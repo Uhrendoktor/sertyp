@@ -6,7 +6,7 @@
   
   import "dictionary.typ" as dict_;
   import "array.typ" as array_;
-  return generic.str_dict_serializer((
+  return generic.raw_serializer(dictionary)((
     pos: array_.serializer(a.pos()),
     named: dict_.serializer(a.named())
   ));

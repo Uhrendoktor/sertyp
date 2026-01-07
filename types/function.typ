@@ -4,7 +4,8 @@
 #let serializer(f, ctx: none) = {
   utils.assert_type(f, function);
   
-  return generic.str_serializer(if ctx != none { ctx + "." } else { "" } + repr(f));
+  import "string.typ" as string_;
+  return string_.serializer(if ctx != none { ctx + "." } else { "" } + repr(f));
 };
 
 #let deserializer(s) = {
@@ -19,15 +20,16 @@
 #let test() = {
   utils.assert(
       serializer((x: int) => { return "test"; }),
-      "\"(..) => ..\""
+      "(..) => .."
   );
   utils.assert(
     serializer(table.cell),
-    "\"cell\""
+    "cell"
   )
   utils.assert(
     deserializer("repr"),
     repr
-  )
+  );
+
   generic.test(repr);
 };

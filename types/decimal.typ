@@ -1,10 +1,7 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(d) = {
-  utils.assert_type(d, decimal);
-  generic.str_serializer(d);
-};
+#let serializer = generic.str_serializer(decimal);
 
 #let deserializer(s) = {
   utils.assert_type(s, str);

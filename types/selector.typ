@@ -7,7 +7,7 @@
   panic("Selector serialization is not yet supported");
 };
 
-#let deserializer(s) => {
+#let deserializer(s) = {
   panic("Selector deserialization is not yet supported")
 }
 

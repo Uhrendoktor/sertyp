@@ -87,11 +87,10 @@
     supertype = sty;
     break
   }
-  let dict = (
+  return generic.raw_serializer(dictionary)((
     fn: func_.serializer(fn, ctx: supertype),
     fields: dict_.serializer(fields),
-  )
-  return generic.str_dict_serializer(dict)
+  ));
 }
 
 /// Splits positional arguments from named arguments based on a list of positional argument names.
@@ -309,7 +308,8 @@
   let args = dict_.deserializer(d.at("fields"))
   let args = split_positional(("body", "text"), arguments(..args))
 
-  let fn = if d.fn in FN { FN.at(d.fn) } else { eval(d.fn) };
+  import "function.typ" as func_
+  let fn = if d.fn in FN { FN.at(d.fn) } else { func_.deserializer(d.fn) };
   return fn(..args)
 }
 

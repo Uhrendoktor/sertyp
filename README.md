@@ -1,11 +1,26 @@
 # Sertyp
 
-Serialization and deserialization of most typst types.
-Contrary to typst's internal `repr` implementation or `cbor` encoding, this representation stores more type information an is less ambiguous.
-The deserialized type is a valid and **displayable** typst type as close as possible to the original.
+Serialization and deserialization of most typst types into an intermediate representation.
+Contrary to the string produced by `repr` or `cbor(cbor.encode(..))` this representation stores more type information an is less ambiguous.
+Moreover the deserialization produces the actual **displayable** value instead of a representation of it.
 
+The intermediate representation can be used in combination with `cbor` to communicate non ambiguos type information accros the WASM boundary.
+
+## Examples
+
+### WASM
 ```typst
-#import "@preview/sertyp:0.1.0";
+#import "@preview/sertyp:0.1.1";
+#let plugin = plugin("...");
+
+#let I = $mat(1,0;0,1)$
+#let It = deserialize_cbor(plugin.transpose(serialize_cbor(I)));
+#assert(repr(It) == repr($mat(0,1;1,0)$));
+```
+
+### General
+```typst
+#import "@preview/sertyp:0.1.1";
 #let content = [
     Total displaced soil by glacial flow:
     $ 7.32 beta + sum_(i=0)^nabla (Q_i (a_i - epsilon)) / 2 $

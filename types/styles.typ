@@ -7,7 +7,10 @@
   return generic.serialize(s.child);
 }
 
-#let deserializer = generic.eval_deserializer;
+#let deserializer(s) = {
+  utils.assert_type(s, str);
+  return eval(s);
+}
 
 #let test() = {
   // TODO: Implement test

@@ -4,7 +4,7 @@
 #let serializer(f) = {
   utils.assert_type(f, fraction);
   
-  return generic.str_dict_serializer(generic.value_unit_serializer(repr(f)));
+  return generic.value_unit_serializer(repr(f));
 };
 
 #let deserializer = generic.value_unit_deserializer;

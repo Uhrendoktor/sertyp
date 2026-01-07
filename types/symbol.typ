@@ -4,7 +4,8 @@
 #let serializer(s) = {
   utils.assert_type(s, symbol);
 
-  return generic.str_serializer([#s].fields().at("text"));
+  import "string.typ" as string_;
+  return string_.serializer([#s].fields().at("text"));
 };
 
 #let deserializer(s) = {

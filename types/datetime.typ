@@ -9,7 +9,10 @@
     ("year", "month", "day", "hour", "minute", "second")    
   );
   import "dictionary.typ" as dict_;
-  return dict_.serializer(fields);
+  import "integer.typ" as int_;
+  return generic.raw_serializer(dictionary)(fields.pairs().map(((k,v))=>{
+    (k, int_.serializer(v))
+  }).to-dict())
 };
 
 #let deserializer(d) = {

@@ -9,7 +9,7 @@
   let dict = generic.value_unit_serializer(repr(l.abs));
   dict.insert("em", float_.serializer(float(l.em)));
   
-  return generic.str_dict_serializer(dict);
+  return generic.raw_serializer(dict);
 };
 
 #let deserializer(l) = {

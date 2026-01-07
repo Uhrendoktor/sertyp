@@ -1,13 +1,12 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(d) = {
-  utils.assert_type(d, direction);
-  
-  return generic.str_serializer(repr(d));
-};
+#let serializer = generic.repr_serializer(direction);
 
-#let deserializer = generic.eval_deserializer;
+#let deserializer(s) = {
+  utils.assert_type(s, str);
+  return eval(s);
+};
 
 #let test() = {
   for v in (ltr, rtl) {

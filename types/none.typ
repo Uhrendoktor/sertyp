@@ -1,12 +1,12 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(s) = {
-  utils.assert_type(s, type(none));
-  return repr(s);
-};
+#let serializer = generic.repr_serializer(type(none));
 
-#let deserializer = generic.plain_type_deserializer(type(none));
+#let deserializer(s) = {
+  utils.assert_type(s, str);
+  return none;
+};
 
 #let test() = {
   generic.test(none);

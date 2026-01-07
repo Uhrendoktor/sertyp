@@ -1,10 +1,7 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(f) = {
-  utils.assert_type(f, float);
-  generic.raw_serializer(f);
-};
+#let serializer = generic.raw_serializer(float);
 
 #let deserializer(f) = {
   if type(f) == int {

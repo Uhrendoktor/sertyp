@@ -1,14 +1,9 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-/// Serializer for boolean values.
-/// Returns "true" for `true` and "false" for `false`.
-#let serializer(b) = {
-  utils.assert_type(b, bool);
-  if b { "true" } else { "false" }
-};
+#let serializer = generic.raw_serializer(bool);
 
-#let deserializer = generic.plain_type_deserializer(bool);
+#let deserializer = generic.raw_serializer(bool);
 
 #let test() = {
   generic.test(true);

@@ -10,8 +10,9 @@
   }
   let name = repr(m).match(regex("\<module (.*?)\>")).captures.at(0);
   import "array.typ" as array_;
-  generic.str_dict_serializer((
-    name: generic.str_serializer(name),
+  import "string.typ" as string_;
+  generic.raw_serializer(dictionary)((
+    name: string_.serializer(name),
     member: array_.serializer(fn)
   ))
 }
@@ -25,11 +26,12 @@
 #let test() = {
   import "module.typ" as mod_;
   import "array.typ" as array_;
+  import "string.typ" as string_;
 
   utils.assert(
     serializer(mod_),
-    generic.str_dict_serializer((
-      name: generic.str_serializer("module"),
+    generic.raw_serializer(dictionary)((
+      name: string_.serializer("module"),
       member: array_.serializer((
         "<module generic>",
         "<module utils>",

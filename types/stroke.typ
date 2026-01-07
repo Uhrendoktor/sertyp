@@ -4,13 +4,15 @@
 #let serializer(s) = {
   utils.assert_type(s, stroke);
   
-  return generic.str_dict_serializer((
-    cap: generic.serialize(s.cap),
-    dash: generic.serialize(s.dash),
-    join: generic.serialize(s.join),
-    miter-limit: generic.serialize(s.miter-limit),
-    paint: generic.serialize(s.paint),
-    thickness: generic.serialize(s.thickness)
+  import "dictionary.typ" as dict_;
+
+  return dict_.serializer((
+    cap: s.cap,
+    dash: s.dash,
+    join: s.join,
+    miter-limit: s.miter-limit,
+    paint: s.paint,
+    thickness: s.thickness
   ));
 };
 

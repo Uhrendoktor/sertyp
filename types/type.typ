@@ -3,7 +3,9 @@
 
 #let serializer(t) = {
   utils.assert_type(t, type);
-  generic.str_serializer(utils.type_str(t));
+
+  import "string.typ" as string_;
+  return string_.serializer(utils.type_str(t));
 };
 
 #let deserializer(t) = {

@@ -6,7 +6,7 @@
 
   import "array.typ" as array_;
   import "function.typ" as func_;
-  return generic.str_dict_serializer((
+  return generic.raw_serializer(dictionary)((
     components: array_.serializer(c.components()),
     space: func_.serializer(c.space(), ctx: "color")
   ));

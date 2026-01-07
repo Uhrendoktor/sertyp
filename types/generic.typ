@@ -1,18 +1,23 @@
 #import "../utils.typ" as utils
 
 /// Serializes content using its string representation.
-#let str_serializer(s) = {
-    return utils.in_quotes(str(s));
+#let str_serializer(ty) = (v) => {
+    utils.assert_type(v, ty);
+    import "string.typ" as string_;
+    return string_.serializer(str(v));
 }
 
 /// Serializes content using its repr representation.
-#let repr_serializer(s) = {
-    return utils.in_quotes(repr(s));
+#let repr_serializer(ty) = (v) => {
+    utils.assert_type(v, ty);
+    import "string.typ" as string_;
+    return string_.serializer(repr(v));
 }
 
 /// Serializes content raw.
-#let raw_serializer(s) = {
-    return str(s);
+#let raw_serializer(ty) = (v) => {
+    utils.assert_type(v, ty);
+    return v;
 }
 
 /// Serializes a value with a unit, e.g., "12.5kg" into (value: 12.5, unit: "kg").
@@ -23,13 +28,20 @@
 /// (dict[str, float|str]): A dictionary with keys "value" and "unit".
 #let value_unit_serializer(s) = {
     import "float.typ" as float_;
+    import "string.typ" as string_;
     let value = s.find(regex("[0-9.+-]+"));
     let unit = s.slice(value.len());
-    return (
+    return raw_serializer(dictionary)((
         value: float_.serializer(float(value)), 
-        unit: str_serializer(unit)
-    );
+        unit: string_.serializer(unit)
+    ));
 }
+
+/// Panic serializer for unsupported types.
+#let panic_serializer = (s) => {
+    panic("No serializer defined for type " + str(type(s)));
+}
+
 
 /// Deserializes a plain type value.
 /// Args:
@@ -38,20 +50,9 @@
 /// 
 /// Returns:
 /// (ty): The deserialized value.
-#let plain_type_deserializer(ty) = (v) =>{
+#let raw_deserializer(ty) = (v) =>{
     utils.assert_type(v, ty);
     return v;
-}
-
-/// Evaluates a string representation into its value.
-/// Args:
-/// s (str): The string representation to evaluate.
-/// 
-/// Returns:
-/// (any): The evaluated value. 
-#let eval_deserializer(s) = {
-    utils.assert_type(s, str);
-    return eval(s);
 }
 
 /// Deserializes a value with a unit from a dictionary.
@@ -67,31 +68,6 @@
     let value = float_.deserializer(l.at("value"));
     let unit = l.at("unit");
     return eval(str(value) + unit);
-}
-
-/// combines already serialized parts of one dictionary into one string representation.
-/// Args:
-/// d (dict[str, str]): The dictionary to serialize.
-/// 
-/// Returns:
-/// (str): The string combined representation of the dictionary.
-/// 
-/// Example:
-/// ```typst
-/// let d = ( "a": "test", "b": "2" );
-/// assert(str_dict_serializer(d) == "(a: test, b: 2)")
-/// ```
-#let str_dict_serializer(d) = {
-    let body = "";
-    for (key, value) in d.pairs() {
-        body += key + ":" + value + ",";
-    }
-    return "(" + body + ")";
-}
-
-/// Panic serializer for unsupported types.
-#let panic_serializer = (s) => {
-    panic("No serializer defined for type " + str(type(s)));
 }
 
 /// Imports the module for a given type.
@@ -140,8 +116,8 @@
     "integer",
     // "float",
     "string",
-    "none",
-    "auto",
+    // "none",
+    // "auto",
     "array",
 );
 
@@ -161,7 +137,7 @@
         return value;
     }
 
-    return str_dict_serializer((
+    return ((
         type: type_.serializer(type(content)),
         value: value
     ));
@@ -191,7 +167,7 @@
 /// Args:
 /// v (any): The value to test.
 #let test(v) = {
-    let vd = deserialize(eval(serialize(v)));
+    let vd = deserialize(serialize(v));
     utils.assert(
         vd,
         v
@@ -207,7 +183,7 @@
 /// Args:
 /// v (any): The value to test. 
 #let test_repr(v) = {
-     let vd = deserialize(eval(serialize(v)));
+     let vd = deserialize(serialize(v));
     utils.assert(
         repr(vd),
         repr(v)

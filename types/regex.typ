@@ -4,7 +4,8 @@
 #let serializer(r) = {
   utils.assert_type(r, regex);
 
-  return ([#r].fields().at("text")).match(regex("regex\((.*?)\)")).captures.at(0);
+  import "string.typ" as string_;
+  return string_.serializer(([#r].fields().at("text")).match(regex("regex\(\"(.*?)\"\)")).captures.at(0));
 };
 
 #let deserializer(s) = {
@@ -15,7 +16,7 @@
 #let test() = {
   utils.assert(
     serializer(regex("[a-z]+")),
-    "\"[a-z]+\"",
+    "[a-z]+",
   );
 
   generic.test(regex("^[0-9]{3}-[0-9]{2}-[0-9]{4}$"));

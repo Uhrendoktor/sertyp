@@ -7,34 +7,36 @@
   "conic": ("stops", "angle", "center", "relative", "space"),
 );
 
-#let serializer(a) = {
-  utils.assert_type(a, gradient);
+#let serializer(g) = {
+  utils.assert_type(g, gradient);
   
-  let kind = a.kind();
+  import "function.typ" as func_;
+  let kind = g.kind();
   let dict = (
-    kind: generic.serialize(kind),
+    kind: func_.serializer(kind, ctx: "gradient"),
   );
   for field in FIELDS.at(repr(kind)) {
     dict.insert(
       field, 
       generic.serialize(eval(
-        "a."+field+"()", 
-        scope: (a: a)
+        "g."+field+"()", 
+        scope: (g: g)
       ))
     );
   }
-  generic.str_dict_serializer(dict)
+  return generic.raw_serializer(dictionary)(dict);
 };
 
-#let deserializer(a) = {
-  utils.assert_type(a, dictionary);
+#let deserializer(d) = {
+  utils.assert_type(d, dictionary);
 
-  a.kind.value = "gradient." + a.kind.value;
+  import "function.typ" as func_;
+  let kind = func_.deserializer(d.remove("kind"));
+
   let args = utils.str_dict();
-  for (key, val) in a.pairs() {
-      args.insert(key, generic.deserialize(val));
+  for (field, val) in d.pairs() {
+      args.insert(field, generic.deserialize(val));
   };
-  let kind = args.remove("kind");
   let stops = args.remove("stops");
 
   return kind(

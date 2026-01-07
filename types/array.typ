@@ -3,12 +3,9 @@
 
 #let serializer(a) = {
   utils.assert_type(a, array);
-  
-  let body = "";
-  for item in a {
-      body += generic.serialize(item) + ","
-  }
-  return "(" + body + ")";
+  return generic.raw_serializer(array)(a.map((item) => {
+    generic.serialize(item)
+  }));
 };
 
 #let deserializer(a) = {

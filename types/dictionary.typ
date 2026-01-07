@@ -8,7 +8,7 @@
   for (key, value) in d.pairs() {
       dict.insert(key, generic.serialize(value)); 
   }
-  return generic.str_dict_serializer(dict);
+  return generic.raw_serializer(dictionary)(dict);
 }
 
 #let deserializer(d) = {

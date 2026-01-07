@@ -5,11 +5,11 @@
   utils.assert_type(v, version);
   
   import "integer.typ" as int_;
-  generic.str_dict_serializer((
+  return generic.raw_serializer(dictionary)((
       major: int_.serializer(v.major),
       minor: int_.serializer(v.minor),
       patch: int_.serializer(v.patch),
-  ))
+  ));
 };
 
 #let deserializer(d) = {

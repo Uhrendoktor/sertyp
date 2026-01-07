@@ -3,8 +3,7 @@
 
 #let serializer(a) = {
   utils.assert_type(a, angle);
-  
-  return generic.str_dict_serializer(generic.value_unit_serializer(repr(a)));
+  return generic.value_unit_serializer(repr(a));
 };
 
 #let deserializer = generic.value_unit_deserializer;
