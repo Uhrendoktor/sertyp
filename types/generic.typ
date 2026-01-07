@@ -111,15 +111,14 @@
     return dict;
 }
 
-#let BASIC = (
+#let PRIMITIVE = (
     "boolean",
     "integer",
-    // "float",
     "string",
-    // "none",
-    // "auto",
     "array",
 );
+
+#let no_value() = {};
 
 /// Serializes any content recursively into a dictionary with type and value.
 /// Args:
@@ -133,14 +132,19 @@
     let ty = type(content);
     let value = type_mod(ty).serializer(content);
 
-    if utils.type_str(ty) in BASIC {
+    if utils.type_str(ty) in PRIMITIVE {
         return value;
     }
-
-    return ((
-        type: type_.serializer(type(content)),
+    let ty = type_.serializer(type(content));
+    if value == no_value {
+        return (
+            type: ty,
+        );
+    }
+    return (
+        type: ty,
         value: value
-    ));
+    );
 }
 
 /// Deserializes content from its serialized representation.
@@ -159,7 +163,11 @@
     }
 
     let ty = type_.deserializer(content.at("type"));
-    return type_mod(ty).deserializer(content.at("value"));
+    let deserializer = type_mod(ty).deserializer;
+    if "value" not in content {
+        return deserializer();
+    }
+    return deserializer(content.at("value"));
 }
 
 /// Tests for correct serialization and deserialization of a value.
