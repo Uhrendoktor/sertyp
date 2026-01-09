@@ -44,8 +44,8 @@ pub fn fibonacci<'a>(
 ```typst
 #import "@preview/sertyp:0.1.1";
 #let fibonacci(n) = {
-    let plugin = plugin("./target/wasm32-unknown-unknown/release/test_plugin.wasm");
-    sertyp.call(test_plugin.cycle, data);
+    let plugin = plugin("<...>.wasm");
+    sertyp.call(plugin.fibonacci, n);
 }
 
 #assert(fibonacci(10) == 89)

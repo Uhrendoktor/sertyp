@@ -17,22 +17,13 @@ Example: Pass `rgb(255, 128, 0)` to a plugin, work with it as `Color { space: RG
 ### In Typst
 
 ```typst
-#import "@preview/sertyp:0.1.1"
+#import "@preview/sertyp:0.1.1";
+#let fibonacci(n) = {
+    let plugin = plugin("<...>.wasm");
+    sertyp.call(plugin.fibonacci, n);
+}
 
-// Serialize data for a plugin
-#let data = rgb(255, 128, 0)
-#let bytes = sertyp.serialize-cbor(data)
-
-// Call plugin
-#let result_bytes = plugin("<...>.wasm").process(bytes)
-
-// Deserialize result
-#let result = sertyp.deserialize-cbor(result_bytes)
-```
-
-Or with the shorthand
-```typst
-#let result = sertyp.call(plugin("<...>.wasm").process, data)
+#assert(fibonacci(10) == 89)
 ```
 
 ### In Rust (plugin)
