@@ -1,0 +1,17 @@
+[workspace.package]
+edition = "2024"
+authors = ["Uhrendoktor"]
+version = "0.1.1"
+
+[package]
+name = "sertyp"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[lib]
+crate-type = ["lib"]
+
+[dependencies]
+serde = { version = "1.0.228", features = ["derive"] }
+serde_cbor = "0.11.2"
