@@ -1,13 +1,14 @@
-[workspace.package]
+[package]
+name = "sertyp"
 edition = "2024"
 authors = ["Uhrendoktor"]
 version = "0.1.1"
-
-[package]
-name = "sertyp"
-version.workspace = true
-edition.workspace = true
-authors.workspace = true
+description = "Serialization and deserialization of most typst types into sertyp CBOR format: This includes markdown, math, etc."
+license = "MIT"
+repository = "https://github.com/Uhrendoktor/sertyp"
+readme = "README.md"
+keywords = ["wasm", "serialization", "deserialization", "typst"]
+categories = ["encoding", "wasm", "api-bindings"]
 
 [lib]
 crate-type = ["lib"]
