@@ -24,33 +24,41 @@ Example: Pass `rgb(255, 128, 0)` to a plugin, work with it as `Color { space: RG
 #let bytes = sertyp.serialize-cbor(data)
 
 // Call plugin
-#let result_bytes = plugin("my_plugin.wasm").process(bytes)
+#let result_bytes = plugin("<...>.wasm").process(bytes)
 
 // Deserialize result
 #let result = sertyp.deserialize-cbor(result_bytes)
 ```
 
+Or with the shorthand
+```typst
+#let result = sertyp.call(plugin("<...>.wasm").process, data)
+```
+
 ### In Rust (plugin)
 
 ```rust
-use sertyp::{deserialize_cbor, serialize_cbor, Item};
+use wasm_minimal_protocol::*;
+use sertyp::*;
 
-#[wasm_func]
-pub fn process(data: &[u8]) -> Vec<u8> {
-    let item = deserialize_cbor(data).unwrap();
+#[cfg(target_arch = "wasm32")]
+initiate_protocol!();
+
+#[typst_func]
+pub fn fibonacci<'a>(
+    n: Integer,
+) -> sertyp::Result<'a, Integer> {
+    let n: i32 = match n.try_into() {
+        Ok(n) => n,
+        Err(_) => return Err("Invalid integer range".into()).into()
+    };
     
-    match item {
-        Item::Color(color) => {
-            // Work with typed color
-            println!("Color space: {:?}", color.space);
-            // color.components is an Array
-        }
-        _ => {}
+    let (mut v0, mut v1) = (0, 1);
+    for _ in 0..n {
+        (v0, v1) = (v1, v0 + v1);
     }
 
-    let result = todo!();
-    
-    serialize_cbor(result).unwrap()
+    Ok(v1.into()).into()
 }
 ```
 
