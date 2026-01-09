@@ -23,23 +23,13 @@ use sertyp::*;
 #[cfg(target_arch = "wasm32")]
 initiate_protocol!();
 
-#[wasm_func]
-pub fn fibonacci(
-    data: &[u8],
-) -> Vec<u8> {
-    let n: i32 = match deserialize_cbor(data) {
-        Ok(Item::Integer(i)) => {
-            match i.try_into() {
-                Ok(n) => n,
-                Err(_) => error!("Invalid integer range")
-            }
-        },
-        Ok(other) => {
-            error!("Expected integer, found {}", other.type_name());
-        }
-        Err(e) => {
-            error!("Deserialization Error: {}", &e);
-        }
+#[typst_func]
+pub fn fibonacci<'a>(
+    n: Integer,
+) -> sertyp::Result<'a, Integer> {
+    let n: i32 = match n.try_into() {
+        Ok(n) => n,
+        Err(_) => return Err("Invalid integer range".into()).into()
     };
     
     let (mut v0, mut v1) = (0, 1);
@@ -47,8 +37,7 @@ pub fn fibonacci(
         (v0, v1) = (v1, v0 + v1);
     }
 
-    let result: Integer = v1.into();
-    serialize_cbor(&result.into()).unwrap()
+    Ok(v1.into()).into()
 }
 ```
 
@@ -56,7 +45,7 @@ pub fn fibonacci(
 #import "@preview/sertyp:0.1.1";
 #let fibonacci(n) = {
     let plugin = plugin("./target/wasm32-unknown-unknown/release/test_plugin.wasm");
-    sertyp.deserialize-cbor(test_plugin.cycle(sertyp.serialize-cbor(data)));
+    sertyp.call(test_plugin.cycle, data);
 }
 
 #assert(fibonacci(10) == 89)

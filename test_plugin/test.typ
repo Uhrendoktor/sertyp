@@ -4,10 +4,8 @@
 #let test() = {
   let test_plugin = plugin("./target/wasm32-unknown-unknown/release/test_plugin.wasm");
 
-  let c = sertyp.deserialize-cbor(test_plugin.fibonacci(sertyp.serialize-cbor(10)));
-
   let cycle(data) = {
-    let cycled = sertyp.deserialize-cbor(test_plugin.cycle(sertyp.serialize-cbor(data)));
+    let cycled = sertyp.call(test_plugin.cycle, data);
 
     if type(data) in (dictionary, arguments) {
       sertyp.utils.assert(data, cycled);

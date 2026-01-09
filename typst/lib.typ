@@ -95,3 +95,15 @@
 #let deserialize-cbor(v) = {
   return deserialize(cbor(v));
 };
+
+/// Calls a WASM plugin function with a single argument, serializing the argument into CBOR format and deserializing the result from CBOR format.
+/// 
+/// Args:
+/// func (function): The plugin function to call.
+/// arg (any): The argument to pass to the function.
+/// 
+/// Returns:
+/// (any): The result returned by the function.
+#let call(func, arg) = {
+  return deserialize-cbor(func(serialize-cbor(arg)));
+};

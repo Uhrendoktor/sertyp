@@ -1,10 +1,22 @@
-[package]
-name = "sertyp"
+[workspace]
+members = [
+    ".",
+    "./sertyp_macros",
+]
+
+[workspace.package]
 edition = "2024"
 authors = ["Uhrendoktor"]
 version = "0.1.1"
-description = "Serialization and deserialization of most typst types into sertyp CBOR format: This includes markdown, math, etc."
 license = "MIT"
+
+[package]
+name = "sertyp"
+edition.workspace = true
+authors.workspace = true
+version.workspace = true
+description = "Serialization and deserialization of most typst types into sertyp CBOR format: This includes markdown, math, etc."
+license.workspace = true
 repository = "https://github.com/Uhrendoktor/sertyp"
 readme = "README.md"
 keywords = ["wasm", "serialization", "deserialization", "typst"]
@@ -16,3 +28,4 @@ crate-type = ["lib"]
 [dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
 serde_cbor = "0.11.2"
+sertyp_macros = { path = "./sertyp_macros" }

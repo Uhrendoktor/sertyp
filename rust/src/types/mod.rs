@@ -37,6 +37,7 @@ mod panic;
 use serde::{Deserialize, Serialize};
 
 pub use crate::types::r#type::TypeName;
+pub use crate::types::generic::{Result, AutoOr, Or};
 pub use crate::types::{panic::Panic, alignment::Alignment, angle::Angle, arguments::Arguments, array::Array, color::Color, content::Content, datetime::Datetime, decimal::Decimal, dictionary::Dictionary, direction::Direction, duration::Duration, float::Float, fraction::Fraction, function::Function, gradient::Gradient, integer::Integer, label::Label, length::Length, module::Module, ratio::Ratio, regex::Regex, relative::Relative, string::String, stroke::Stroke, styles::Styles, symbol::Symbol, tiling::Tiling, r#type::Type, version::Version};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -57,7 +58,7 @@ pub enum TypeByteArray_<'a> {
 }
 
 impl<'a> Deserialize<'a> for TypeByteArray_<'a> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
         D: serde::Deserializer<'a>,
     {
@@ -70,14 +71,14 @@ impl<'a> Deserialize<'a> for TypeByteArray_<'a> {
                 formatter.write_str("a byte array or string")
             }
 
-            fn visit_borrowed_bytes<E>(self, v: &'de [u8]) -> Result<Self::Value, E>
+            fn visit_borrowed_bytes<E>(self, v: &'de [u8]) -> std::result::Result<Self::Value, E>
             where
                 E: serde::de::Error,
             {
                 Ok(TypeByteArray_::Bytes(v))
             }
 
-            fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
+            fn visit_borrowed_str<E>(self, v: &'de str) -> std::result::Result<Self::Value, E>
             where
                 E: serde::de::Error,
             {
@@ -90,7 +91,7 @@ impl<'a> Deserialize<'a> for TypeByteArray_<'a> {
 }
 
 impl<'a> Serialize for TypeByteArray_<'a> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {

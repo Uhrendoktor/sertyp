@@ -1,5 +1,6 @@
 mod types;
 pub use types::*;
+pub use sertyp_macros::*;
 
 pub fn deserialize_cbor(
     data: &[u8]

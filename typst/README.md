@@ -46,9 +46,7 @@ Pass typed data to Rust plugins and get typed results back:
 
 // Send a matrix to the plugin
 #let I = $mat(1,2;-2,1)$
-#let transposed = sertyp.deserialize-cbor(
-    math_plugin.transpose(sertyp.serialize-cbor(I))
-)
+#let transposed = sertyp.call(math_plugin.transpose, I)
 #assert(repr(transposed) == repr($mat(1,-2;2,1)$))
 ```
 
@@ -108,6 +106,13 @@ Deserializes from CBOR bytes back to a Typst value.
 
 ```typst
 let value = sertyp.deserialize-cbor(plugin_output)
+```
+
+### `call(function, arg) -> any`
+
+Shorthand for
+```typst
+sertyp.deserialize-cbor(function(sertyp.serialize-cbor(arg)))
 ```
 
 **Security note**: Deserialization uses `eval()` internally. Only deserialize trusted data.
