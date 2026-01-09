@@ -21,13 +21,13 @@ Example: Pass `rgb(255, 128, 0)` to a plugin, work with it as `Color { space: RG
 
 // Serialize data for a plugin
 #let data = rgb(255, 128, 0)
-#let bytes = sertyp.serialize_cbor(data)
+#let bytes = sertyp.serialize-cbor(data)
 
 // Call plugin
 #let result_bytes = plugin("my_plugin.wasm").process(bytes)
 
 // Deserialize result
-#let result = sertyp.deserialize_cbor(result_bytes)
+#let result = sertyp.deserialize-cbor(result_bytes)
 ```
 
 ### In Rust (plugin)

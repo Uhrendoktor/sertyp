@@ -56,7 +56,7 @@ pub fn fibonacci(
 #import "@preview/sertyp:0.1.1";
 #let fibonacci(n) = {
     let plugin = plugin("./target/wasm32-unknown-unknown/release/test_plugin.wasm");
-    sertyp.deserialize_cbor(test_plugin.cycle(sertyp.serialize_cbor(data)));
+    sertyp.deserialize-cbor(test_plugin.cycle(sertyp.serialize-cbor(data)));
 }
 
 #assert(fibonacci(10) == 89)
