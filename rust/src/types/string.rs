@@ -1,12 +1,11 @@
 use std::{fmt::Display, ops::Deref};
 
-use crate::types::{Item, r#type::TypeName};
-
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct String<'a> (
     #[serde(borrow)]
-    pub(crate) &'a str,
+    pub std::borrow::Cow<'a, str>
 );
+crate::impl_all!(String<'a>, "string");
 
 impl Deref for String<'_> {
     type Target = str;
@@ -18,35 +17,24 @@ impl Deref for String<'_> {
 
 impl<'a> From<&'a str> for String<'a> {
     fn from(value: &'a str) -> Self {
+        String(std::borrow::Cow::Borrowed(value))
+    }
+}
+
+impl<'a> From<std::borrow::Cow<'a, str>> for String<'a> {
+    fn from(value: std::borrow::Cow<'a, str>) -> Self {
         String(value)
+    }
+}
+
+impl<'a> From<std::string::String> for String<'a> {
+    fn from(value: std::string::String) -> Self {
+        String(std::borrow::Cow::Owned(value))
     }
 }
 
 impl<'a> Display for String<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-impl<'a> TryFrom<Item<'a>> for String<'a> {
-    type Error = std::string::String;
-
-    fn try_from(value: Item<'a>) -> Result<Self, Self::Error> {
-        match value {
-            Item::String(s) => Ok(s),
-            _ => Err(format!("Invalid type for String: {:?}", value)),
-        }
-    }
-}
-
-impl<'a> Into<Item<'a>> for String<'a> {
-    fn into(self) -> Item<'a> {
-        Item::String(self)
-    }
-}
-
-impl<'a> TypeName for String<'a> {
-    fn name() -> &'static str {
-        "string"
+        self.deref().fmt(f)
     }
 }

@@ -1,10 +1,10 @@
 use std::collections::HashMap;
-use crate::types::{Item, Item_, r#type::TypeName};
+use crate::types::{Item, Item_};
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct Dictionary_<'a>(
     #[serde(borrow)]
-    HashMap<&'a str, Item_<'a>>
+    pub HashMap<&'a str, Item_<'a>>
 );
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
@@ -13,6 +13,8 @@ pub struct Dictionary<'a>(
     #[serde(borrow)]
     HashMap<&'a str, Item<'a>>
 );
+
+crate::impl_all!(Dictionary<'a>, "dictionary");
 
 impl<'a> From<Dictionary<'a>> for Dictionary_<'a> {
     fn from(value: Dictionary<'a>) -> Self {
@@ -40,25 +42,8 @@ impl<'a> std::ops::DerefMut for Dictionary<'a> {
     }
 }
 
-impl<'a> TryFrom<Item<'a>> for Dictionary<'a> {
-    type Error = std::string::String;
-
-    fn try_from(value: Item<'a>) -> Result<Self, Self::Error> {
-        match value {
-            Item::Dictionary(d) => Ok(d),
-            _ => Err(format!("Invalid type for Dictionary: {:?}", value)),
-        }
-    }
-}
-
-impl<'a> Into<Item<'a>> for Dictionary<'a> {
-    fn into(self) -> Item<'a> {
-        Item::Dictionary(self)
-    }
-}
-
-impl<'a> TypeName for Dictionary<'a> {
-    fn name() -> &'static str {
-        "dictionary"
+impl<'a> From<HashMap<&'a str, Item<'a>>> for Dictionary<'a> {
+    fn from(value: HashMap<&'a str, Item<'a>>) -> Self {
+        Dictionary(value)
     }
 }

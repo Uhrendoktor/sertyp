@@ -1,15 +1,18 @@
-use crate::types::{Item, r#type::TypeName};
+use crate::types::string::String;
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-#[serde(from = "&'a str", into = "&'a str")]
+#[serde(from = "String", into = "String")]
 pub enum Function<'a> {
     Inline,
-    Named(&'a str),
+    #[serde(borrow)]
+    Named(String<'a>),
 }
 
-impl<'a> From<&'a str> for Function<'a> {
-    fn from(value: &'a str) -> Self {
-        if value == "(..) => .." {
+crate::impl_all!(Function<'a>, "function");
+
+impl<'a> From<String<'a>> for Function<'a> {
+    fn from(value: String<'a>) -> Self {
+        if &*value == "(..) => .." {
             Function::Inline
         } else {
             Function::Named(value)
@@ -17,61 +20,38 @@ impl<'a> From<&'a str> for Function<'a> {
     }
 }
 
-impl<'a> From<Function<'a>> for &'a str {
-    fn from(value: Function<'a>) -> Self {
-        match value {
-            Function::Inline => "(..) => ..",
+impl<'a> Into<String<'a>> for Function<'a> {
+    fn into(self) -> String<'a> {
+        match self {
+            Function::Inline => "(..) => ..".into(),
             Function::Named(name) => name,
         }
     }
 }
 
 impl<'a> Function<'a> {
-    pub fn name(&self) -> Option<&'a str> {
+    pub fn name(&'a self) -> Option<String<'a>> {
         match self {
             Function::Inline => None,
-            Function::Named(name) => name.rsplitn(1, ".").next(),
+            Function::Named(name) => (&*name).rsplitn(1, ".").next().map(|s| s.into()),
         }
     }
 
-    pub fn full_name(&self) -> Option<&'a str> {
+    pub fn full_name(&'a self) -> Option<String<'a>> {
         match self {
             Function::Inline => None,
-            Function::Named(name) => Some(name),
+            Function::Named(name) => Some((&**name).into()),
         }
     }
 
-    pub fn ctx_name(&self) -> Option<&'a str> {
+    pub fn ctx_name(&'a self) -> Option<String<'a>> {
         match self {
             Function::Inline => None,
             Function::Named(name) => {
                 let mut parts = name.rsplitn(1, ".");
                 parts.next();
-                parts.next()
+                parts.next().map(|s| s.into())
             }
         }
-    }
-}
-
-impl<'a> TryFrom<Item<'a>> for Function<'a> {
-    type Error = std::string::String;
-
-    fn try_from(value: Item<'a>) -> Result<Self, Self::Error> {
-        match value {
-            Item::Function(f) => Ok(f),
-            _ => Err(format!("Invalid type for Function: {:?}", value)),
-        }
-    }
-}
-
-impl<'a> Into<Item<'a>> for Function<'a> {
-    fn into(self) -> Item<'a> {
-        Item::Function(self)
-    }
-}
-
-impl<'a> TypeName for Function<'a> {
-    fn name() -> &'static str {
-        "function"
     }
 }

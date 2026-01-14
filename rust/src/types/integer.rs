@@ -1,9 +1,5 @@
 use std::{fmt::Display, num::TryFromIntError};
 
-use crate::types::{Item, r#type::TypeName};
-
-
-
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[allow(non_camel_case_types)]
 #[serde(untagged)]
@@ -21,6 +17,8 @@ pub enum Integer {
     isize(isize),
     usize(usize),
 }
+
+crate::impl_all!(Integer, "integer");
 
 impl TryInto<i32> for Integer {
     type Error = TryFromIntError;
@@ -64,28 +62,5 @@ impl Display for Integer {
             Integer::isize(val) => val.fmt(f),
             Integer::usize(val) => val.fmt(f),
         }
-    }
-}
-
-impl<'a> TryFrom<Item<'a>> for Integer {
-    type Error = std::string::String;
-
-    fn try_from(value: Item<'a>) -> Result<Self, Self::Error> {
-        match value {
-            Item::Integer(i) => Ok(i),
-            _ => Err(format!("Invalid type for Integer: {:?}", value)),
-        }
-    }
-}
-
-impl<'a> Into<Item<'a>> for Integer {
-    fn into(self) -> Item<'a> {
-        Item::Integer(self)
-    }
-}
-
-impl<'a> TypeName for Integer {
-    fn name() -> &'static str {
-        "integer"
     }
 }

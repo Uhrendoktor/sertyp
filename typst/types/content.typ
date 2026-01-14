@@ -26,7 +26,7 @@
   return generic.raw_serializer(dictionary)((
     func: func_.serializer(fn),
     fields: dict_.serializer(fields),
-  ));
+  ))
 }
 
 /// Splits positional arguments from named arguments based on a list of positional argument names.
@@ -226,7 +226,7 @@
       let label = named.remove("label")
       metadata = [#metadata #label]
     }
-    return metadata;
+    return metadata
   },
   "state-update": (..args) => {
     panic("complex sftate update deserialization is not supported")
@@ -242,13 +242,18 @@
   let args = split_positional(("body", "text"), arguments(..args))
 
   import "function.typ" as func_
-  let func = if d.func in FN { FN.at(d.func) } else { func_.deserializer(d.func) };
+  let func = if d.func in FN { FN.at(d.func) } else { func_.deserializer(d.func) }
   return func(..args)
 }
 
 #let test(cycle) = {
-  cycle([123]);
-  cycle(strong("Bold Text"));
-  cycle($1/2$);
-  cycle([abc #auto $root(2+1,3)$]);
+  cycle([123])
+  cycle(strong("Bold Text"))
+  cycle($1/2$)
+  cycle([abc #auto $root(2+1, 3) alpha$])
+
+  cycle($accent(a, b)$)
+  cycle($a_b$)
+  cycle($binom(n, k, k_2)$)
+  cycle($sqrt(2), root(3,2)$)
 };

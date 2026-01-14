@@ -1,11 +1,5 @@
-use crate::types::r#type::TypeName;
 
-// For future use
-#[allow(dead_code)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Selector;
 
-impl<'a> TypeName for Selector {
-    fn name() -> &'static str {
-        "selector"
-    }
-}
+crate::impl_all!(Selector, "selector");

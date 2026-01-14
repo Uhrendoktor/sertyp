@@ -17,22 +17,9 @@ pub fn typst_func(
         .to_compile_error()
         .into();
     }
-    let input_type = match wrapper_sig.inputs.first_mut().unwrap() {
+    match wrapper_sig.inputs.first_mut().unwrap() {
         syn::FnArg::Typed(pat_type) => {
-            let old = pat_type.clone();
             *pat_type = syn::parse_quote! { data: &[u8] };
-
-            match *old.ty {
-                syn::Type::Path(path) => path,
-                _ => {
-                    return syn::Error::new_spanned(
-                        &item.sig.inputs,
-                        "Function argument must be a type path",
-                    )
-                    .to_compile_error()
-                    .into();
-                }
-            }
         }
         syn::FnArg::Receiver(_) => {
             return syn::Error::new_spanned(
@@ -42,16 +29,6 @@ pub fn typst_func(
             .to_compile_error()
             .into();
         }
-    };
-    let match_pattern = if input_type.path.segments.last().unwrap().ident == "Item" {
-        quote! { v }
-    } else {
-        let mut input_item_type =input_type.clone();
-        input_item_type.path.segments.insert(
-            input_item_type.path.segments.len()-1,
-            syn::parse_quote!(Item)
-        );
-        quote! { #input_item_type(v) }
     };
 
     match &mut wrapper_sig.output {
@@ -74,22 +51,24 @@ pub fn typst_func(
     quote!{
         #[wasm_func]
         #wrapper_sig {
-            let value = match deserialize_cbor(data) {
-                Ok(#match_pattern) => v,
-                Ok(other) => {
-                    error!("Expected {}, found {}", #input_type::name(), other.type_name());
-                }
+            let value = match sertyp::deserialize_cbor(data) {
+                Ok(v) => match v.try_into() {
+                    Ok(v) => v,
+                    Err(e) => {
+                        sertyp::error!("Type Conversion Error: {}", &e);
+                    }
+                },
                 Err(e) => {
-                    error!("Deserialization Error: {}", &e);
+                    sertyp::error!("Deserialization Error: {}", &e);
                 }
             };
 
             #item
             let result = #ident(value);
-            match serialize_cbor(&result.into()) {
+            match sertyp::serialize_cbor(&result.into()) {
                 Ok(data) => data,
                 Err(e) => {
-                    error!("Serialization Error: {}", &e);
+                    sertyp::error!("Serialization Error: {}", &e);
                 }
             }
         }

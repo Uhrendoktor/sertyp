@@ -1,12 +1,12 @@
 use std::fmt::Display;
 
-use crate::{Integer, types::{Item, r#type::TypeName}};
+use crate::Integer;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Version {
-    major: Integer,
-    minor: Integer,
-    patch: Integer
+    pub major: Integer,
+    pub minor: Integer,
+    pub patch: Integer
 }
 
 impl Display for Version {
@@ -15,25 +15,4 @@ impl Display for Version {
     }
 }
 
-impl<'a> TryFrom<Item<'a>> for Version {
-    type Error = std::string::String;
-
-    fn try_from(value: Item<'a>) -> Result<Self, Self::Error> {
-        match value {
-            Item::Version(v) => Ok(v),
-            _ => Err(format!("Invalid type for Version: {:?}", value)),
-        }
-    }
-}
-
-impl<'a> Into<Item<'a>> for Version {
-    fn into(self) -> Item<'a> {
-        Item::Version(self)
-    }
-}
-
-impl<'a> TypeName for Version {
-    fn name() -> &'static str {
-        "version"
-    }
-}
+crate::impl_all!(Version, "version");

@@ -1,11 +1,11 @@
 use std::ops::{Deref, DerefMut};
 
-use crate::types::{Item, r#type::TypeName};
+use crate::types::Item;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Styles<'a>(
     #[serde(borrow)]
-    Box<Item<'a>>
+    pub Box<Item<'a>>
 );
 
 impl<'a> Deref for Styles<'a> {
@@ -22,25 +22,4 @@ impl<'a> DerefMut for Styles<'a> {
     }
 }
 
-impl<'a> TryFrom<Item<'a>> for Styles<'a> {
-    type Error = std::string::String;
-
-    fn try_from(value: Item<'a>) -> Result<Self, Self::Error> {
-        match value {
-            Item::Styles(s) => Ok(s),
-            _ => Err(format!("Invalid type for Styles: {:?}", value)),
-        }
-    }
-}
-
-impl<'a> Into<Item<'a>> for Styles<'a> {
-    fn into(self) -> Item<'a> {
-        Item::Styles(self)
-    }
-}
-
-impl<'a> TypeName for Styles<'a> {
-    fn name() -> &'static str {
-        "styles"
-    }
-}
+crate::impl_all!(Styles<'a>, "styles");

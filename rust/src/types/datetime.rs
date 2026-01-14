@@ -1,4 +1,4 @@
-use crate::types::{integer::Integer, r#type::TypeName};
+use crate::types::integer::Integer;
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Datetime {
@@ -13,25 +13,4 @@ pub struct Datetime {
     pub second: Option<Integer>,
 }
 
-impl<'a> TryFrom<crate::types::Item<'a>> for Datetime {
-    type Error = std::string::String;
-
-    fn try_from(value: crate::types::Item<'a>) -> Result<Self, Self::Error> {
-        match value {
-            crate::types::Item::Datetime(d) => Ok(d),
-            _ => Err(format!("Invalid type for Datetime: {:?}", value)),
-        }
-    }
-}
-
-impl<'a> Into<crate::types::Item<'a>> for Datetime {
-    fn into(self) -> crate::types::Item<'a> {
-        crate::types::Item::Datetime(self)
-    }
-}
-
-impl<'a> TypeName for Datetime {
-    fn name() -> &'static str {
-        "datetime"
-    }
-}
+crate::impl_all!(Datetime, "datetime");

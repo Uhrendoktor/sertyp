@@ -18,7 +18,8 @@ pub fn serialize_cbor(
 macro_rules! error {
     ($($arg:tt)*) => {{
         let err = format!($($arg)*);
-        let p: sertyp::Panic = err.as_str().into();
+        let s: sertyp::String = err.as_str().into();
+        let p: sertyp::Panic = s.into();
         return sertyp::serialize_cbor(&p.into()).unwrap();
     }};
 }

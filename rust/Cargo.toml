@@ -26,6 +26,7 @@ categories = ["encoding", "wasm", "api-bindings"]
 crate-type = ["lib"]
 
 [dependencies]
+paste = "1.0.15"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_cbor = "0.11.2"
 sertyp_macros = { path = "./sertyp_macros" }

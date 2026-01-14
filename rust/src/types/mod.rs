@@ -7,6 +7,7 @@ mod alignment;
 mod angle;
 mod arguments;
 mod array;
+mod boolean;
 mod color;
 mod content;
 mod datetime;
@@ -36,15 +37,16 @@ mod panic;
 
 use serde::{Deserialize, Serialize};
 
-pub use crate::types::r#type::TypeName;
-pub use crate::types::generic::{Result, AutoOr, Or};
-pub use crate::types::{panic::Panic, alignment::Alignment, angle::Angle, arguments::Arguments, array::Array, color::Color, content::Content, datetime::Datetime, decimal::Decimal, dictionary::Dictionary, direction::Direction, duration::Duration, float::Float, fraction::Fraction, function::Function, gradient::Gradient, integer::Integer, label::Label, length::Length, module::Module, ratio::Ratio, regex::Regex, relative::Relative, string::String, stroke::Stroke, styles::Styles, symbol::Symbol, tiling::Tiling, r#type::Type, version::Version};
+use crate::types::selector::Selector;
+pub use crate::types::r#type::{TypstType, TypstTypeLike};
+pub use crate::types::generic::{Result, AutoOr, Or, Box};
+pub use crate::types::{boolean::Boolean, panic::Panic, alignment::Alignment, angle::Angle, arguments::Arguments, array::Array, color::Color, content::Content, datetime::Datetime, decimal::Decimal, dictionary::Dictionary, direction::Direction, duration::Duration, float::Float, fraction::Fraction, function::Function, gradient::Gradient, integer::Integer, label::Label, length::Length, module::Module, ratio::Ratio, regex::Regex, relative::Relative, string::String, stroke::Stroke, styles::Styles, symbol::Symbol, tiling::Tiling, r#type::Type, version::Version};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(untagged)]
 pub enum Item_<'a> {
     Array(Array<'a>),
-    Boolean(bool),
+    Boolean(Boolean),
     Integer(Integer),
     #[serde(borrow)]
     ByteArray(TypeByteArray_<'a>),
@@ -82,7 +84,7 @@ impl<'a> Deserialize<'a> for TypeByteArray_<'a> {
             where
                 E: serde::de::Error,
             {
-                Ok(TypeByteArray_::String(String(v)))
+                Ok(TypeByteArray_::String(v.into()))
             }
         }
 
@@ -128,10 +130,11 @@ pub enum ItemTagged_<'a> {
     Ratio(Ratio),
     Regex(Regex<'a>),
     Relative(Relative<'a>),
+    Selector(Selector),
     Stroke(Stroke<'a>),
     Styles(Styles<'a>),
     Symbol(Symbol<'a>),
-    Tiling(Tiling<'a>),
+    Tiling(Tiling),
     Type(Type<'a>),
     Version(Version),
 
@@ -169,6 +172,7 @@ impl<'a> From<Item<'a>> for Item_<'a> {
             Item::Ratio(ratio) => Item_::Other(ItemTagged_::Ratio(ratio)),
             Item::Regex(r) => Item_::Other(ItemTagged_::Regex(r)),
             Item::Relative(rel) => Item_::Other(ItemTagged_::Relative(rel)),
+            Item::Selector(s) => Item_::Other(ItemTagged_::Selector(s)),
             Item::Stroke(s) => Item_::Other(ItemTagged_::Stroke(s)),
             Item::Styles(s) => Item_::Other(ItemTagged_::Styles(s)),
             Item::Symbol(s) => Item_::Other(ItemTagged_::Symbol(s)),
@@ -220,7 +224,7 @@ impl<'a> From<Item_<'a>> for Item<'a> {
                 ItemTagged_::Tiling(t) => Item::Tiling(t),
                 ItemTagged_::Type(t) => Item::Type(t),
                 ItemTagged_::Version(v) => Item::Version(v),
-                
+                ItemTagged_::Selector(s) => Item::Selector(s),
                 ItemTagged_::Panic(p) => Item::Panic(p)
             },
         }
@@ -232,7 +236,7 @@ impl<'a> From<Item_<'a>> for Item<'a> {
 #[serde(from = "Item_", into = "Item_")]
 pub enum Item<'a> {
     Array(Array<'a>),
-    Boolean(bool),
+    Boolean(Boolean),
     Bytes(&'a [u8]),
     Integer(Integer),
     String(String<'a>),
@@ -259,59 +263,51 @@ pub enum Item<'a> {
     Ratio(Ratio),
     Regex(Regex<'a>),
     Relative(Relative<'a>),
+    Selector(Selector),
     Stroke(Stroke<'a>),
     Styles(Styles<'a>),
     Symbol(Symbol<'a>),
-    Tiling(Tiling<'a>),
+    Tiling(Tiling),
     Type(Type<'a>),
     Version(Version),
 
     Panic(Panic<'a>),
 }
 
-impl TypeName for Item<'_> {
-    fn name() -> &'static str {
-        "item"
-    }
+crate::impl_typst_type!(typst_like Item<'a>, "item");
 
-    fn type_name(&self) -> &'static str {
-        match self {
-            Item::Array(_) => Array::name(),
-            Item::Boolean(_) => "boolean",
-            Item::Bytes(_) => "bytes",
-            Item::Integer(_) => Integer::name(),
-            Item::String(_) => String::name(),
+#[macro_export]
+macro_rules! impl_try_from {
+    ($variant:ident$(<$lt:lifetime>)*) => {
+        impl<'a> TryFrom<crate::Item<'a>> for $variant$(<$lt>)* {
+            type Error = std::string::String;
 
-            Item::Alignment(_) => Alignment::name(),
-            Item::Angle(_) => Angle::name(),
-            Item::Arguments(_) => Arguments::name(),
-            Item::Auto => "auto",
-            Item::Color(_) => Color::name(),
-            Item::Content(_) => Content::name(),
-            Item::Datetime(_) => Datetime::name(),
-            Item::Decimal(_) => Decimal::name(),
-            Item::Dictionary(_) => Dictionary::name(),
-            Item::Direction(_) => Direction::name(),
-            Item::Duration(_) => Duration::name(),
-            Item::Float(_) => Float::name(),
-            Item::Fraction(_) => Fraction::name(),
-            Item::Function(_) => <Function as TypeName>::name(),
-            Item::Gradient(_) => Gradient::name(),
-            Item::Label(_) => Label::name(),
-            Item::Length(_) => Length::name(),
-            Item::Module(_) => Module::name(),
-            Item::None => "none",
-            Item::Ratio(_) => Ratio::name(),
-            Item::Regex(_) => Regex::name(),
-            Item::Relative(_) => Relative::name(),
-            Item::Stroke(_) => Stroke::name(),
-            Item::Styles(_) => Styles::name(),
-            Item::Symbol(_) => Symbol::name(),
-            Item::Tiling(_) => Tiling::name(),
-            Item::Type(_) => Type::name(),
-            Item::Version(_) => Version::name(),
-
-            Item::Panic(_) => Panic::name(),
+            fn try_from(value: crate::Item<'a>) -> Result<Self, Self::Error> {
+                match value {
+                    crate::Item::$variant(v) => Ok(v),
+                    _ => Err(format!("Tried to cast Item to {}, found {:?}", stringify!($variant), value)),
+                }
+            }
         }
-    }
+    };
+}
+
+#[macro_export]
+macro_rules! impl_into {
+    ($variant:ident$(<$lt:lifetime>)*) => {
+        impl<'a> Into<crate::Item<'a>> for $variant$(<$lt>)* {
+            fn into(self) -> crate::Item<'a> {
+                crate::Item::$variant(self)
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! impl_all {
+    ($variant:ident$(<$lt:lifetime>)*, $name:expr) => {
+        crate::impl_try_from!($variant$(<$lt>)*);
+        crate::impl_into!($variant$(<$lt>)*);
+        crate::impl_typst_type!($variant$(<$lt>)*, $name);
+    };
 }
