@@ -4,8 +4,7 @@ use crate::{Angle, AutoOr, Boolean, Box, Color, Content, Dictionary, Function, G
 pub struct Cancel<'a> {
     #[serde(borrow)]
     pub body: Box<Content<'a>>,
-    #[serde(borrow)]
-    pub length: Relative<'a>,
+    pub length: Relative,
     pub inverted: Boolean,
     pub cross: Boolean,
     #[serde(borrow)]

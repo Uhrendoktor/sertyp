@@ -23,10 +23,17 @@
 
   import "function.typ" as func_
   import "dictionary.typ" as dict_
-  return generic.raw_serializer(dictionary)((
+  let dict = (
     func: func_.serializer(fn),
-    fields: dict_.serializer(fields),
-  ))
+  )
+  if fields.len() > 0 {
+    dict = (
+      ..dict,
+      fields: dict_.serializer(fields)
+    )
+  }
+
+  return generic.raw_serializer(dictionary)(dict)
 }
 
 /// Splits positional arguments from named arguments based on a list of positional argument names.
@@ -113,8 +120,9 @@
     let args = split_positional(("count",), args)
     math.primes(..args)
   },
-  "styled": (..args) => {
+  "math.styled": (..args) => {
     args = split_positional(("child",), args)
+    // This is unstable and does not deserialize into the exact serialized content.
     math.display(..args)
   },
   "math.vec": (..args) => {
@@ -152,7 +160,7 @@
   "align-point": (..args) => {
     $&$
   },
-  "class": (..args) => {
+  "math.class": (..args) => {
     let named = args.named()
     let relation = named.remove("class")
     math.class(relation, ..args.pos(), ..named)
@@ -229,7 +237,7 @@
     return metadata
   },
   "state-update": (..args) => {
-    panic("complex sftate update deserialization is not supported")
+    panic("complex state update deserialization is not supported")
   },
 );
 
@@ -238,7 +246,11 @@
   utils.assert_type(d, dictionary)
 
   import "dictionary.typ" as dict_
-  let args = dict_.deserializer(d.at("fields"))
+  let args = if "fields" in d { 
+    dict_.deserializer(d.at("fields"))
+  } else { 
+    utils.str_dict() 
+  }
   let args = split_positional(("body", "text"), arguments(..args))
 
   import "function.typ" as func_
@@ -247,7 +259,7 @@
 }
 
 #let test(cycle) = {
-  cycle([123])
+  cycle([123]);
   cycle(strong("Bold Text"))
   cycle($1/2$)
   cycle([abc #auto $root(2+1, 3) alpha$])
@@ -256,4 +268,18 @@
   cycle($a_b$)
   cycle($binom(n, k, k_2)$)
   cycle($sqrt(2), root(3,2)$)
+
+  // styled
+  cycle(math.display($a$, cramped: true))
+  cycle(math.inline($b$))
+  cycle(math.script($c$, cramped: true))
+  cycle(math.sscript($c$, cramped: true))
+
+  cycle(math.stretch($a$))
+  cycle(stack(
+    dir: ttb,
+    rect(width: 40pt),
+    rect(width: 120pt),
+    rect(width: 90pt),
+  ))
 };

@@ -1,9 +1,9 @@
-use crate::{AutoOr, Float, Length, types::{array::Array, color::Color, dictionary::Dictionary, gradient::Gradient, tiling::Tiling}};
+use crate::{AutoOr, Float, Length, types::{array::Array, dictionary::Dictionary, generic::FillColor}};
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct Stroke<'a> {
     #[serde(borrow)]
-    pub paint: AutoOr<StrokePaint<'a>>,
+    pub paint: AutoOr<FillColor<'a>>,
     pub thickness: AutoOr<Length>,
     pub cap: AutoOr<StrokeCap>,
     pub join: AutoOr<StrokeJoin>,
@@ -11,15 +11,6 @@ pub struct Stroke<'a> {
     pub dash: Option<AutoOr<StrokeDash<'a>>>,
     #[serde(rename = "miter-limit")]
     pub miter_limit: AutoOr<Float>,
-}
-
-crate::auto_impl!{
-    #[derive(Clone, Debug)]
-    pub enum StrokePaint<'a> {
-        Color(Color<'a>),
-        Gradient(Gradient<'a>),
-        Tiling(Tiling)
-    }
 }
 
 crate::auto_impl_str!{

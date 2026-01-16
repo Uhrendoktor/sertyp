@@ -7,7 +7,9 @@ mod alignment;
 mod angle;
 mod arguments;
 mod array;
+mod auto;
 mod boolean;
+mod bytes;
 mod color;
 mod content;
 mod datetime;
@@ -22,6 +24,7 @@ mod gradient;
 mod label;
 mod length;
 mod module;
+mod none;
 mod ratio;
 mod regex;
 mod relative;
@@ -35,246 +38,270 @@ mod version;
 
 mod panic;
 
-use serde::{Deserialize, Serialize};
-
 use crate::types::selector::Selector;
 pub use crate::types::r#type::{TypstType, TypstTypeLike};
 pub use crate::types::generic::{Result, AutoOr, Or, Box};
-pub use crate::types::{boolean::Boolean, panic::Panic, alignment::Alignment, angle::Angle, arguments::Arguments, array::Array, color::Color, content::Content, datetime::Datetime, decimal::Decimal, dictionary::Dictionary, direction::Direction, duration::Duration, float::Float, fraction::Fraction, function::Function, gradient::Gradient, integer::Integer, label::Label, length::Length, module::Module, ratio::Ratio, regex::Regex, relative::Relative, string::String, stroke::Stroke, styles::Styles, symbol::Symbol, tiling::Tiling, r#type::Type, version::Version};
+pub use crate::types::{auto::Auto, none::None, boolean::Boolean, bytes::Bytes, panic::Panic, alignment::Alignment, angle::Angle, arguments::Arguments, array::Array, color::Color, content::Content, datetime::Datetime, decimal::Decimal, dictionary::Dictionary, direction::Direction, duration::Duration, float::Float, fraction::Fraction, function::Function, gradient::Gradient, integer::Integer, label::Label, length::Length, module::Module, ratio::Ratio, regex::Regex, relative::Relative, string::String, stroke::Stroke, styles::Styles, symbol::Symbol, tiling::Tiling, r#type::Type, version::Version};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(untagged)]
-pub enum Item_<'a> {
-    Array(Array<'a>),
-    Boolean(Boolean),
-    Integer(Integer),
-    #[serde(borrow)]
-    ByteArray(TypeByteArray_<'a>),
-    Other(ItemTagged_<'a>),
-}
-
-#[derive(Clone, Debug)]
-pub enum TypeByteArray_<'a> {
-    String(String<'a>),
-    Bytes(&'a [u8]),
-}
-
-impl<'a> Deserialize<'a> for TypeByteArray_<'a> {
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'a>,
-    {
-        struct TypeByteArrayVisitor;
-
-        impl<'de> serde::de::Visitor<'de> for TypeByteArrayVisitor {
-            type Value = TypeByteArray_<'de>;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("a byte array or string")
-            }
-
-            fn visit_borrowed_bytes<E>(self, v: &'de [u8]) -> std::result::Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                Ok(TypeByteArray_::Bytes(v))
-            }
-
-            fn visit_borrowed_str<E>(self, v: &'de str) -> std::result::Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                Ok(TypeByteArray_::String(v.into()))
-            }
-        }
-
-        deserializer.deserialize_any(TypeByteArrayVisitor)
+crate::define_enum!{
+    #[serde(tag = "type", content = "value", rename_all = "lowercase")]
+    pub enum Item<'a> {
+        untagged {
+            Array(Array<'a>),
+            Boolean(Boolean),
+            Integer(Integer),
+            String(String<'a>),
+            Bytes(Bytes<'a>),
+        },
+        remap {
+            Auto => Auto(Auto),
+            None => None(None),
+        },
+        Alignment(Alignment),
+        Angle(Angle),
+        #[serde(borrow)]
+        Arguments(Arguments<'a>),
+        #[serde(borrow)]
+        Color(Color<'a>),
+        #[serde(borrow)]
+        Content(Content<'a>),
+        Datetime(Datetime),
+        #[serde(borrow)]
+        Decimal(Decimal<'a>),
+        #[serde(borrow)]
+        Dictionary(Dictionary<'a>),
+        Direction(Direction),
+        Duration(Duration),
+        Float(Float),
+        Fraction(Fraction),
+        #[serde(borrow)]
+        Function(Function<'a>),
+        #[serde(borrow)]
+        Gradient(Gradient<'a>),
+        #[serde(borrow)]
+        Label(Label<'a>),
+        Length(Length),
+        #[serde(borrow)]
+        Module(Module<'a>),
+        Ratio(Ratio),
+        Relative(Relative),
+        #[serde(borrow)]
+        Regex(Regex<'a>),
+        Selector(Selector),
+        #[serde(borrow)]
+        Stroke(Stroke<'a>),
+        #[serde(borrow)]
+        Styles(Styles<'a>),
+        #[serde(borrow)]
+        Symbol(Symbol<'a>),
+        Tiling(Tiling),
+        #[serde(borrow)]
+        Type(Type<'a>),
+        Version(Version),
+        
+        #[serde(borrow)]
+        Panic(Panic<'a>),
     }
-}
-
-impl<'a> Serialize for TypeByteArray_<'a> {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        match self {
-            TypeByteArray_::String(s) => serializer.serialize_str(s),
-            TypeByteArray_::Bytes(b) => serializer.serialize_bytes(b),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(tag = "type", content = "value", rename_all = "lowercase")]
-pub enum ItemTagged_<'a> {
-    Alignment(Alignment),
-    Angle(Angle),
-    #[serde(borrow)]
-    Arguments(Arguments<'a>),
-    Auto,
-    Color(Color<'a>),
-    Content(Content<'a>),
-    Datetime(Datetime),
-    Decimal(Decimal<'a>),
-    Dictionary(Dictionary<'a>),
-    Direction(Direction),
-    Duration(Duration),
-    Float(Float),
-    Fraction(Fraction),
-    Function(Function<'a>),
-    Gradient(Gradient<'a>),
-    Label(Label<'a>),
-    Length(Length),
-    Module(Module<'a>),
-    None,
-    Ratio(Ratio),
-    Regex(Regex<'a>),
-    Relative(Relative<'a>),
-    Selector(Selector),
-    Stroke(Stroke<'a>),
-    Styles(Styles<'a>),
-    Symbol(Symbol<'a>),
-    Tiling(Tiling),
-    Type(Type<'a>),
-    Version(Version),
-
-    Panic(Panic<'a>),
-}
-
-impl<'a> From<Item<'a>> for Item_<'a> {
-    fn from(value: Item<'a>) -> Self {
-        match value {
-            Item::Array(a) => Item_::Array(a),
-            Item::Boolean(b) => Item_::Boolean(b),
-            Item::Bytes(b) => Item_::ByteArray(TypeByteArray_::Bytes(b)),
-            Item::Integer(i) => Item_::Integer(i),
-            Item::String(s) => Item_::ByteArray(TypeByteArray_::String(s)),
-
-            Item::Alignment(a) => Item_::Other(ItemTagged_::Alignment(a)),
-            Item::Angle(a) => Item_::Other(ItemTagged_::Angle(a)),
-            Item::Arguments(a) => Item_::Other(ItemTagged_::Arguments(a)),
-            Item::Auto => Item_::Other(ItemTagged_::Auto),
-            Item::Color(c) => Item_::Other(ItemTagged_::Color(c)),
-            Item::Content(content) => Item_::Other(ItemTagged_::Content(content)),
-            Item::Datetime(d) => Item_::Other(ItemTagged_::Datetime(d)),
-            Item::Decimal(dec) => Item_::Other(ItemTagged_::Decimal(dec)),
-            Item::Dictionary(d) => Item_::Other(ItemTagged_::Dictionary(d)),
-            Item::Direction(dir) => Item_::Other(ItemTagged_::Direction(dir)),
-            Item::Duration(dur) => Item_::Other(ItemTagged_::Duration(dur)),
-            Item::Float(f) => Item_::Other(ItemTagged_::Float(f)),
-            Item::Fraction(frac) => Item_::Other(ItemTagged_::Fraction(frac)),
-            Item::Function(func) => Item_::Other(ItemTagged_::Function(func)),
-            Item::Gradient(grad) => Item_::Other(ItemTagged_::Gradient(grad)),
-            Item::Label(l) => Item_::Other(ItemTagged_::Label(l)),
-            Item::Length(l) => Item_::Other(ItemTagged_::Length(l)),
-            Item::Module(m) => Item_::Other(ItemTagged_::Module(m)),
-            Item::None => Item_::Other(ItemTagged_::None),
-            Item::Ratio(ratio) => Item_::Other(ItemTagged_::Ratio(ratio)),
-            Item::Regex(r) => Item_::Other(ItemTagged_::Regex(r)),
-            Item::Relative(rel) => Item_::Other(ItemTagged_::Relative(rel)),
-            Item::Selector(s) => Item_::Other(ItemTagged_::Selector(s)),
-            Item::Stroke(s) => Item_::Other(ItemTagged_::Stroke(s)),
-            Item::Styles(s) => Item_::Other(ItemTagged_::Styles(s)),
-            Item::Symbol(s) => Item_::Other(ItemTagged_::Symbol(s)),
-            Item::Tiling(t) => Item_::Other(ItemTagged_::Tiling(t)),
-            Item::Type(t) => Item_::Other(ItemTagged_::Type(t)),
-            Item::Version(v) => Item_::Other(ItemTagged_::Version(v)),
-            
-            Item::Panic(p) => Item_::Other(ItemTagged_::Panic(p)),
-        }
-    }
-}
-
-impl<'a> From<Item_<'a>> for Item<'a> {
-    fn from(value: Item_<'a>) -> Self{
-        match value {
-            Item_::Array(a) => Item::Array(a),
-            Item_::Boolean(b) => Item::Boolean(b),
-            Item_::Integer(i) => Item::Integer(i),
-            Item_::ByteArray(ba) => match ba {
-                TypeByteArray_::String(s) => Item::String(s),
-                TypeByteArray_::Bytes(b) => Item::Bytes(b),
-            },
-            Item_::Other(o) => match o {
-                ItemTagged_::Alignment(a) => Item::Alignment(a),
-                ItemTagged_::Angle(a) => Item::Angle(a),
-                ItemTagged_::Arguments(a) => Item::Arguments(a),
-                ItemTagged_::Auto => Item::Auto,
-                ItemTagged_::Color(c) => Item::Color(c),
-                ItemTagged_::Content(c) => Item::Content(c),
-                ItemTagged_::Datetime(d) => Item::Datetime(d),
-                ItemTagged_::Decimal(dec) => Item::Decimal(dec),
-                ItemTagged_::Dictionary(d) => Item::Dictionary(d),
-                ItemTagged_::Direction(dir) => Item::Direction(dir),
-                ItemTagged_::Duration(dur) => Item::Duration(dur),
-                ItemTagged_::Float(f) => Item::Float(f),
-                ItemTagged_::Fraction(frac) => Item::Fraction(frac),
-                ItemTagged_::Function(func) => Item::Function(func),
-                ItemTagged_::Gradient(grad) => Item::Gradient(grad),
-                ItemTagged_::Label(l) => Item::Label(l),
-                ItemTagged_::Length(l) => Item::Length(l),
-                ItemTagged_::Module(m) => Item::Module(m),
-                ItemTagged_::None => Item::None,
-                ItemTagged_::Ratio(ratio) => Item::Ratio(ratio),
-                ItemTagged_::Regex(r) => Item::Regex(r),
-                ItemTagged_::Relative(rel) => Item::Relative(rel),
-                ItemTagged_::Stroke(s) => Item::Stroke(s),
-                ItemTagged_::Styles(s) => Item::Styles(s),
-                ItemTagged_::Symbol(s) => Item::Symbol(s),
-                ItemTagged_::Tiling(t) => Item::Tiling(t),
-                ItemTagged_::Type(t) => Item::Type(t),
-                ItemTagged_::Version(v) => Item::Version(v),
-                ItemTagged_::Selector(s) => Item::Selector(s),
-                ItemTagged_::Panic(p) => Item::Panic(p)
-            },
-        }
-    }
-}
-
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(from = "Item_", into = "Item_")]
-pub enum Item<'a> {
-    Array(Array<'a>),
-    Boolean(Boolean),
-    Bytes(&'a [u8]),
-    Integer(Integer),
-    String(String<'a>),
-
-    Alignment(Alignment),
-    Angle(Angle),
-    Arguments(Arguments<'a>),
-    Auto,
-    Color(Color<'a>),
-    Content(Content<'a>),
-    Datetime(Datetime),
-    Decimal(Decimal<'a>),
-    Dictionary(Dictionary<'a>),
-    Direction(Direction),
-    Duration(Duration),
-    Float(Float),
-    Fraction(Fraction),
-    Function(Function<'a>),
-    Gradient(Gradient<'a>),
-    Label(Label<'a>),
-    Length(Length),
-    Module(Module<'a>),
-    None,
-    Ratio(Ratio),
-    Regex(Regex<'a>),
-    Relative(Relative<'a>),
-    Selector(Selector),
-    Stroke(Stroke<'a>),
-    Styles(Styles<'a>),
-    Symbol(Symbol<'a>),
-    Tiling(Tiling),
-    Type(Type<'a>),
-    Version(Version),
-
-    Panic(Panic<'a>),
 }
 
 crate::impl_typst_type!(typst_like Item<'a>, "item");
+
+#[macro_export]
+macro_rules! define_enum {
+    (
+        $(#[$meta:meta])*
+        $vis:vis enum $name:ident<$lt:lifetime> {
+            untagged {$(
+                $(#[$metau:meta])*
+                $varu:ident$(($tyu:ty))?
+            ),*$(,)?},
+            remap {$(
+                $(#[$metar:meta])*
+                $varr1:ident $(($tyr1:ty))? => $varr2:ident $(($tyr2:ty))?
+            ),*$(,)?},
+            $(
+                $(#[$metav:meta])*
+                $var:ident $(($ty:ty))?
+            ),*$(,)?
+        }
+    ) => {
+        paste::paste!{
+            #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+            $(#[$meta])* 
+            $vis enum [<$name __>]<$lt> {
+                $(
+                    $(#[$metav])*
+                    $var $(($ty))?,
+                )*
+                $(
+                    $(#[$metar])*
+                    $varr1 $(($tyr1))?,
+                )*
+            }
+        }
+
+        paste::paste!{
+            #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+            #[serde(untagged)]
+            pub enum [<$name _>]<$lt> {
+                #[serde(borrow)]
+                Typed([<$name __>]<$lt>),
+                $(
+                    $(#[$metau])*
+                    $varu$(($tyu))?
+                ),*
+            }
+        }
+
+        paste::paste!{
+            #[derive(Clone, Debug)]
+            pub enum $name<$lt> {
+                $(
+                    $var$(($ty))?,
+                )*
+                $(
+                    $varr2$(($tyr2))?,
+                )*
+                $(
+                    $varu$(($tyu))?
+                ),*
+            }
+        }
+
+        paste::paste!{
+            impl<'de: $lt, $lt> serde::Deserialize<'de> for $name<$lt> {
+                fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+                where
+                    D: serde::Deserializer<'de>,
+                {
+                    let intermediate = [<$name _>]::deserialize(deserializer)?;
+                    Ok(intermediate.into())
+                }
+            } 
+        }
+
+        paste::paste!{
+            impl<$lt> serde::Serialize for $name<$lt> {
+                fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+                where
+                    S: serde::Serializer,
+                {
+                    let intermediate: [<$name _>] = self.clone().into();
+                    intermediate.serialize(serializer)
+                }
+            }
+        }
+
+        paste::paste!{
+            impl<$lt> From<[<$name _>]<$lt>> for $name<$lt> {
+                fn from(value: [<$name _>]<$lt>) -> Self {
+                    match value {
+                        [<$name _>]::Typed(t) => match t {
+                            $(
+                                [<$name __>]::$var $((crate::define_enum!(@make_arg $ty, r)))? => $name::$var$((crate::define_enum!(@make_arg $ty, r.into())))?,
+                            )*
+                            $(
+                                [<$name __>]::$varr1 $((crate::define_enum!(@make_arg $tyr1, r)))? => crate::define_enum!(
+                                    @make_arg $($tyr2)?, 
+                                    $name::$varr2(crate::define_enum!(@make_arg $($tyr1)?, r.into(), {Default::default()})), 
+                                    {$name::$varr2}
+                                ),
+                            )*
+                        },
+                        $(
+                            [<$name _>]::$varu(r) => $name::$varu(r),
+                        )*
+                    }
+                }
+            }
+        }
+
+        paste::paste!{
+            impl<$lt> Into<[<$name _>]<$lt>> for $name<$lt> {
+                fn into(self) -> [<$name _>]<$lt> {
+                    match self {
+                        $(
+                            $name::$var $((crate::define_enum!(@make_arg $ty, r)))? => [<$name _>]::Typed([<$name __>]::$var$((crate::define_enum!(@make_arg $ty, r.into())))?),
+                        )*
+                        $(
+                            #[allow(unused)]
+                            $name::$varr2(r) => [<$name _>]::Typed([<$name __>]::$varr1$((crate::define_enum!(@make_arg $tyr1, r.into())))?),
+                        )*
+                        $(
+                            $name::$varu(r) => [<$name _>]::$varu(r),
+                        )*
+                    }
+                }
+            }
+        } 
+
+        paste::paste!{
+            #[derive(Clone, Debug)]
+            pub struct [<Typed $name>]<T>(pub T);
+
+            impl<$lt, T: TryFrom<$name<$lt>, Error=std::string::String>> TryFrom<$name<$lt>> for [<Typed $name>]<T> {
+                type Error = std::string::String;
+
+                fn try_from(value: $name<$lt>) -> std::result::Result<Self, Self::Error> {
+                    let typed: T = value.try_into()?;
+                    Ok([<Typed $name>](typed) )
+                }
+            }
+
+            impl<$lt, T: Into<$name<$lt>>> Into<$name<$lt>> for [<Typed $name>]<T> {
+                fn into(self) -> $name<$lt> {
+                    self.0.into()
+                }
+            }
+
+            impl<$lt, 'de: $lt, T: serde::Deserialize<'de> + TryFrom<$name<$lt>, Error=std::string::String>> serde::Deserialize<'de> for [<Typed $name>]<T> {
+                fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+                where
+                    D: serde::Deserializer<'de>,
+                {
+                    let intermediate = $name::<$lt>::deserialize(deserializer)?;
+                    let typed: T = intermediate.try_into().map_err(serde::de::Error::custom)?;
+                    Ok([<Typed $name>](typed))
+                }
+            }
+
+            impl<$lt, T: Clone + Into<$name<$lt>>> serde::Serialize for [<Typed $name>]<T> {
+                fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+                where
+                    S: serde::Serializer,
+                {
+                    let intermediate: $name<$lt> = self.0.clone().into();
+                    intermediate.serialize(serializer)
+                }
+            }
+
+            impl<$lt, T: crate::TypstTypeLike> crate::TypstTypeLike for [<Typed $name>]<T> {
+                fn static_type_name() -> std::borrow::Cow<'static, str> {
+                    T::static_type_name()
+                }
+            }
+
+            impl<T> std::ops::Deref for [<Typed $name>]<T> {
+                type Target = T;
+
+                fn deref(&self) -> &Self::Target {
+                    &self.0
+                }
+            }
+
+            impl<T> std::ops::DerefMut for [<Typed $name>]<T> {
+                fn deref_mut(&mut self) -> &mut Self::Target {
+                    &mut self.0
+                }
+            }
+        }
+    };
+    (@make_arg $ty:ty, $r:tt $(, $else:tt)?) => { $r };
+    (@make_arg $ty:ty, $r:expr $(, $else:tt)?) => { $r };
+    (@make_arg , $r:tt, $else:expr) => { $else };
+    (@make_arg , $r:expr, $else:expr) => { $else };
+}
+
 
 #[macro_export]
 macro_rules! impl_try_from {

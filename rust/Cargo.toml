@@ -25,6 +25,9 @@ categories = ["encoding", "wasm", "api-bindings"]
 [lib]
 crate-type = ["lib"]
 
+[features]
+content = []
+
 [dependencies]
 paste = "1.0.15"
 serde = { version = "1.0.228", features = ["derive"] }

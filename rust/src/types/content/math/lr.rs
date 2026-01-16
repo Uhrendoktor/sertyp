@@ -2,8 +2,7 @@ use crate::{Box, Content, Relative};
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct LR<'a> {
-    #[serde(borrow)]
-    pub size: Relative<'a>,
+    pub size: Relative,
     #[serde(borrow)]
     pub body: Box<Content<'a>>
 }

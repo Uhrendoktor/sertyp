@@ -1,45 +1,35 @@
-mod symbol;
-mod sequence;
+#[cfg(feature = "content")]
 mod h;
-mod v;
+#[cfg(feature = "content")]
 pub mod math;
-use crate::types::content::{symbol::Symbol_};
-pub use crate::types::content::{h::H, v::V, sequence::Sequence};
-pub use crate::{Symbol, types::{dictionary::Dictionary, function::Function}};
+#[cfg(feature = "content")]
+mod metadata;
+#[cfg(feature = "content")]
+mod raw;
+#[cfg(feature = "content")]
+mod sequence;
+#[cfg(feature = "content")]
+mod space;
+#[cfg(feature = "content")]
+mod stack;
+#[cfg(feature = "content")]
+mod strong;
+#[cfg(feature = "content")]
+mod symbol;
+#[cfg(feature = "content")]
+mod text;
+#[cfg(feature = "content")]
+mod v;
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
-#[serde(tag="func", content="fields", rename_all="lowercase")]
-pub enum TypedContent<'a> {
-    #[serde(borrow, rename="symbol")]
-    Symbol(Symbol_<'a>),
-    #[serde(borrow)]
-    Sequence(Sequence<'a>),
-    Space,
-    H(H<'a>),
-    V(V<'a>),
-    #[serde(borrow, rename="math.accent")]
-    MathAccent(math::Accent<'a>),
-    #[serde(borrow, rename="math.attach")]
-    MathAttach(math::Attach<'a>),
-    #[serde(borrow, rename="math.binom")]
-    MathBinom(math::Binom<'a>),
-    #[serde(borrow, rename="math.cancel")]
-    MathCancel(math::Cancel<'a>),
-    #[serde(borrow, rename="math.cases")]
-    MathCases(math::Cases<'a>),
-    #[serde(borrow, rename="math.class")]
-    MathClass(math::Class<'a>),
-    #[serde(borrow, rename="math.equation")]
-    MathEquation(math::Equation<'a>),
-    #[serde(borrow, rename="math.frac")]
-    MathFrac(math::Frac<'a>),
-    #[serde(borrow, rename="math.lr")]
-    MathLR(math::LR<'a>),
-    #[serde(borrow, rename="math.mat")]
-    MathMat(math::Mat<'a>),
-    #[serde(borrow, rename="math.root")]
-    MathRoot(math::Root<'a>),
-}
+#[cfg(feature = "content")]
+use crate::types::content::{symbol::Symbol_};
+#[cfg(feature = "content")]
+pub use crate::types::content::{space::Space, raw::Raw, strong::Strong,stack::Stack, metadata::Metadata, h::H, v::V, sequence::Sequence, text::Text};
+#[cfg(feature = "content")]
+pub use crate::Symbol;
+
+
+pub use crate::types::{dictionary::Dictionary, function::Function};
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct RawContent<'a> {
@@ -48,91 +38,72 @@ pub struct RawContent<'a> {
     pub fields: Dictionary<'a>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
-#[serde(untagged)]
-pub enum Content_<'a> {
-    #[serde(borrow)]
-    Typed(TypedContent<'a>),
-    Unknown(RawContent<'a>)
-}
+#[cfg(not(feature = "content"))]
+pub type Content<'a> = RawContent<'a>;
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
-#[serde(from="Content_", into="Content_")]
-#[serde(untagged)]
-pub enum Content<'a> {
-    #[serde(borrow)]
-    Symbol(Symbol<'a>),
-    Sequence(Sequence<'a>),
-    Space,
-    H(H<'a>),
-    V(V<'a>),
-    MathAccent(math::Accent<'a>),
-    MathAttach(math::Attach<'a>),
-    MathBinom(math::Binom<'a>),
-    MathCancel(math::Cancel<'a>),
-    MathCases(math::Cases<'a>),
-    MathClass(math::Class<'a>),
-    MathEquation(math::Equation<'a>),
-    MathFrac(math::Frac<'a>),
-    MathLR(math::LR<'a>),
-    MathMat(math::Mat<'a>),
-    MathRoot(math::Root<'a>),
-    Other(RawContent<'a>),
+#[cfg(feature = "content")]
+crate::define_enum! {
+    #[serde(tag="func", content="fields", rename_all="lowercase")]
+    pub enum Content<'a> {
+        untagged {
+            // Unknown(RawContent<'a>),
+        },
+        remap {
+            #[serde(borrow, rename="symbol")]
+            Symbol(Symbol_<'a>) => Symbol(Symbol<'a>),
+            Space => Space(Space),
+        },
+        H(H),
+        #[serde(borrow)]
+        Metadata(Metadata<'a>),
+        #[serde(borrow)]
+        Raw(Raw<'a>),
+        #[serde(borrow)]
+        Sequence(Sequence<'a>),
+        #[serde(borrow)]
+        Stack(Stack<'a>),
+        #[serde(borrow)]
+        Strong(Strong<'a>),
+        #[serde(borrow)]
+        Text(Text<'a>),
+        V(V),
+
+        #[serde(borrow, rename="math.accent")]
+        MathAccent(math::Accent<'a>),
+        #[serde(borrow, rename="math.attach")]
+        MathAttach(math::Attach<'a>),
+        #[serde(borrow, rename="math.binom")]
+        MathBinom(math::Binom<'a>),
+        #[serde(borrow, rename="math.cancel")]
+        MathCancel(math::Cancel<'a>),
+        #[serde(borrow, rename="math.cases")]
+        MathCases(math::Cases<'a>),
+        #[serde(borrow, rename="math.class")]
+        MathClass(math::Class<'a>),
+        #[serde(borrow, rename="math.equation")]
+        MathEquation(math::Equation<'a>),
+        #[serde(borrow, rename="math.frac")]
+        MathFrac(math::Frac<'a>),
+        #[serde(borrow, rename="math.lr")]
+        MathLR(math::LR<'a>),
+        #[serde(borrow, rename="math.mat")]
+        MathMat(math::Mat<'a>),
+        #[serde(rename="math.primes")]
+        MathPrimes(math::Primes),
+        #[serde(borrow, rename="math.root")]
+        MathRoot(math::Root<'a>),
+        #[serde(borrow, rename="math.stretch")]
+        MathStretch(math::Stretch<'a>),
+        #[serde(borrow, rename="math.styled")]
+        MathStyled(math::Styled<'a>),
+        #[serde(borrow, rename="math.op")]
+        MathOp(math::Op<'a>),
+        #[serde(borrow, rename="math.vec")]
+        MathVec(math::Vec<'a>),
+    }
 }
 
 crate::impl_all!(Content<'a>, "content");
-
-impl<'a> From<Content_<'a>> for Content<'a> {
-    fn from(value: Content_<'a>) -> Self {
-        match value {
-            Content_::Typed(typed) => match typed {
-                TypedContent::Symbol(s) => Content::Symbol(s.into()),
-                TypedContent::Sequence(s) => Content::Sequence(s),
-                TypedContent::Space => Content::Space,
-                TypedContent::H(h) => Content::H(h),
-                TypedContent::V(v) => Content::V(v),
-                TypedContent::MathAccent(r) => Content::MathAccent(r),
-                TypedContent::MathAttach(r) => Content::MathAttach(r),
-                TypedContent::MathBinom(r) => Content::MathBinom(r),
-                TypedContent::MathCancel(r) => Content::MathCancel(r),
-                TypedContent::MathCases(c) => Content::MathCases(c),
-                TypedContent::MathClass(c) => Content::MathClass(c),
-                TypedContent::MathEquation(r) => Content::MathEquation(r),
-                TypedContent::MathFrac(r) => Content::MathFrac(r),
-                TypedContent::MathLR(r) => Content::MathLR(r),
-                TypedContent::MathMat(r) => Content::MathMat(r),
-
-                TypedContent::MathRoot(r) => Content::MathRoot(r),
-            },
-            Content_::Unknown(raw) => Content::Other(raw),
-        }
-    }
-}
-
-impl<'a> Into<Content_<'a>> for Content<'a> {
-    fn into(self) -> Content_<'a> {
-        match self {
-            Content::Symbol(s) => Content_::Typed(TypedContent::Symbol(s.into())),
-            Content::Sequence(s) => Content_::Typed(TypedContent::Sequence(s)),
-            Content::Space => Content_::Typed(TypedContent::Space),
-            Content::H(h) => Content_::Typed(TypedContent::H(h)),
-            Content::V(v) => Content_::Typed(TypedContent::V(v)),
-            Content::MathAccent(r) => Content_::Typed(TypedContent::MathAccent(r)),
-            Content::MathAttach(r) => Content_::Typed(TypedContent::MathAttach(r)),
-            Content::MathBinom(r) => Content_::Typed(TypedContent::MathBinom(r)),
-            Content::MathCancel(r) => Content_::Typed(TypedContent::MathCancel(r)),
-            Content::MathCases(c) => Content_::Typed(TypedContent::MathCases(c)),
-            Content::MathClass(c) => Content_::Typed(TypedContent::MathClass(c)),
-            Content::MathEquation(r) => Content_::Typed(TypedContent::MathEquation(r)),
-            Content::MathFrac(r) => Content_::Typed(TypedContent::MathFrac(r)),
-            Content::MathLR(r) => Content_::Typed(TypedContent::MathLR(r)),
-            Content::MathMat(r) => Content_::Typed(TypedContent::MathMat(r)),
-
-            Content::MathRoot(r) => Content_::Typed(TypedContent::MathRoot(r)),
-            Content::Other(raw) => Content_::Unknown(raw),
-        }
-    }
-}
 
 #[macro_export]
 macro_rules! impl_try_from_content {

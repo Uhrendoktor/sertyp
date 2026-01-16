@@ -81,6 +81,9 @@
       break;
     }
   }
+  if repr(f) == "styled" {
+    ctx = "math"
+  }
   
   import "string.typ" as string_;
   return string_.serializer(if ctx != none { ctx + "." } else { "" } + repr(f));

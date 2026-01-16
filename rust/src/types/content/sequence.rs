@@ -1,9 +1,9 @@
-use crate::Content;
+use crate::{Content, types::generic::TypedArray};
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct Sequence<'a> {
     #[serde(borrow)]
-    pub children: Vec<Content<'a>>
+    pub children: TypedArray<Content<'a>>
 }
 
 crate::impl_all_content!(Sequence<'a>, "sequence");

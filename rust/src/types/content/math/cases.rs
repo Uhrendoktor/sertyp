@@ -5,8 +5,7 @@ pub struct Cases<'a> {
     #[serde(borrow)]
     pub delim: Delim<'a>,
     pub reverse: Boolean,
-    #[serde(borrow)]
-    pub gap: Relative<'a>,
+    pub gap: Relative,
     #[serde(borrow)]
     pub children: Array<'a>,
 }

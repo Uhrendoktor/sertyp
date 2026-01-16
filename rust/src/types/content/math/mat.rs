@@ -7,12 +7,11 @@ pub struct Mat<'a> {
     pub align: Alignment,
     #[serde(borrow)]
     pub augment: Option<Or<Integer, Dictionary<'a>>>,
-    #[serde(borrow)]
-    pub gap: Relative<'a>,
-    #[serde(borrow, rename = "row-gap")]
-    pub row_gap: Relative<'a>,
-    #[serde(borrow, rename = "column-gap")]
-    pub column_gap: Relative<'a>,
+    pub gap: Relative,
+    #[serde(rename = "row-gap")]
+    pub row_gap: Relative,
+    #[serde(rename = "column-gap")]
+    pub column_gap: Relative,
     #[serde(borrow)]
     pub rows: Array<'a>,
 }
