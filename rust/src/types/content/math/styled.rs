@@ -1,6 +1,6 @@
 use crate::{Content, TypedItem};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Styled<'a> {
     #[serde(borrow)]
     pub child: Box<TypedItem<Content<'a>>>,

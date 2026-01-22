@@ -8,6 +8,12 @@ pub struct String<'a> (
 );
 crate::impl_all!(String<'a>, "string");
 
+impl<'a> Default for String<'a> {
+    fn default() -> Self {
+        String(std::borrow::Cow::Borrowed(""))
+    }
+}
+
 impl<'a, 'de: 'a> serde::Deserialize<'de> for String<'a> {
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where

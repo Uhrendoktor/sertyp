@@ -2,7 +2,7 @@ use std::{fmt::{Debug, Display}, ops::Deref};
 
 use crate::TypstType;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct Bytes<'a> (
     pub std::borrow::Cow<'a, [u8]>
 );

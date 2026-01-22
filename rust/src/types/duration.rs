@@ -2,7 +2,7 @@ use std::ops::{Deref, DerefMut};
 
 use crate::types::float::Float;
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Default)]
 pub struct Duration(pub Float);
 
 impl Deref for Duration {

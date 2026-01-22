@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::Integer;
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, Default)]
 pub struct Version {
     pub major: Integer,
     pub minor: Integer,

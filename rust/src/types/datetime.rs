@@ -1,6 +1,6 @@
 use crate::types::integer::Integer;
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq, Default)]
 pub struct Datetime {
     pub year: Integer,
     pub month: Integer,

@@ -9,3 +9,9 @@ crate::auto_impl!{
         Symbol(Symbol<'a>),
     }
 }
+
+impl<'a> Default for Delim<'a> {
+    fn default() -> Self {
+        Delim::Double(Pair(String::from("("), String::from(")")))
+    }
+}

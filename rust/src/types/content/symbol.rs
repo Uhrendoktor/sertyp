@@ -1,6 +1,6 @@
 use crate::{Symbol, String};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq, Default)]
 pub struct Symbol_<'a> {
     #[serde(borrow)]
     pub text: String<'a>

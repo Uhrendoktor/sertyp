@@ -1,6 +1,6 @@
 use crate::{AutoOr, Float, Length, types::{array::Array, dictionary::Dictionary, generic::FillColor}};
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default)]
 pub struct Stroke<'a> {
     #[serde(borrow)]
     pub paint: AutoOr<FillColor<'a>>,

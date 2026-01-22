@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::types::{array::Array, string::String};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Module<'a> {
     #[serde(borrow)]
     pub name: String<'a>,

@@ -8,6 +8,12 @@ pub enum AutoOr<
     Type(T),
 }
 
+impl<T> Default for AutoOr<T> {
+    fn default() -> Self {
+        AutoOr::Auto
+    }
+}
+
 impl<'a, 'de: 'a, T> serde::Deserialize<'de> for AutoOr<T>
 where
     Self: 'a,

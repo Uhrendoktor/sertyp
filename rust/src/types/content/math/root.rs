@@ -1,6 +1,6 @@
 use crate::{Content, Box};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Root<'a> {
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
     pub index: Option<Box<Content<'a>>>,

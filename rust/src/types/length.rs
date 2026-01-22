@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::types::float::Float;
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Default)]
 pub struct Length {
     #[serde(rename = "value")]
     pub abs: Float,
@@ -22,6 +22,12 @@ pub enum AbsUnit {
     Centimeters,
     #[serde(rename = "mm")]
     Millimeters,
+}
+
+impl Default for AbsUnit {
+    fn default() -> Self {
+        AbsUnit::Points
+    }
 }
 
 impl Display for AbsUnit {

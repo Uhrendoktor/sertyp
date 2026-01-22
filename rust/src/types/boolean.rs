@@ -1,4 +1,4 @@
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq, Default)]
 pub struct Boolean(pub bool);
 
 impl From<bool> for Boolean {

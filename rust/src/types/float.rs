@@ -11,6 +11,12 @@ pub enum Float{
 
 crate::impl_all!(Float, "float");
 
+impl Default for Float {
+    fn default() -> Self {
+        Float::f64(0.0)
+    }
+}
+
 impl Into<f64> for Float {
     fn into(self) -> f64 {
         match self {

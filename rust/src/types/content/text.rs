@@ -1,6 +1,6 @@
 use crate::{Array, AutoOr, Boolean, Box, Content, Dictionary, Direction, Integer, Item, Length, Or, Ratio, Relative, String, TypedItem, types::generic::{FillColor, StrokeColor}};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Text<'a> {
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
     pub font: Option<TextFont<'a>>,

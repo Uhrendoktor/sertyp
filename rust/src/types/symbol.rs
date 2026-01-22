@@ -2,7 +2,7 @@ use std::{ops::Deref};
 
 use crate::types::string::String;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq, Default)]
 pub struct Symbol<'a>(
     #[serde(borrow)]
     pub String<'a>

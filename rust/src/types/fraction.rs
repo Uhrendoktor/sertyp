@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::types::float::Float;
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Default)]
 pub struct Fraction {
     pub value: Float,
     pub unit: FractionUnit
@@ -14,6 +14,12 @@ crate::impl_all!(Fraction, "fraction");
 pub enum FractionUnit {
     #[serde(rename = "fr")]
     Fraction,
+}
+
+impl Default for FractionUnit {
+    fn default() -> Self {
+        FractionUnit::Fraction
+    }
 }
 
 impl Display for FractionUnit {

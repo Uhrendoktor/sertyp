@@ -8,3 +8,9 @@ pub enum Direction {
 }
 
 crate::impl_all!(Direction, "direction");
+
+impl Default for Direction {
+    fn default() -> Self {
+        Direction::LTR
+    }
+}

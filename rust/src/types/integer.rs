@@ -18,6 +18,12 @@ pub enum Integer {
     usize(usize),
 }
 
+impl Default for Integer {
+    fn default() -> Self {
+        Integer::i32(0)
+    }
+}
+
 crate::impl_all!(Integer, "integer");
 
 impl TryInto<i32> for Integer {

@@ -48,3 +48,14 @@ crate::auto_impl_str!{
         Parent = "parent",
     }
 }
+
+impl<'a> Default for Gradient<'a> {
+    fn default() -> Self {
+        Gradient::Linear {
+            stops: Or::default(),
+            space: Function::default(),
+            relative: AutoOr::default(),
+            angle: Angle::default(),
+        }
+    }
+}

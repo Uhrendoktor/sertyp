@@ -7,7 +7,7 @@ pub struct Array_<'a>(
     pub Vec<Item_<'a>>
 );
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 #[serde(from = "Array_", into = "Array_")]
 pub struct Array<'a>(
     #[serde(borrow)]
@@ -57,8 +57,8 @@ impl<'a> From<Vec<Item<'a>>> for Array<'a> {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct Pair<T> (T, T);
+#[derive(Clone, Debug, Default)]
+pub struct Pair<T> (pub T, pub T);
 
 impl<'a, T: Clone> TryFrom<Array<'a>> for Pair<T>
 where

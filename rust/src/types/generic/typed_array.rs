@@ -3,7 +3,7 @@ use std::fmt::Debug;
 
 use crate::{Array, Item, TypstTypeLike};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct TypedArray<T>(pub Vec<T>);
 
 impl<'a, 'de: 'a, T: TryFrom<Item<'a>, Error=std::string::String>> serde::Deserialize<'de> for TypedArray<T> {

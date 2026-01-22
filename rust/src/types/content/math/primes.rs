@@ -1,6 +1,6 @@
 use crate::{Integer, TypedItem};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Primes {
     pub count: TypedItem<Integer>
 }

@@ -1,6 +1,6 @@
 use crate::{Box, Content};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Attach<'a> {
     #[serde(borrow)]
     pub base: Box<Content<'a>>,

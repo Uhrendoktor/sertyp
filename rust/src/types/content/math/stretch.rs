@@ -1,6 +1,6 @@
 use crate::{Content, Relative, TypedItem};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Stretch<'a> {
     #[serde(borrow)]
     pub body: Box<TypedItem<Content<'a>>>,

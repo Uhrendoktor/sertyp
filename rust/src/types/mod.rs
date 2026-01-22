@@ -41,7 +41,7 @@ mod panic;
 use crate::types::selector::Selector;
 pub use crate::types::r#type::{TypstType, TypstTypeLike};
 pub use crate::types::generic::{Result, AutoOr, Or, Box};
-pub use crate::types::{auto::Auto, none::None, boolean::Boolean, bytes::Bytes, panic::Panic, alignment::Alignment, angle::Angle, arguments::Arguments, array::Array, color::Color, content::Content, datetime::Datetime, decimal::Decimal, dictionary::Dictionary, direction::Direction, duration::Duration, float::Float, fraction::Fraction, function::Function, gradient::Gradient, integer::Integer, label::Label, length::Length, module::Module, ratio::Ratio, regex::Regex, relative::Relative, string::String, stroke::Stroke, styles::Styles, symbol::Symbol, tiling::Tiling, r#type::Type, version::Version};
+pub use crate::types::{auto::Auto, none::None, boolean::Boolean, bytes::Bytes, panic::Panic, alignment::Alignment, angle::Angle, arguments::Arguments, array::Array, color::Color, content::*, datetime::Datetime, decimal::Decimal, dictionary::Dictionary, direction::Direction, duration::Duration, float::Float, fraction::Fraction, function::Function, gradient::Gradient, integer::Integer, label::Label, length::Length, module::Module, ratio::Ratio, regex::Regex, relative::Relative, string::String, stroke::Stroke, styles::Styles, symbol::Symbol, tiling::Tiling, r#type::Type, version::Version};
 
 crate::define_enum!{
     #[serde(tag = "type", content = "value", rename_all = "lowercase")]
@@ -105,6 +105,12 @@ crate::define_enum!{
 }
 
 crate::impl_typst_type!(typst_like Item<'a>, "item");
+
+impl<'a> Default for Item<'a> {
+    fn default() -> Self {
+        String::default().into()
+    }
+}
 
 #[macro_export]
 macro_rules! define_enum {
@@ -236,7 +242,7 @@ macro_rules! define_enum {
         } 
 
         paste::paste!{
-            #[derive(Clone, Debug)]
+            #[derive(Clone, Debug, Default)]
             pub struct [<Typed $name>]<T>(pub T);
 
             impl<$lt, T: TryFrom<$name<$lt>, Error=std::string::String>> TryFrom<$name<$lt>> for [<Typed $name>]<T> {

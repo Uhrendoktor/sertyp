@@ -12,3 +12,9 @@ pub enum Alignment {
 }
 
 crate::impl_all!(Alignment, "alignment");
+
+impl Default for Alignment {
+    fn default() -> Self {
+        Alignment::Left
+    }
+}

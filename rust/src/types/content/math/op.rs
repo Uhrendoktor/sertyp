@@ -1,6 +1,6 @@
 use crate::{Boolean, Content, TypedItem, Box};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Op<'a> {
     #[serde(borrow)]
     pub text: Box<Content<'a>>,

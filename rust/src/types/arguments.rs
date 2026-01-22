@@ -1,6 +1,6 @@
 use crate::types::{array::Array, dictionary::Dictionary};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Arguments<'a> {
     #[serde(borrow)]
     pub pos: Array<'a>,

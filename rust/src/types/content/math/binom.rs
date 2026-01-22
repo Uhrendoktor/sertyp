@@ -1,6 +1,6 @@
 use crate::{Box, Content, types::generic::TypedArray};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Binom<'a> {
     #[serde(borrow)]
     pub upper: Box<Content<'a>>,

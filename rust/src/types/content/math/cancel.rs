@@ -1,6 +1,6 @@
 use crate::{Angle, AutoOr, Boolean, Box, Color, Content, Dictionary, Function, Gradient, Length, Or, Relative, Stroke, Tiling, TypedItem};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Cancel<'a> {
     #[serde(borrow)]
     pub body: Box<TypedItem<Content<'a>>>,

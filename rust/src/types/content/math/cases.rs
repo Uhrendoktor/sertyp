@@ -1,6 +1,6 @@
 use crate::{Boolean, Content, Relative, TypedItem, types::{content::math::generic::Delim, generic::TypedArray}};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Cases<'a> {
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
     pub delim: Option<Delim<'a>>,

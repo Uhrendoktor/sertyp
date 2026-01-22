@@ -1,6 +1,6 @@
 use crate::types::array::Array;
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Color<'a> {
     #[serde(borrow)]
     pub components: Array<'a>,
@@ -19,5 +19,11 @@ crate::auto_impl_func!{
         LinearRGB = "color.linear-rgb",
         HSL = "color.hsl",
         HSV = "color.hsv"
+    }
+}
+
+impl Default for ColorSpace {
+    fn default() -> Self {
+        ColorSpace::RGB
     }
 }

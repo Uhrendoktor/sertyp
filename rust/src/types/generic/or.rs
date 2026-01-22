@@ -11,6 +11,15 @@ pub enum Or<
     Right(T2),
 }
 
+impl<T1, T2> Default for Or<T1, T2>
+where
+    T1: Default,
+{
+    fn default() -> Self {
+        Or::Left(T1::default())
+    }
+}
+
 impl<'a, 'de: 'a, T1, T2> Deserialize<'de> for Or<T1, T2>
 where
     Or<T1, T2>: TryFrom<Item<'a>, Error=std::string::String>,

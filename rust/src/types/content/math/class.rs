@@ -1,6 +1,6 @@
 use crate::{Box, Content, TypedItem};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Class<'a> {
     pub class: TypedItem<ClassVariant>,
     #[serde(borrow)]
@@ -19,6 +19,12 @@ crate::auto_impl_str!{
         Unary = "unary",
         Binary = "binary",
         Vary = "vary",
+    }
+}
+
+impl Default for ClassVariant {
+    fn default() -> Self {
+        ClassVariant::Normal
     }
 }
 

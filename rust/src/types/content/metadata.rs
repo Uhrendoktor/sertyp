@@ -1,6 +1,6 @@
 use crate::{Item, Label, TypedItem, impl_all_content};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Metadata<'a> {
     #[serde(borrow)]
     pub value: std::boxed::Box<Item<'a>>,

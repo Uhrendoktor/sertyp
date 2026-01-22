@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::{Item, Length, Ratio, types::generic::TypedArray};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Relative(
     pub TypedArray<RelativeItem>,
 );
@@ -28,6 +28,12 @@ crate::auto_impl!{
     pub enum RelativeItem {
         Length(Length),
         Ratio(Ratio),
+    }
+}
+
+impl Default for RelativeItem {
+    fn default() -> Self {
+        RelativeItem::Ratio(Ratio::default())
     }
 }
 

@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::types::float::Float;
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Default)]
 pub struct Ratio {
     pub value: Float,
     pub unit: RatioUnit
@@ -14,6 +14,12 @@ crate::impl_all!(Ratio, "ratio");
 pub enum RatioUnit {
     #[serde(rename = "%")]
     Percent,
+}
+
+impl Default for RatioUnit {
+    fn default() -> Self {
+        RatioUnit::Percent
+    }
 }
 
 impl Display for RatioUnit {

@@ -21,6 +21,7 @@ mod text;
 #[cfg(feature = "content")]
 mod v;
 
+use crate::Item;
 #[cfg(feature = "content")]
 use crate::types::content::{symbol::Symbol_};
 #[cfg(feature = "content")]
@@ -87,7 +88,7 @@ crate::define_enum! {
         #[serde(borrow, rename="math.lr")]
         MathLR(math::LR<'a>),
         #[serde(borrow, rename="math.mat")]
-        MathMat(math::Mat<'a>),
+        MathMatrix(math::Matrix<'a>),
         #[serde(rename="math.primes")]
         MathPrimes(math::Primes),
         #[serde(borrow, rename="math.root")]
@@ -99,11 +100,34 @@ crate::define_enum! {
         #[serde(borrow, rename="math.op")]
         MathOp(math::Op<'a>),
         #[serde(borrow, rename="math.vec")]
-        MathVec(math::Vec<'a>),
+        MathVector(math::Vector<'a>),
     }
 }
 
 crate::impl_all!(Content<'a>, "content");
+
+impl<'a> Default for Content<'a> {
+    fn default() -> Self {
+        Text::default().into()
+    }
+}
+
+impl<'a, T: TryFrom<Content<'a>, Error = std::string::String>> TryFrom<Item<'a>> for TypedContent<T> {
+    type Error = std::string::String;
+
+    fn try_from(value: Item<'a>) -> Result<Self, Self::Error> {
+        let content: Content<'a> = value.try_into()?;
+        let typed: T = content.try_into()?;
+        Ok(TypedContent(typed))
+    }
+}
+
+impl<'a, T: Into<Content<'a>>> Into<Item<'a>> for TypedContent<T> {
+    fn into(self) -> Item<'a> {
+        let content: Content<'a> = self.0.into();
+        content.into()
+    }
+}
 
 #[macro_export]
 macro_rules! impl_try_from_content {

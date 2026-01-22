@@ -1,6 +1,6 @@
 use crate::{Alignment, Array, AutoOr, Boolean, Bytes, Integer, Or, String, TypedItem};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Raw<'a> {
     #[serde(borrow)]
     pub text: TypedItem<String<'a>>,

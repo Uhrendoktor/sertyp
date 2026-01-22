@@ -1,6 +1,6 @@
 use crate::{Box, Content, TypedItem};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Frac<'a> {
     #[serde(borrow)]
     pub num: Box<Content<'a>>,

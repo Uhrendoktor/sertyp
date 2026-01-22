@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Item, TypstTypeLike};
 
+#[derive(Clone, Debug, Default)]
 pub struct Box<T>(pub std::boxed::Box<T>);
 impl<'a, 'de: 'a, T> Deserialize<'de> for Box<T>
 where
@@ -28,18 +29,6 @@ impl<'a, T: Clone + Into<Item<'a>>> Serialize for Box<T>
     {
         let item: Item = (&**self).clone().into();
         item.serialize(serializer)
-    }
-}
-
-impl<T: Clone> Clone for Box<T> {
-    fn clone(&self) -> Self {
-        Box(std::boxed::Box::new((**self).clone()))
-    }
-}
-
-impl<T: Debug> Debug for Box<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (**self).fmt(f)
     }
 }
 

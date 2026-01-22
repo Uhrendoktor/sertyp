@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::types::float::Float;
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Default)]
 pub struct Angle {
     pub value: Float,
     pub unit: AngleUnit
@@ -16,6 +16,12 @@ pub enum AngleUnit {
     Radians,
     #[serde(rename = "deg")]
     Degrees
+}
+
+impl Default for AngleUnit {
+    fn default() -> Self {
+        AngleUnit::Degrees
+    }
 }
 
 impl Display for AngleUnit {

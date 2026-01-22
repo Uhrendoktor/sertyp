@@ -26,12 +26,12 @@ pub use class::Class;
 pub use equation::Equation;
 pub use frac::Frac;
 pub use lr::LR;
-pub use mat::Mat;
+pub use mat::Matrix;
 pub use primes::Primes;
 pub use root::Root;
 pub use stretch::Stretch;
 pub use styled::Styled;
 pub use op::Op;
-pub use vec::Vec;
+pub use vec::Vector;
 
 

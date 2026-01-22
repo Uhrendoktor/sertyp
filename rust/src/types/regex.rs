@@ -2,7 +2,7 @@ use std::{fmt::Display, ops::Deref};
 
 use crate::types::string::String;
 
-#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Clone, Debug, Default)]
 pub struct Regex<'a> (
     #[serde(borrow)]
     pub String<'a>,

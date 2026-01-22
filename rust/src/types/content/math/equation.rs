@@ -1,6 +1,6 @@
 use crate::{Alignment, AutoOr, Boolean, Box, Content, Function, Or, String, TypedItem};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Equation<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub block: Option<TypedItem<Boolean>>,

@@ -1,6 +1,6 @@
 use crate::{Boolean, Box, Content, Or, Relative, String, TypedItem};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Accent<'a> {
     #[serde(borrow)]
     pub base: Box<TypedItem<Content<'a>>>,

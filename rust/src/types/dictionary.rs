@@ -7,7 +7,7 @@ pub struct Dictionary_<'a>(
     pub HashMap<&'a str, Item_<'a>>
 );
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 #[serde(from = "Dictionary_", into = "Dictionary_")]
 pub struct Dictionary<'a>(
     #[serde(borrow)]

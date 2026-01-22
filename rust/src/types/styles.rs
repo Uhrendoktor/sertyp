@@ -2,7 +2,7 @@ use std::ops::{Deref, DerefMut};
 
 use crate::types::Item;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
 pub struct Styles<'a>(
     #[serde(borrow)]
     pub Box<Item<'a>>

@@ -1,6 +1,6 @@
 use crate::types::string::String;
 
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Default)]
 pub struct Panic<'a> (
     #[serde(borrow)]
     pub String<'a>

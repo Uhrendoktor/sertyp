@@ -1,6 +1,6 @@
 use crate::{Content, Direction, Fraction, Or, Relative, TypedItem, impl_all_content, types::generic::TypedArray};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Stack<'a> {
     #[serde(skip_serializing_if="Option::is_none")]
     pub dir: Option<TypedItem<Direction>>,
@@ -18,5 +18,11 @@ crate::auto_impl!{
         Relative(Relative),
         Fraction(Fraction),
         Content(Content<'a>),
+    }
+}
+
+impl<'a> Default for StackChildren<'a> {
+    fn default() -> Self {
+        StackChildren::Content(Content::default())
     }
 }

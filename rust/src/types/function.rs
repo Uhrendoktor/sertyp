@@ -10,6 +10,12 @@ pub enum Function<'a> {
 
 crate::impl_all!(Function<'a>, "function");
 
+impl Default for Function<'_> {
+    fn default() -> Self {
+        Function::Inline
+    }
+}
+
 impl<'a> From<String<'a>> for Function<'a> {
     fn from(value: String<'a>) -> Self {
         if &*value == "(..) => .." {

@@ -2,7 +2,7 @@ use std::{borrow::Cow, ops::Deref};
 
 use crate::types::string::String;
 
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Default)]
 pub struct Type<'a>(
     #[serde(borrow)]
     pub String<'a>

@@ -1,6 +1,6 @@
 use crate::types::string::String;
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Eq, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Eq, PartialEq, Default)]
 pub struct Decimal<'a> (
     #[serde(borrow)]
     pub String<'a>
