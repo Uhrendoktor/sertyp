@@ -46,7 +46,7 @@ crate::define_enum! {
     #[serde(tag="func", content="fields", rename_all="lowercase")]
     pub enum Content<'a> {
         untagged {
-            // Unknown(RawContent<'a>),
+            Unknown(RawContent<'a>),
         },
         remap {
             #[serde(borrow, rename="symbol")]
