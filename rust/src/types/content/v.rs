@@ -1,9 +1,10 @@
-use crate::{Fraction, Or, Relative, types::boolean::Boolean};
+use crate::{Fraction, Or, Relative, TypedItem, types::boolean::Boolean};
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct V {
     pub amount: Or<Relative, Fraction>,
-    pub weak: Boolean
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub weak: Option<TypedItem<Boolean>>
 }
 
 crate::impl_all_content!(V, "v");

@@ -22,6 +22,7 @@
     math.binom,
     math.cancel,
     math.cases,
+    math.class,
     math.equation,
     math.frac,
     math.lr,

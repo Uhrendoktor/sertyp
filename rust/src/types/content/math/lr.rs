@@ -1,8 +1,9 @@
-use crate::{Box, Content, Relative};
+use crate::{Box, Content, Relative, TypedItem};
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct LR<'a> {
-    pub size: Relative,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub size: Option<TypedItem<Relative>>,
     #[serde(borrow)]
     pub body: Box<Content<'a>>
 }

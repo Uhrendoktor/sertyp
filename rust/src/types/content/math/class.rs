@@ -1,8 +1,8 @@
-use crate::Content;
+use crate::{Box, Content, TypedItem};
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct Class<'a> {
-    pub class: ClassVariant,
+    pub class: TypedItem<ClassVariant>,
     #[serde(borrow)]
     pub body: Box<Content<'a>>,
 }

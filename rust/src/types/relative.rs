@@ -1,13 +1,27 @@
 use std::fmt::Display;
 
-use crate::{Length, Or, Ratio, types::generic::TypedArray};
+use crate::{Item, Length, Ratio, types::generic::TypedArray};
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct Relative(
-    pub Or<TypedArray<RelativeItem>, RelativeItem>,
+    pub TypedArray<RelativeItem>,
 );
 
-crate::impl_all!(Relative, "relative");
+crate::impl_typst_type!(Relative, "relative");
+crate::impl_into!(Relative);
+
+impl<'a> TryFrom<Item<'a>> for Relative {
+    type Error = std::string::String;
+
+    fn try_from(value: Item<'a>) -> Result<Self, Self::Error> {
+        match value {
+            Item::Relative(r) => Ok(r),
+            Item::Ratio(r) => Ok(Relative(vec![RelativeItem::Ratio(r)].into())),
+            Item::Length(l) => Ok(Relative(vec![RelativeItem::Length(l)].into())),
+            other => Err(format!("Cannot convert {:?} into Relative", other)),
+        }
+    }
+}
 
 crate::auto_impl!{
     #[derive(Clone, Debug)]
@@ -19,15 +33,10 @@ crate::auto_impl!{
 
 impl Display for Relative {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.0 {// join with +
-            Or::Left(s) => {
-                let repr = s.iter()
-                    .map(|item| format!("{:?}", item))
-                    .collect::<Vec<_>>()
-                    .join(" + ");
-                write!(f, "{}", repr)
-            },
-            Or::Right(s) => write!(f, "{:?}", s),
-        }    
+        let repr = self.0.iter()
+            .map(|item| format!("{:?}", item))
+            .collect::<Vec<_>>()
+            .join(" + ");
+        write!(f, "{}", repr)    
     }
 }

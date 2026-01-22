@@ -66,9 +66,8 @@
   "sequence": (..args) => {
     let named = args.named()
     let children = named.remove("children")
-    for child in children {
-      [#child]
-    }
+    let sequence = [a + b].func()
+    sequence(children)
   },
   "space": () => {
     [ ]
@@ -229,10 +228,10 @@
   "metadata": (..args) => {
     let args = split_positional(("value",), args)
     let named = args.named()
-    let metadata = metadata(..args.pos(), ..named)
+    let metadata = metadata(..args.pos())
     if "label" in named {
       let label = named.remove("label")
-      metadata = [#metadata #label]
+      metadata = [#metadata #label].fields().children.at(0)
     }
     return metadata
   },
@@ -264,22 +263,145 @@
   cycle($1/2$)
   cycle([abc #auto $root(2+1, 3) alpha$])
 
+  // math.accent
   cycle($accent(a, b)$)
+  // cycle($hat(dotless: #false, i)$)
+  cycle($dash(A, size: #150%)$)
+
+  // math.attach
   cycle($a_b$)
+  cycle($attach(
+    Pi, t: alpha, b: beta,
+    tl: 1, tr: 2+3, bl: 4+5, br: 6,
+  )$)
+  
+  // math.binom
   cycle($binom(n, k, k_2)$)
+
+
+  // math.cancel
+  cycle($cancel(x+y)$)
+  cycle($cancel(1/(1+x), angle: #90deg)$)
+  cycle($cancel(1/x, angle: #auto, cross: #false, inverted: #false, length: #100%, stroke: #stroke(2pt))$)
+
+  // math.cases
+  cycle($cases(x+1 = 2, x = 1)$)
+  cycle($cases(x+1 = 3, x_2=4, delim: #symbol("["), gap: #2%, reverse: #false)$)
+
+
+  // math.class
+  cycle($class("relation", a+b=c)$)
+
+  // math.equation
+  cycle($a+d => e$)
+  cycle(math.equation($a + b = c$, number-align: left, numbering: "1.1.1", supplement: auto))
+
+  //math.frac
+  cycle($frac(1, 2)$)
+  // cycle($ frac(x, y, style: "horizontal") $);
+
+  // math.lr
+  cycle($math.floor(a+b+c)$)
+  cycle($lr(a, size: #10%)$)
+
+  // math.mat
+  cycle($mat(1,2;2)$);
+  cycle($mat(
+    (a, b), (c, d),
+    delim: #symbol("|"),
+    align: #center,
+    augment: #2,
+    gap: #5%,
+    row-gap: #10pt,
+    column-gap: #15pt,
+  )$);
+
+  // math.op
+  cycle($sin(4)$)
+  cycle($op(a+b, limits: #true)$)
+
+  // math.primes
+  cycle($primes(#3)$)
+
+  // math.root
   cycle($sqrt(2), root(3,2)$)
 
-  // styled
+  // match.stretch
+  cycle($stretch(=>)$)
+  cycle(math.stretch($a+b+c$, size: 150%))
+
+  // math.styled
   cycle(math.display($a$, cramped: true))
   cycle(math.inline($b$))
   cycle(math.script($c$, cramped: true))
   cycle(math.sscript($c$, cramped: true))
 
-  cycle(math.stretch($a$))
+  // math.vec
+  cycle($vec(a, b, c)$)
+  cycle($vec(a, b, c, delim: #symbol("["), gap: #2%, align: #center)$)
+
+  // h
+  cycle(h(10pt))
+  cycle(h(5pt, weak: true))
+
+  // v
+  cycle(v(10pt))
+  cycle(v(5%, weak: true))
+
+  // metadata
+  cycle(metadata("Test Metadata"))
+  // cycle(metadata("Test with Label", label: "meta1"))
+  cycle([#metadata("Test with Label") <meta1>])
+
+  // raw
+  // panic(generic.serializer(raw("Raw content test")))
+  cycle(raw("Raw content test"))
+  cycle(raw("Raw content test", align: center, lang: "en", block: true, syntaxes: (), tab-size: 4, theme: auto))
+
+  // space
+  cycle([ ])
+
+  // stack
   cycle(stack(
+    [first],
+    [second],
     dir: ttb,
-    rect(width: 40pt),
-    rect(width: 120pt),
-    rect(width: 90pt),
+    spacing: 5pt,
   ))
+
+  // strong
+  cycle(strong("Bold Text"))
+  cycle(strong("Bold Text", delta: 800))
+
+  // symbol
+  cycle($#alpha$)
+
+  // text
+  cycle(text("Sample Text"))
+  cycle(text("Sample Text", 
+    alternates: true, 
+    baseline: 2pt,
+    bottom-edge: "baseline",
+    cjk-latin-spacing: auto,
+    spacing: 5pt,
+    costs: (:),
+    dir: ltr,
+    discretionary-ligatures: true,
+    fallback: true,
+    fill: black,
+    font: "Roboto",
+    hyphenate: true,
+    kerning: true,
+    lang: "en",
+    ligatures: true,
+    number-type: "lining",
+    number-width: "proportional",
+    overhang: false,
+    size: 12pt,
+    slashed-zero: false,
+    stretch: 100%,
+    style: "normal",
+    tracking: 0em,
+    weight: 400,
+  ))  
 };

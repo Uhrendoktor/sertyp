@@ -3,11 +3,11 @@ use crate::{Box, Content, TypedItem};
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct Frac<'a> {
     #[serde(borrow)]
-    pub num: Box<TypedItem<Content<'a>>>,
+    pub num: Box<Content<'a>>,
     #[serde(borrow)]
-    pub denom: Box<TypedItem<Content<'a>>>,
+    pub denom: Box<Content<'a>>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub style: Option<FracStyle>,
+    pub style: Option<TypedItem<FracStyle>>,
 }
 
 crate::impl_all_content!(Frac<'a>.Math, "math.frac");

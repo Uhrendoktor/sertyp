@@ -11,7 +11,8 @@ impl<'a, 'de: 'a, T: TryFrom<Item<'a>, Error=std::string::String>> serde::Deseri
     where
         D: serde::Deserializer<'de>,
     {
-        let arr = Array::deserialize(deserializer)?;
+        let item: Item = Item::deserialize(deserializer)?;
+        let arr: Array = item.try_into().map_err(serde::de::Error::custom)?;
         arr.try_into().map_err(serde::de::Error::custom)
     }
 }

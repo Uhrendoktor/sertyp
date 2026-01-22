@@ -16,4 +16,10 @@ impl<'a> Deref for Symbol<'a> {
     }
 }
 
+impl<'a> From<String<'a>> for Symbol<'a> {
+    fn from(value: String<'a>) -> Self {
+        Symbol(value)
+    }
+}
+
 crate::impl_all!(Symbol<'a>, "symbol");

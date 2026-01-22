@@ -1,20 +1,20 @@
-use crate::Symbol;
+use crate::{Symbol, String};
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Symbol_<'a> {
     #[serde(borrow)]
-    pub text: Symbol<'a>
+    pub text: String<'a>
 }
 
 impl<'a> Into<Symbol<'a>> for Symbol_<'a> {
     fn into(self) -> Symbol<'a> {
-        self.text
+        self.text.into()
     }
 }
 
 impl<'a> From<Symbol<'a>> for Symbol_<'a> {
     fn from(value: Symbol<'a>) -> Self {
-        Symbol_ { text: value }
+        Symbol_ { text: value.0 }
     }
 }
 

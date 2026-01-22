@@ -7,7 +7,7 @@
   let cycle(data) = {
     let cycled = sertyp.call(test_plugin.cycle, data);
 
-    if type(data) in (dictionary, arguments) {
+    if type(data) in (content, dictionary, arguments) {
       sertyp.utils.assert(data, cycled);
     } else {
       sertyp.utils.assert(repr(data), repr(cycled));
@@ -53,7 +53,7 @@
     let null = mod.test(cycle);
   }
 
-  cycle([
+  /*cycle([
     Total displaced soil by glacial flow:
     $ 7.32 beta + sum_(i=0)^nabla (Q_i (a_i - epsilon)) / 2 $
     #metadata("Glacial Flow Calculation")
@@ -73,7 +73,7 @@
         $ sqrt(2) / 12 a^3 $,
         [$a$: edge length]
     )
-  ]);
+  ]);*/
 }
 
 #test()

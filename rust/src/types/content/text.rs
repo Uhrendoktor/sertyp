@@ -1,41 +1,41 @@
-use crate::{Array, AutoOr, Boolean, Box, Content, Dictionary, Direction, Integer, Item, Length, Or, Ratio, Relative, String, types::generic::{FillColor, StrokeColor}};
+use crate::{Array, AutoOr, Boolean, Box, Content, Dictionary, Direction, Integer, Item, Length, Or, Ratio, Relative, String, TypedItem, types::generic::{FillColor, StrokeColor}};
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct Text<'a> {
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
     pub font: Option<TextFont<'a>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub fallback: Option<Boolean>,
+    pub fallback: Option<TypedItem<Boolean>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub style: Option<TextStyle>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub weight: Option<Or<Integer, TextWeight>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub stretch: Option<Ratio>,
+    pub stretch: Option<TypedItem<Ratio>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub size: Option<Length>,
+    pub size: Option<TypedItem<Length>>,
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
     pub fill: Option<FillColor<'a>>,
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
     pub stroke: Option<StrokeColor<'a>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tracking: Option<Length>,
+    pub tracking: Option<TypedItem<Length>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub spacing: Option<Relative>,
+    pub spacing: Option<TypedItem<Relative>>,
     #[serde(borrow, rename="cjk-spacing-latin", skip_serializing_if = "Option::is_none")]
     pub cjk_spacing_latin: Option<std::boxed::Box<Item<'a>>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub baseline: Option<Length>,
+    pub baseline: Option<TypedItem<Length>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub overhang: Option<Boolean>,
+    pub overhang: Option<TypedItem<Boolean>>,
     #[serde(rename="top-edge", skip_serializing_if = "Option::is_none")]
     pub top_edge: Option<Or<Length, TextTopEdge>>,
     #[serde(rename="bottom-edge", skip_serializing_if = "Option::is_none")]
     pub bottom_edge: Option<Or<Length, TextBottomEdge>>,
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
-    pub lang: Option<String<'a>>,
+    pub lang: Option<TypedItem<String<'a>>>,
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
-    pub region: Option<String<'a>>,
+    pub region: Option<TypedItem<String<'a>>>,
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
     pub script: Option<AutoOr<String<'a>>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -43,33 +43,33 @@ pub struct Text<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hyphenate: Option<AutoOr<Boolean>>,
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
-    pub costs: Option<Dictionary<'a>>,
+    pub costs: Option<TypedItem<Dictionary<'a>>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub kerning: Option<Boolean>,
+    pub kerning: Option<TypedItem<Boolean>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub alternates: Option<Boolean>,
+    pub alternates: Option<TypedItem<Boolean>>,
     #[serde(borrow, rename="stylistic-set", skip_serializing_if = "Option::is_none")]
     pub sylistic_set: Option<Or<Integer, Array<'a>>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub lignatures: Option<Boolean>,
+    pub lignatures: Option<TypedItem<Boolean>>,
     #[serde(rename="discretionary-ligatures", skip_serializing_if = "Option::is_none")]
-    pub discretionary_ligatures: Option<Boolean>,
+    pub discretionary_ligatures: Option<TypedItem<Boolean>>,
     #[serde(rename="historical-ligatures", skip_serializing_if = "Option::is_none")]
-    pub historical_ligatures: Option<Boolean>,
+    pub historical_ligatures: Option<TypedItem<Boolean>>,
     #[serde(rename="number-type", skip_serializing_if = "Option::is_none")]
     pub number_type: Option<AutoOr<TextNumberType>>,
     #[serde(rename="number-width", skip_serializing_if = "Option::is_none")]
     pub number_width: Option<AutoOr<TextNumberWidth>>,
     #[serde(rename="slashed-zero", skip_serializing_if = "Option::is_none")]
-    pub slashed_zero: Option<Boolean>,
+    pub slashed_zero: Option<TypedItem<Boolean>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub fractions: Option<Boolean>,
+    pub fractions: Option<TypedItem<Boolean>>,
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
     pub features: Option<Or<Array<'a>, Dictionary<'a>>>,
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
     pub body: Option<Box<Content<'a>>>,
     #[serde(borrow)]
-    pub text: String<'a>,
+    pub text: TypedItem<String<'a>>,
 }
 
 crate::auto_impl!{

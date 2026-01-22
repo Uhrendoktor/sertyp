@@ -137,7 +137,7 @@ macro_rules! auto_impl_str {
     ) => {
         $(#[derive($($meta),*)])*
         #[derive(serde::Deserialize, serde::Serialize, Debug, Clone, PartialEq, Eq)]
-        #[serde(try_from = "crate::Item", into = "crate::Item")]
+        #[serde(try_from = "crate::String", into = "crate::String")]
         $vis enum $name {
             $(
                 $(#[$var_meta])*
