@@ -1,12 +1,13 @@
 use std::fmt::Display;
 
-use crate::Integer;
+use crate::{Integer, Item};
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+/// For more information visit the typst documentation: [version](https://typst.app/docs/reference/foundations/version/)
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, Default)]
 pub struct Version {
     pub major: Integer,
     pub minor: Integer,
-    pub patch: Integer
+    pub patch: Integer,
 }
 
 impl Display for Version {
@@ -15,4 +16,4 @@ impl Display for Version {
     }
 }
 
-crate::impl_all!(Version, "version");
+crate::impl_all!(Item<'a>::Version, Version {}, "version");

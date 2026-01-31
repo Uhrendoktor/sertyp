@@ -1,6 +1,9 @@
 use std::{fmt::Display, num::TryFromIntError};
 
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+use crate::Item;
+
+/// For more information visit the typst documentation: [integer](https://typst.app/docs/reference/foundations/int/)
+#[derive(Copy, Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[allow(non_camel_case_types)]
 #[serde(untagged)]
 pub enum Integer {
@@ -18,12 +21,18 @@ pub enum Integer {
     usize(usize),
 }
 
-crate::impl_all!(Integer, "integer");
+impl Default for Integer {
+    fn default() -> Self {
+        Integer::i32(0)
+    }
+}
 
-impl TryInto<i32> for Integer {
+crate::impl_all!(Item<'a>::Integer, Integer {}, "integer");
+
+impl TryFrom<Integer> for i32 {
     type Error = TryFromIntError;
-    fn try_into(self) -> Result<i32, Self::Error> {
-        match self {
+    fn try_from(value: Integer) -> Result<i32, Self::Error> {
+        match value {
             Integer::i8(i) => Ok(i as i32),
             Integer::i16(i) => Ok(i as i32),
             Integer::i32(i) => Ok(i),

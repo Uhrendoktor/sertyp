@@ -1,20 +1,21 @@
-use std::{fmt::Debug, ops::{Deref, DerefMut}};
 use crate::types::{Item, Item_};
+use std::{
+    fmt::Debug,
+    ops::{Deref, DerefMut},
+};
 
+/// Pre-deserialization / post-serialization helper struct for [Array]. You probably want to use [Array] instead.
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
-pub struct Array_<'a>(
-    #[serde(borrow)]
-    pub Vec<Item_<'a>>
-);
+pub struct Array_<'a>(#[serde(borrow)] pub Vec<Item_<'a>>);
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+/// For more information visit the typst documentation: [array](https://typst.app/docs/reference/foundations/array/)
+/// # Note
+/// For homogenous known types, consider using [crate::TypedArray] instead.
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 #[serde(from = "Array_", into = "Array_")]
-pub struct Array<'a>(
-    #[serde(borrow)]
-    Vec<Item<'a>>
-);
+pub struct Array<'a>(#[serde(borrow)] Vec<Item<'a>>);
 
-crate::impl_all!(Array<'a>, "array");
+crate::impl_all!(Item<'a>::Array, Array<'a>{'a}, "array");
 
 impl<'a> From<Array<'a>> for Array_<'a> {
     fn from(value: Array<'a>) -> Self {
@@ -57,58 +58,60 @@ impl<'a> From<Vec<Item<'a>>> for Array<'a> {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct Pair<T> (T, T);
+#[derive(Clone, Debug, Default)]
+pub struct Pair<T>(pub T, pub T);
 
 impl<'a, T: Clone> TryFrom<Array<'a>> for Pair<T>
 where
-    T: TryFrom<Item<'a>, Error=std::string::String>,
+    T: TryFrom<Item<'a>, Error = std::string::String>,
 {
     type Error = std::string::String;
 
     fn try_from(value: Array<'a>) -> Result<Self, Self::Error> {
         if value.len() != 2 {
-            return Err(format!("Expected array of length 2 for Pair, got length {}", value.len()));
+            return Err(format!(
+                "Expected array of length 2 for Pair, got length {}",
+                value.len()
+            ));
         }
         let t1 = T::try_from(value[0].clone())
-            .map_err(|e| format!("Error converting first element of Pair: {}", e))?;
+            .map_err(|e| format!("Error converting first element of Pair: {e}"))?;
         let t2 = T::try_from(value[1].clone())
-            .map_err(|e| format!("Error converting second element of Pair: {}", e))?;
+            .map_err(|e| format!("Error converting second element of Pair: {e}"))?;
         Ok(Pair(t1, t2))
     }
 }
 
-impl<'a, T: Clone + Into<Item<'a>>> Into<Array<'a>> for Pair<T> 
-{
-    fn into(self) -> Array<'a> {
-        Array(vec![self.0.into(), self.1.into()])
+impl<'a, T: Clone + Into<Item<'a>>> From<Pair<T>> for Array<'a> {
+    fn from(val: Pair<T>) -> Self {
+        Array(vec![val.0.into(), val.1.into()])
     }
 }
 
 impl<'a, T> TryFrom<Item<'a>> for Pair<T>
 where
-    Pair<T>: TryFrom<Array<'a>, Error=std::string::String>,
+    Pair<T>: TryFrom<Array<'a>, Error = std::string::String>,
 {
     type Error = std::string::String;
 
     fn try_from(value: Item<'a>) -> Result<Self, Self::Error> {
         match value {
             Item::Array(arr) => Pair::try_from(arr),
-            other => Err(format!("Tried to convert Item to Pair, found {:?}", other)),
+            other => Err(format!("Tried to convert Item to Pair, found {other:?}")),
         }
     }
 }
 
-impl<'a, T: Clone + Into<Item<'a>>> Into<Item<'a>> for Pair<T> {
-    fn into(self) -> Item<'a> {
-        let array: Array<'a> = Pair(self.0.clone(), self.1.clone()).into();
+impl<'a, T: Clone + Into<Item<'a>>> From<Pair<T>> for Item<'a> {
+    fn from(val: Pair<T>) -> Self {
+        let array: Array<'a> = Pair(val.0.clone(), val.1.clone()).into();
         Item::Array(array)
     }
 }
 
 impl<'a, 'de: 'a, T> serde::Deserialize<'de> for Pair<T>
 where
-    Pair<T>: TryFrom<Array<'a>, Error=std::string::String>,
+    Pair<T>: TryFrom<Array<'a>, Error = std::string::String>,
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

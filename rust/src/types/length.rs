@@ -1,8 +1,9 @@
 use std::fmt::Display;
 
-use crate::types::float::Float;
+use crate::{Item, types::float::Float};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
+/// For more information visit the typst documentation: [length](https://typst.app/docs/reference/layout/length/)
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Default)]
 pub struct Length {
     #[serde(rename = "value")]
     pub abs: Float,
@@ -10,10 +11,13 @@ pub struct Length {
     pub em: Float,
 }
 
-crate::impl_all!(Length, "length");
+crate::impl_all!(Item<'a>::Length, Length {}, "length");
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq)]
+/// Unit of length. Typst automatically casts into `pt` even if another unit was specified.
+/// The other variants can still be used when constructing values in rust.
+#[derive(Default, serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum AbsUnit {
+    #[default]
     #[serde(rename = "pt")]
     Points,
     #[serde(rename = "in")]

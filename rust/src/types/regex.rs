@@ -1,17 +1,15 @@
 use std::{fmt::Display, ops::Deref};
 
-use crate::types::string::String;
+use crate::{Item, types::string::String};
 
-#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Clone, Debug)]
-pub struct Regex<'a> (
-    #[serde(borrow)]
-    pub String<'a>,
-);
+/// For more information visit the typst documentation: [regex](https://typst.app/docs/reference/foundations/regex/)
+#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Clone, Debug, Default)]
+pub struct Regex<'a>(#[serde(borrow)] pub String<'a>);
 
-crate::impl_all!(Regex<'a>, "regex");
+crate::impl_all!(Item<'a>::Regex, Regex<'a>{'a}, "regex");
 
 impl<'a> Deref for Regex<'a> {
-    type Target = str;
+    type Target = String<'a>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -20,13 +18,13 @@ impl<'a> Deref for Regex<'a> {
 
 impl<'a> Display for Regex<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "/{}/", &*self)
+        write!(f, "/{}/", **self)
     }
 }
 
-impl<'a> Into<String<'a>> for Regex<'a> {
-    fn into(self) -> String<'a> {
-        self.0
+impl<'a> From<Regex<'a>> for String<'a> {
+    fn from(val: Regex<'a>) -> Self {
+        val.0
     }
 }
 

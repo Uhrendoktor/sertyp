@@ -1,14 +1,19 @@
-use crate::{Array, Boolean, Relative, types::content::math::generic::Delim};
+use crate::{
+    Boolean, Content, Relative, TypedItem,
+    types::{content::math::generic::Delim, generic::TypedArray},
+};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+/// For more information visit the typst documentation: [math.cases](https://typst.app/docs/reference/math/cases/)
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Cases<'a> {
+    #[serde(borrow, skip_serializing_if = "Option::is_none")]
+    pub delim: Option<Delim<'a>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reverse: Option<TypedItem<Boolean>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub gap: Option<TypedItem<Relative>>,
     #[serde(borrow)]
-    pub delim: Delim<'a>,
-    pub reverse: Boolean,
-    #[serde(borrow)]
-    pub gap: Relative<'a>,
-    #[serde(borrow)]
-    pub children: Array<'a>,
+    pub children: TypedArray<Content<'a>>,
 }
 
-crate::impl_all_content!(Cases<'a>.Math, "math.cases");
+crate::impl_all!(Content<'a>::MathCases, Cases<'a>{'a}, "math.cases");

@@ -11,10 +11,10 @@ Unlike `repr()` or `cbor.encode()`, which produce ambiguous strings or lose type
 
 The [Rust backend](https://github.com/Uhrendoktor/sertyp/blob/main/rust/README.md) provides deserialization logic and typed data structures so plugins can work with actual Typst types instead of manual parsing efforts.
 
-## Installation
+## Usage
 
 ```typst
-#import "@preview/sertyp:0.1.1"
+#import "@preview/sertyp:0.1.2"
 ``` 
 
 ## Examples
@@ -22,7 +22,7 @@ The [Rust backend](https://github.com/Uhrendoktor/sertyp/blob/main/rust/README.m
 ### Basic serialization
 
 ```typst
-#import "@preview/sertyp:0.1.1"
+#import "@preview/sertyp:0.1.2"
 
 // Serialize and deserialize complex content
 #let value = [
@@ -41,7 +41,7 @@ The [Rust backend](https://github.com/Uhrendoktor/sertyp/blob/main/rust/README.m
 Pass typed data to Rust plugins and get typed results back:
 
 ```typst
-#import "@preview/sertyp:0.1.1"
+#import "@preview/sertyp:0.1.2"
 #let math_plugin = plugin("<...>/matrix_ops.wasm")
 
 // Send a matrix to the plugin
@@ -53,25 +53,18 @@ Pass typed data to Rust plugins and get typed results back:
 ### Type preservation examples
 
 ```typst
-#import "@preview/sertyp:0.1.1"
+#import "@preview/sertyp:0.1.2"
 
-// Colors preserve their color space
 #let color = rgb(255, 128, 0)
 #let restored = sertyp.deserialize(sertyp.serialize(color))
-// restored is still rgb(255, 128, 0), not a string
+// restored value is a real color object value, not a string
 
-// Lengths keep their units
 #let len = 2.5em + 10pt
 #let restored = sertyp.deserialize(sertyp.serialize(len))
-// restored is still a length with both em and pt components
-
-// Functions preserve their names
-#let fn = math.floor
-#let restored = sertyp.deserialize(sertyp.serialize(fn))
-// Plugin can extract "math.floor" as a string
+// Same with lengths and most other types
 ```
 
-## API
+## Overview
 
 ### `serialize(value) -> any`
 
@@ -91,10 +84,12 @@ let value = sertyp.deserialize(serialized)
 // Returns the original displayable value
 ```
 
+**Security note**: Deserialization uses `eval()` internally. Deserializing untrusted values may therefore lead to arbitrary code execution. **Only deserialize trusted data**.
+
+
 ### `serialize-cbor(value) -> bytes`
 
-Serializes to CBOR binary format for WASM plugins.
-
+Serializes to CBOR binary format. Usefull when passing values to WASM plugins.
 ```typst
 let bytes = sertyp.serialize-cbor(my_value)
 // Returns CBOR-encoded bytes
@@ -108,15 +103,14 @@ Deserializes from CBOR bytes back to a Typst value.
 let value = sertyp.deserialize-cbor(plugin_output)
 ```
 
+**Security note**: Deserialization uses `eval()` internally. Deserializing untrusted values may therefore lead to arbitrary code execution. **Only deserialize trusted data**.
+
 ### `call(function, arg) -> any`
 
 Shorthand for
 ```typst
 sertyp.deserialize-cbor(function(sertyp.serialize-cbor(arg)))
 ```
-
-**Security note**: Deserialization uses `eval()` internally. Only deserialize trusted data.
-
 ## Supported Types
 
 **Primitives**: `bool`, `int`, `float`, `decimal`, `string`, `bytes`, `none`, `auto`

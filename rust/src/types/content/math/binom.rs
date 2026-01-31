@@ -1,11 +1,12 @@
-use crate::{Array, Box, Content};
+use crate::{Content, types::generic::TypedArray};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+/// For more information visit the typst documentation: [math.binom](https://typst.app/docs/reference/math/binom/)
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Binom<'a> {
     #[serde(borrow)]
     pub upper: Box<Content<'a>>,
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
-    pub lower: Option<Box<Array<'a>>>,
+    pub lower: Option<TypedArray<Box<Content<'a>>>>,
 }
 
-crate::impl_all_content!(Binom<'a>.Math, "math.binom");
+crate::impl_all!(Content<'a>::MathBinom, Binom<'a>{'a}, "math.binom");

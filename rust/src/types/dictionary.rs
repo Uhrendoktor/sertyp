@@ -1,20 +1,16 @@
-use std::collections::HashMap;
 use crate::types::{Item, Item_};
+use std::collections::HashMap;
 
+/// Pre-deserialization / post-serialization helper struct for [Dictionary]. You probably want to use [Dictionary] instead.
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
-pub struct Dictionary_<'a>(
-    #[serde(borrow)]
-    pub HashMap<&'a str, Item_<'a>>
-);
+pub struct Dictionary_<'a>(#[serde(borrow)] pub HashMap<&'a str, Item_<'a>>);
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+/// For more information visit the typst documentation: [dictionary](https://typst.app/docs/reference/foundations/dictionary/)
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 #[serde(from = "Dictionary_", into = "Dictionary_")]
-pub struct Dictionary<'a>(
-    #[serde(borrow)]
-    HashMap<&'a str, Item<'a>>
-);
+pub struct Dictionary<'a>(#[serde(borrow)] HashMap<&'a str, Item<'a>>);
 
-crate::impl_all!(Dictionary<'a>, "dictionary");
+crate::impl_all!(Item<'a>::Dictionary, Dictionary<'a>{'a}, "dictionary");
 
 impl<'a> From<Dictionary<'a>> for Dictionary_<'a> {
     fn from(value: Dictionary<'a>) -> Self {

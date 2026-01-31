@@ -74,7 +74,7 @@ dependencies = [
 
 [[package]]
 name = "sertyp"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "paste",
  "serde",
@@ -84,7 +84,7 @@ dependencies = [
 
 [[package]]
 name = "sertyp_macros"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "quote",
  "syn",

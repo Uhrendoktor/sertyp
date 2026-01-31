@@ -1,10 +1,14 @@
-use crate::{Fraction, Or, Relative, types::boolean::Boolean};
+use crate::{
+    Fraction, Or, Relative, TypedItem,
+    types::{boolean::Boolean, content::Content},
+};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
-pub struct V<'a> {
-    #[serde(borrow)]
-    pub amount: Or<Relative<'a>, Fraction>,
-    pub weak: Boolean
+/// For more information visit the typst documentation: [v](https://typst.app/docs/reference/layout/v/)
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
+pub struct V {
+    pub amount: Or<Relative, Fraction>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub weak: Option<TypedItem<Boolean>>,
 }
 
-crate::impl_all_content!(V<'a>, "v");
+crate::impl_all!(Content<'a>::V, V {}, "v");

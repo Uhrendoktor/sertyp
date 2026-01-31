@@ -1,10 +1,11 @@
-use crate::{Length, types::array::Pair};
+use crate::{Item, Length, types::array::Pair};
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct Tiling{
+/// For more information visit the typst documentation: [tiling](https://typst.app/docs/reference/visualize/tiling/)
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
+pub struct Tiling {
     pub size: Pair<Length>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub spacing: Option<Pair<Length>>
+    pub spacing: Option<Pair<Length>>,
 }
 
-crate::impl_all!(Tiling, "tiling");
+crate::impl_all!(Item<'a>::Tiling, Tiling {}, "tiling");

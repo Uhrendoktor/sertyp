@@ -1,17 +1,20 @@
 use std::fmt::Display;
 
-use crate::types::float::Float;
+use crate::{Item, types::float::Float};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
+/// For more information visit the typst documentation: [ratio](https://typst.app/docs/reference/layout/ratio/)
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Default)]
 pub struct Ratio {
     pub value: Float,
-    pub unit: RatioUnit
+    pub unit: RatioUnit,
 }
 
-crate::impl_all!(Ratio, "ratio");
+crate::impl_all!(Item<'a>::Ratio, Ratio {}, "ratio");
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq)]
+/// Unit of a ratio value. Typst only supports percentages (`%`).
+#[derive(Default, serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum RatioUnit {
+    #[default]
     #[serde(rename = "%")]
     Percent,
 }

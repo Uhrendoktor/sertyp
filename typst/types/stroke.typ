@@ -26,8 +26,7 @@
 };
 
 #let test(cycle) = {
-  let a = generic.serializer( stroke(paint: blue, thickness: 4pt, cap: "round"));
-
+  let null = cycle(stroke(2pt));
   cycle(
     stroke(paint: blue, thickness: 4pt, cap: "round")
   );

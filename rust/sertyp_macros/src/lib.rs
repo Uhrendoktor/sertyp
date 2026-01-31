@@ -1,5 +1,24 @@
 use quote::{format_ident, quote};
 
+/// Exposes a function as typst-wasm function with automatic serialization and deserialization.
+/// The function must take exactly one argument and return a value.
+/// The argument must implement `sertyp::TryFrom<Item>` and the return type must implement `sertyp::Into<Item>`.
+/// # Example
+/// ```rust
+/// use sertyp::typst_func;
+///
+/// //#[typst_func]
+/// pub fn fibonacci<'a>(n: sertyp::Integer) -> Result<sertyp::Integer, sertyp::String<'a>> {
+///     let n: i32 = n.try_into().map_err(|_| "Invalid integer range")?;
+///
+///     let (mut v0, mut v1) = (0, 1);
+///     for _ in 0..n {
+///         (v0, v1) = (v1, v0 + v1);
+///     }
+///
+///     Ok(v1.into())
+/// }
+/// ```
 #[proc_macro_attribute]
 pub fn typst_func(
     _attr: proc_macro::TokenStream,
@@ -7,27 +26,21 @@ pub fn typst_func(
 ) -> proc_macro::TokenStream {
     let mut item: syn::ItemFn = syn::parse(item).unwrap();
     item.attrs.retain(|attr| !attr.path().is_ident("wasm_func"));
-    let mut wrapper_sig  = item.sig.clone();
+    let mut wrapper_sig = item.sig.clone();
 
     if item.sig.inputs.len() != 1 {
-        return syn::Error::new_spanned(
-            item.sig.inputs,
-            "Function must have exactly one argument",
-        )
-        .to_compile_error()
-        .into();
+        return syn::Error::new_spanned(item.sig.inputs, "Function must have exactly one argument")
+            .to_compile_error()
+            .into();
     }
     match wrapper_sig.inputs.first_mut().unwrap() {
         syn::FnArg::Typed(pat_type) => {
             *pat_type = syn::parse_quote! { data: &[u8] };
         }
         syn::FnArg::Receiver(_) => {
-            return syn::Error::new_spanned(
-                &item.sig.inputs,
-                "Function cannot take self argument",
-            )
-            .to_compile_error()
-            .into();
+            return syn::Error::new_spanned(&item.sig.inputs, "Function cannot take self argument")
+                .to_compile_error()
+                .into();
         }
     };
 
@@ -36,19 +49,16 @@ pub fn typst_func(
             *ty = syn::parse_quote! { Vec<u8> };
         }
         syn::ReturnType::Default => {
-            return syn::Error::new_spanned(
-                &item.sig.output,
-                "Function must have a return type",
-            )
-            .to_compile_error()
-            .into();
+            return syn::Error::new_spanned(&item.sig.output, "Function must have a return type")
+                .to_compile_error()
+                .into();
         }
     };
 
     item.sig.ident = format_ident!("__impl_{}", wrapper_sig.ident);
     let ident = &item.sig.ident;
 
-    quote!{
+    quote! {
         #[wasm_func]
         #wrapper_sig {
             let value = match sertyp::deserialize_cbor(data) {
@@ -72,5 +82,6 @@ pub fn typst_func(
                 }
             }
         }
-    }.into()
+    }
+    .into()
 }

@@ -1,10 +1,28 @@
-use crate::{Content, String};
+use crate::{Box, Content, TypedItem};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+/// For more information visit the typst documentation: [math.class](https://typst.app/docs/reference/math/class/)
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Class<'a> {
+    pub class: TypedItem<ClassVariant>,
     #[serde(borrow)]
-    pub class: String<'a>,
     pub body: Box<Content<'a>>,
 }
 
-crate::impl_all_content!(Class<'a>.Math, "math.class");
+crate::auto_impl_str! {
+    #[derive(Default)]
+    pub enum ClassVariant{
+        #[default]
+        Normal = "normal",
+        Punctuation = "punctuation",
+        Opening = "opening",
+        Closing = "closing",
+        Fence = "fence",
+        Large = "large",
+        Relation = "relation",
+        Unary = "unary",
+        Binary = "binary",
+        Vary = "vary",
+    }
+}
+
+crate::impl_all!(Content<'a>::MathClass, Class<'a>{'a}, "math.class");

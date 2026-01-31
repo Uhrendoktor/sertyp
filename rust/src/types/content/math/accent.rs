@@ -1,13 +1,15 @@
-use crate::{Boolean, Box, Content, Or, Relative, String};
+use crate::{Boolean, Content, Or, Relative, String, TypedItem};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+/// For more information visit the typst documentation: [math.accent](https://typst.app/docs/reference/math/accent/)
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Accent<'a> {
     #[serde(borrow)]
-    pub base: Box<Content<'a>>,
+    pub base: TypedItem<Box<Content<'a>>>,
     pub accent: Or<String<'a>, Box<Content<'a>>>,
-    #[serde(borrow)]
-    pub size: Relative<'a>,
-    pub dotless: Boolean,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub size: Option<TypedItem<Relative>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dotless: Option<TypedItem<Boolean>>,
 }
 
-crate::impl_all_content!(Accent<'a>.Math, "math.accent");
+crate::impl_all!(Content<'a>::MathAccent, Accent<'a>{'a}, "math.accent");

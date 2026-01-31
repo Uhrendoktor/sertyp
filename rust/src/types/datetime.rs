@@ -1,6 +1,7 @@
-use crate::types::integer::Integer;
+use crate::{Item, types::integer::Integer};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
+/// For more information visit the typst documentation: [datetime](https://typst.app/docs/reference/foundations/datetime/)
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq, Default)]
 pub struct Datetime {
     pub year: Integer,
     pub month: Integer,
@@ -13,4 +14,4 @@ pub struct Datetime {
     pub second: Option<Integer>,
 }
 
-crate::impl_all!(Datetime, "datetime");
+crate::impl_all!(Item<'a>::Datetime, Datetime {}, "datetime");

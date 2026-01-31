@@ -1,21 +1,25 @@
 use std::fmt::Display;
 
-use crate::types::float::Float;
+use crate::{Item, types::float::Float};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
+/// For more information visit the typst documentation: [angle](https://typst.app/docs/reference/layout/angle/)
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Default)]
 pub struct Angle {
     pub value: Float,
-    pub unit: AngleUnit
+    pub unit: AngleUnit,
 }
 
-crate::impl_all!(Angle, "angle");
+crate::impl_all!(Item<'a>::Angle, Angle {}, "angle");
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq)]
+/// Unit of angle. Typst automatically casts into `deg` even if another unit was specified.
+/// The `rad` variant can still be used when constructing values in rust.
+#[derive(Default, serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum AngleUnit {
     #[serde(rename = "rad")]
     Radians,
+    #[default]
     #[serde(rename = "deg")]
-    Degrees
+    Degrees,
 }
 
 impl Display for AngleUnit {

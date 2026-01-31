@@ -1,14 +1,12 @@
 use std::fmt::Display;
 
-use crate::types::string::String;
+use crate::{Item, types::string::String};
 
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub struct Label<'a>(
-    #[serde(borrow)]
-    pub String<'a>
-);
+/// For more information visit the typst documentation: [label](https://typst.app/docs/reference/foundations/label/)
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Default)]
+pub struct Label<'a>(#[serde(borrow)] pub String<'a>);
 
-crate::impl_all!(Label<'a>, "label");
+crate::impl_all!(Item<'a>::Label, Label<'a>{'a}, "label");
 
 impl<'a> Display for Label<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

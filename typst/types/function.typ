@@ -22,6 +22,7 @@
     math.binom,
     math.cancel,
     math.cases,
+    math.class,
     math.equation,
     math.frac,
     math.lr,
@@ -80,6 +81,9 @@
       ctx = group;
       break;
     }
+  }
+  if repr(f) == "styled" {
+    ctx = "math"
   }
   
   import "string.typ" as string_;

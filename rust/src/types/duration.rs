@@ -1,8 +1,9 @@
 use std::ops::{Deref, DerefMut};
 
-use crate::types::float::Float;
+use crate::{Item, types::float::Float};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
+/// For more information visit the typst documentation: [duration](https://typst.app/docs/reference/foundations/duration/)
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Default)]
 pub struct Duration(pub Float);
 
 impl Deref for Duration {
@@ -13,7 +14,7 @@ impl Deref for Duration {
     }
 }
 
-crate::impl_all!(Duration, "duration");
+crate::impl_all!(Item<'a>::Duration, Duration {}, "duration");
 
 impl DerefMut for Duration {
     fn deref_mut(&mut self) -> &mut Self::Target {
@@ -21,9 +22,9 @@ impl DerefMut for Duration {
     }
 }
 
-impl Into<std::time::Duration> for Duration {
-    fn into(self) -> std::time::Duration {
-        let seconds: f64 = self.0.into();
+impl From<Duration> for std::time::Duration {
+    fn from(val: Duration) -> Self {
+        let seconds: f64 = val.0.into();
         let nanos = (seconds.fract() * 1_000_000_000.0) as u32;
         std::time::Duration::new(seconds.trunc() as u64, nanos)
     }

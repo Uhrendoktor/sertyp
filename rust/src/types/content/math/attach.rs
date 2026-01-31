@@ -1,6 +1,8 @@
-use crate::{Box, Content};
+use crate::Content;
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+/// For more information visit the typst documentation: [math.attach](https://typst.app/docs/reference/math/attach/)
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Attach<'a> {
     #[serde(borrow)]
     pub base: Box<Content<'a>>,
@@ -18,4 +20,4 @@ pub struct Attach<'a> {
     pub br: Option<Box<Content<'a>>>,
 }
 
-crate::impl_all_content!(Attach<'a>.Math, "math.attach");
+crate::impl_all!(Content<'a>::MathAttach, Attach<'a>{'a}, "math.attach");
