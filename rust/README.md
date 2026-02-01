@@ -20,7 +20,11 @@ CBOR format into a handy rust data-structure and utility functions.
 `stroke`, `gradient`, `tiling`, `direction`, `version`, `module`, `styles`,
 `content`
 
-## Writing a sertyp powered Rust WASM plugin
+**Content** By enabling the `content` feature, many content types are usable as
+well `math.mat`, `math.vec`, `math.accent`, `math.attach`, `metadata`, `text`,
+`equation`, and many more.
+
+## Example
 
 ### Rust
 
@@ -31,10 +35,6 @@ use sertyp::{typst_func, Integer, String};
 #[cfg(target_arch = "wasm32")]
 initiate_protocol!();
 
-#[typst_func]
-pub fn fibonacci<'a>(
-    n: Integer,
-) -> 
 // Result errors are automatically converted to typst panics.
 #[typst_func]
 pub fn fibonacci<'a>(n: Integer) -> Result<Integer, String<'a>> {
@@ -49,9 +49,11 @@ pub fn fibonacci<'a>(n: Integer) -> Result<Integer, String<'a>> {
 }
 ```
 
+_Typst usage below_
+
 Each function decorated with `#[typst_func]` can use the following types
 
-#### Input types
+### Input types
 
 It must specify a single argument that must implement `TryFrom<Item<'_>>`.
 
@@ -90,7 +92,7 @@ This behavior is by default supported for:
   ) -> ... { ... }
   ```
 
-#### Output types
+### Output types
 
 It must specify a return type that must implement `Into<Item<'_>>`.
 
@@ -128,18 +130,4 @@ interaction with your plugin much more intuitive.
 }
 
 #assert(fibonacci(10) == 89)
-```
-
-## Development
-
-### Running Tests
-
-The test suite in `../test_plugin/` validates roundtrip serialization for all
-types:
-
-```bash
-cd ../test_plugin
-cargo build --release
-# Then run via Typst
-typst compile ../test_plugin/test.typ --root ..
 ```

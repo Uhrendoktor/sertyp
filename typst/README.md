@@ -1,21 +1,30 @@
 # Sertyp
 
-Type-preserving serialization for Typst values. Converts Typst objects into an intermediate representation. This can be used for communication with WASM plugins.
+Type-preserving serialization for Typst values. Converts Typst objects into an
+intermediate representation. This can be used for communication with WASM
+plugins.
 
 ## What is this?
 
-Unlike `repr()` or `cbor.encode()`, which produce ambiguous strings or lose type information, `sertyp`:
+Unlike `repr()` or `cbor.encode()`, which produce ambiguous strings or lose type
+information, `sertyp`:
 
-- **Enables roundtrips**: Deserialize back to the original displayable value, not just a string representation. This means a content object will again be fully displayed as content.
-- **Works with WASM plugins**: The intermediate representation can be further serialized to cbor and passed over the WASM boundary.
+- **Enables roundtrips**: Deserialize back to the original displayable value,
+  not just a string representation. This means a content object will again be
+  fully displayed as content.
+- **Works with WASM plugins**: The intermediate representation can be further
+  serialized to cbor and passed over the WASM boundary.
 
-The [Rust backend](https://github.com/Uhrendoktor/sertyp/blob/main/rust/README.md) provides deserialization logic and typed data structures so plugins can work with actual Typst types instead of manual parsing efforts.
+The
+[Rust backend](https://github.com/Uhrendoktor/sertyp/blob/main/rust/README.md)
+provides deserialization logic and typed data structures so plugins can work
+with actual Typst types instead of manual parsing efforts.
 
 ## Usage
 
 ```typst
 #import "@preview/sertyp:0.1.2"
-``` 
+```
 
 ## Examples
 
@@ -36,18 +45,27 @@ The [Rust backend](https://github.com/Uhrendoktor/sertyp/blob/main/rust/README.m
 #assert(repr(deserialized) == repr(value))
 ```
 
-### WASM plugin communication
+### WASM Plugins using (rust sertyp crate)
 
-Pass typed data to Rust plugins and get typed results back:
+```rust
+use wasm_minimal_protocol::*;
+use sertyp::{typst_func, Integer, String};
 
-```typst
-#import "@preview/sertyp:0.1.2"
-#let math_plugin = plugin("<...>/matrix_ops.wasm")
+#[cfg(target_arch = "wasm32")]
+initiate_protocol!();
 
-// Send a matrix to the plugin
-#let I = $mat(1,2;-2,1)$
-#let transposed = sertyp.call(math_plugin.transpose, I)
-#assert(repr(transposed) == repr($mat(1,-2;2,1)$))
+// Result errors are automatically converted to typst panics.
+#[typst_func]
+pub fn fibonacci<'a>(n: Integer) -> Result<Integer, String<'a>> {
+    let n: i32 = n.try_into().map_err(|_| "Invalid integer range")?;
+
+    let (mut v0, mut v1) = (0, 1);
+    for _ in 0..n {
+        (v0, v1) = (v1, v0 + v1);
+    }
+
+    Ok(v1.into())
+}
 ```
 
 ### Type preservation examples
@@ -68,7 +86,8 @@ Pass typed data to Rust plugins and get typed results back:
 
 ### `serialize(value) -> any`
 
-Converts a Typst value into an intermediate representation (nested dicts/arrays with type tags).
+Converts a Typst value into an intermediate representation (nested dicts/arrays
+with type tags).
 
 ```typst
 let serialized = sertyp.serialize(rgb(255, 0, 0))
@@ -84,12 +103,14 @@ let value = sertyp.deserialize(serialized)
 // Returns the original displayable value
 ```
 
-**Security note**: Deserialization uses `eval()` internally. Deserializing untrusted values may therefore lead to arbitrary code execution. **Only deserialize trusted data**.
-
+**Security note**: Deserialization uses `eval()` internally. Deserializing
+untrusted values may therefore lead to arbitrary code execution. **Only
+deserialize trusted data**.
 
 ### `serialize-cbor(value) -> bytes`
 
 Serializes to CBOR binary format. Usefull when passing values to WASM plugins.
+
 ```typst
 let bytes = sertyp.serialize-cbor(my_value)
 // Returns CBOR-encoded bytes
@@ -103,21 +124,27 @@ Deserializes from CBOR bytes back to a Typst value.
 let value = sertyp.deserialize-cbor(plugin_output)
 ```
 
-**Security note**: Deserialization uses `eval()` internally. Deserializing untrusted values may therefore lead to arbitrary code execution. **Only deserialize trusted data**.
+**Security note**: Deserialization uses `eval()` internally. Deserializing
+untrusted values may therefore lead to arbitrary code execution. **Only
+deserialize trusted data**.
 
 ### `call(function, arg) -> any`
 
 Shorthand for
+
 ```typst
 sertyp.deserialize-cbor(function(sertyp.serialize-cbor(arg)))
 ```
+
 ## Supported Types
 
-**Primitives**: `bool`, `int`, `float`, `decimal`, `string`, `bytes`, `none`, `auto`
+**Primitives**: `bool`, `int`, `float`, `decimal`, `string`, `bytes`, `none`,
+`auto`
 
 **Collections**: `array`, `dictionary`
 
-**Numeric with units**: `length`, `angle`, `ratio`, `fraction`, `duration`, `relative`
+**Numeric with units**: `length`, `angle`, `ratio`, `fraction`, `duration`,
+`relative`
 
 **Text & content**: `content`, `label`, `regex`, `symbol`, `version`, `datetime`
 
@@ -127,10 +154,15 @@ sertyp.deserialize-cbor(function(sertyp.serialize-cbor(arg)))
 
 ## Known Limitations
 
-- **`selector`**: Requires custom parsing for proper serialization (partially supported)
-- **Dynamic types**: `context` and other runtime-dependent elements cannot be fully serialized
-- **Closures**: Inline functions `(..) => ..` serialize but lose their captured state
+- **`selector`**: Requires custom parsing for proper serialization (partially
+  supported)
+- **Dynamic types**: `context` and other runtime-dependent elements cannot be
+  fully serialized
+- **Closures**: Inline functions `(..) => ..` serialize but lose their captured
+  state
 
 ## Plugin Development
 
-See the [Rust README](https://github.com/Uhrendoktor/sertyp/blob/main/rust/README.md) for details on building WASM plugins that work with sertyp.
+See the
+[Rust README](https://github.com/Uhrendoktor/sertyp/blob/main/rust/README.md)
+for details on building WASM plugins that work with sertyp.

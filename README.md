@@ -1,7 +1,7 @@
 # Sertyp
 
-Type-preserving serialization for Typst. Serialize Typst values to CBOR and work
-with them in Rust WASM plugins using typed data structures.
+Type-preserving serialization for Typst. Serialize Typst values and work with
+them in Rust WASM plugins using typed data structures.
 
 ## What is this?
 
@@ -9,28 +9,15 @@ Sertyp bridges Typst and Rust for WASM plugin development. Instead of passing
 untyped bytes or parsing strings, you get:
 
 - **Typst package**: Serialize any Typst value (colors, lengths, content, etc.)
-  to CBOR
-- **Rust library**: Deserialize CBOR into typed structs with utility methods
-- **Full roundtrips**: No information loss — serialize and deserialize without
-  degradation
+- **Rust library**: Deserialize into typed structs with utility methods
+- **Full roundtrips**: Lossless — serialize and deserialize without degradation
+  and reconstruct displayble values in typst.
 
 Example: Pass `rgb(255, 128, 0)` to a plugin, work with it as
-`Color { space: RGB, components: [255, 128, 0] }` in Rust, and return typed
-results back to Typst.
+`Color { space: RGB, components: [255, 128, 0] }` in Rust, and return it back to
+typst. The color can then still be used as a real typst color.
 
-## Quick Start
-
-### In Typst
-
-```typst
-#import "@preview/sertyp:0.1.2";
-#let fibonacci(n) = {
-    let plugin = plugin("<...>.wasm");
-    sertyp.call(plugin.fibonacci, n);
-}
-
-#assert(fibonacci(10) == 89)
-```
+## Example
 
 ### In Rust (plugin)
 
@@ -57,6 +44,18 @@ pub fn fibonacci<'a>(
 
     Ok(v1.into()).into()
 }
+```
+
+### In Typst
+
+```typst
+#import "@preview/sertyp:0.1.2";
+#let fibonacci(n) = {
+    let plugin = plugin("<...>.wasm");
+    sertyp.call(plugin.fibonacci, n);
+}
+
+#assert(fibonacci(10) == 89)
 ```
 
 ## Supported Types
