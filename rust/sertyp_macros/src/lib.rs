@@ -2,7 +2,17 @@ use quote::{format_ident, quote};
 
 /// Exposes a function as typst-wasm function with automatic serialization and deserialization.
 /// The function must take exactly one argument and return a value.
-/// The argument must implement `sertyp::TryFrom<Item>` and the return type must implement `sertyp::Into<Item>`.
+/// The argument must implement [TryFrom]<[sertyp::Item]> and the return type must implement [Into]<[sertyp::Item]>.
+///
+/// Types you may find useful:
+/// - [sertyp::Or]
+/// - [sertyp::TypedArray]
+/// - [sertyp::Pair]
+/// - [sertyp::Result]
+/// - [sertyp::auto_impl]
+/// - [sertyp::auto_impl_str]
+/// - [sertyp::auto_impl_func]
+///
 /// # Example
 /// ```rust
 /// use sertyp::typst_func;
