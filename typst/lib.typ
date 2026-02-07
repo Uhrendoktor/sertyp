@@ -2,6 +2,7 @@
 
 #import "types/generic.typ" as generic;
 #import generic: deserializer, serializer;
+#import "types/panic.typ": error-box
 
 /// Reduces most values into a intermediate representation which may for example be used for communication over the WASM boundary using additional CBOR serialization.
 /// See `serialize-cbor` and `deserialize-cbor`.
@@ -73,6 +74,8 @@
 /// Deserializes a value from its serialized representation.
 /// Args:
 /// v (any): The serialized representation of the value.
+/// ctx (dict): deserialization context:
+///  - panic (bool, default=false): If enabled deserialized panic values will cause runtime panics instead of error boxes in the typst document.
 ///
 /// Returns:
 /// (any): The deserialized value.
@@ -80,8 +83,8 @@
 /// Note:
 /// The deserialization framework makes heavy use of typst built-in `eval` function and may thus lead to security issues if used with untrusted input.
 /// Use with caution.
-#let deserialize(v) = {
-  return generic.deserializer(v)
+#let deserialize(v, ctx: (panic: false)) = {
+  return generic.deserializer(v, ctx)
 };
 
 /// Deserializes a value from its CBOR serialized representation.
@@ -89,11 +92,13 @@
 ///
 /// Args:
 /// v (bytes): The CBOR serialized representation of the value.
+/// ctx (dict): deserialization context:
+///  - panic (bool, default=false): If enabled deserialized panic values will cause runtime panics instead of error boxes in the typst document.
 ///
 /// Returns:
 /// (any): The deserialized value.
-#let deserialize-cbor(v) = {
-  return deserialize(cbor(v))
+#let deserialize-cbor(v, ctx: (panic: false)) = {
+  return deserialize(cbor(v), ctx: ctx)
 };
 
 /// Calls a WASM plugin function with a single argument, serializing the argument into CBOR format and deserializing the result from CBOR format.
@@ -101,9 +106,25 @@
 /// Args:
 /// func (function): The plugin function to call.
 /// arg (any): The argument to pass to the function.
+/// ctx (dict): deserialization context:
+///  - panic (bool, default=false): If enabled deserialized panic values will cause runtime panics instead of error boxes in the typst document.
 ///
 /// Returns:
 /// (any): The result returned by the function.
-#let call(func, arg) = {
-  return deserialize-cbor(func(serialize-cbor(arg)))
+#let call(func, arg, ctx: (panic: false)) = {
+  return deserialize-cbor(func(serialize-cbor(arg)), ctx: ctx)
 };
+
+/// Calls a WASM plugin function with a single argument, serializing the argument into CBOR format and deserializing the result from CBOR format into the intermediate sertyp format.
+/// This can be useful for debugging purposes, as it allows to inspect the intermediate representation of the result before it is deserialized into a displayable value.
+///
+/// Args:
+/// func (function): The plugin function to call.
+/// arg (any): The argument to pass to the function.
+///
+/// Returns:
+/// (any): The result returned by the function in sertyp intermediate representation.
+#let call_debug(func, arg) = {
+  return cbor(func(serialize-cbor(arg)))
+};
+

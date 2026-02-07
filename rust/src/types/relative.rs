@@ -10,7 +10,7 @@ use crate::{Item, Length, Ratio, types::generic::TypedArray};
 /// Therefore this type can auto case [Item] variants [Length] and [Ratio] into [Relative] when used in any context where [TryFrom]<[Item]> is required.
 ///
 /// For more information visit the typst documentation: [relative](https://typst.app/docs/reference/layout/relative/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
 pub struct Relative(pub TypedArray<RelativeItem>);
 
 crate::impl_typst_type!(Relative {}, "relative");
@@ -31,7 +31,7 @@ impl<'a> TryFrom<Item<'a>> for Relative {
 
 crate::auto_impl! {
     /// An item of [Relative].
-    #[derive(Clone, Debug)]
+    #[derive(Clone, Debug, Hash)]
     pub enum RelativeItem {
         try_from{ },
         Length(Length=>Length),

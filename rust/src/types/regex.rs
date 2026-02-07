@@ -3,7 +3,7 @@ use std::{fmt::Display, ops::Deref};
 use crate::{Item, types::string::String};
 
 /// For more information visit the typst documentation: [regex](https://typst.app/docs/reference/foundations/regex/)
-#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Clone, Debug, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Clone, Debug, Default, Hash)]
 pub struct Regex<'a>(#[serde(borrow)] pub String<'a>);
 
 crate::impl_all!(Item<'a>::Regex, Regex<'a>{'a}, "regex");

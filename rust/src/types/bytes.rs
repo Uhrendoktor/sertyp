@@ -6,7 +6,7 @@ use std::{
 use crate::{Item, TypstTypeLike};
 
 /// For more information visit the typst documentation: [bytes](https://typst.app/docs/reference/foundations/bytes/)
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Default, Hash)]
 pub struct Bytes<'a>(pub std::borrow::Cow<'a, [u8]>);
 crate::impl_all!(Item<'a>::Bytes, Bytes<'a>{'a}, "bytes");
 

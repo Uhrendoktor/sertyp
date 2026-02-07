@@ -1,7 +1,7 @@
 use crate::{Item, types::array::Array};
 
 /// For more information visit the typst documentation: [color](https://typst.app/docs/reference/visualize/color/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
 pub struct Color<'a> {
     #[serde(borrow)]
     pub components: Array<'a>,
@@ -12,7 +12,7 @@ crate::impl_all!(Item<'a>::Color, Color<'a>{'a}, "color");
 
 crate::auto_impl_func! {
     /// For more information visit the typst documentation: [color space](https://typst.app/docs/reference/visualize/color/#definitions-space)
-    #[derive(Default)]
+    #[derive(Default, Hash)]
     pub enum ColorSpace {
         #[default]
         Rgb = "color.rgb",

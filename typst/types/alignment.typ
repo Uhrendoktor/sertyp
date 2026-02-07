@@ -3,17 +3,17 @@
 
 #let serializer = generic.repr_serializer(alignment);
 
-#let deserializer(s) = {
-  utils.assert_type(s, str);
-  return eval(s);
+#let deserializer(s, ctx) = {
+  utils.assert_type(s, str)
+  return eval(s)
 };
 
 #let test(cycle) = {
   utils.assert(
     serializer(left),
-    "left"
-  );
- 
+    "left",
+  )
+
   for v in (left, right, center) {
     let null = cycle(v)
   }

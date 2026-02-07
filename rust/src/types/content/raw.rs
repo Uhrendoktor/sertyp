@@ -1,7 +1,7 @@
 use crate::{Alignment, Array, AutoOr, Boolean, Bytes, Content, Integer, Or, String, TypedItem};
 
 /// For more information visit the typst documentation: [raw](https://typst.app/docs/reference/text/raw/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
 pub struct Raw<'a> {
     #[serde(borrow)]
     pub text: TypedItem<String<'a>>,
@@ -22,7 +22,7 @@ pub struct Raw<'a> {
 crate::impl_all!(Content<'a>::Raw, Raw<'a>{'a}, "raw");
 
 crate::auto_impl! {
-    #[derive(Clone, Debug)]
+    #[derive(Clone, Debug, Hash)]
     pub enum RawSyntaxes<'a> {
         try_from{},
         String(String=>String<'a>),

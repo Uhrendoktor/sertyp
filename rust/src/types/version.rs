@@ -3,7 +3,7 @@ use std::fmt::Display;
 use crate::{Integer, Item};
 
 /// For more information visit the typst documentation: [version](https://typst.app/docs/reference/foundations/version/)
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, Default, Hash)]
 pub struct Version {
     pub major: Integer,
     pub minor: Integer,

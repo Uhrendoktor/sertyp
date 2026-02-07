@@ -2,25 +2,28 @@
 #import "../utils.typ" as utils;
 
 #let serializer(d) = {
-  utils.assert_type(d, dictionary);
+  utils.assert_type(d, dictionary)
 
-  let dict = utils.str_dict();
+  let dict = utils.str_dict()
   for (key, value) in d.pairs() {
-      dict.insert(key, generic.serializer(value)); 
+    dict.insert(key, generic.serializer(value))
   }
-  return generic.raw_serializer(dictionary)(dict);
+  return generic.raw_serializer(dictionary)(dict)
 }
 
-#let deserializer(d) = {
+#let deserializer(d, ctx) = {
   if d == () {
-    d = (:);
+    d = (:)
   }
-  utils.assert_type(d, dictionary);
-  return d.pairs().map(((k, v)) => {
-    return (k, generic.deserializer(v));
-  }).to-dict();
+  utils.assert_type(d, dictionary)
+  return d
+    .pairs()
+    .map(((k, v)) => {
+      return (k, generic.deserializer(v, ctx))
+    })
+    .to-dict()
 }
 
 #let test(cycle) = {
-  cycle(("a": 2, b: -1.1, c: "test", d: rgb("#ff0000")));
+  cycle(("a": 2, b: -1.1, c: "test", d: rgb("#ff0000")))
 }

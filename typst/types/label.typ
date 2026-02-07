@@ -3,11 +3,11 @@
 
 #let serializer = generic.str_serializer(label);
 
-#let deserializer(l) = {
-  utils.assert_type(l, str);
-  return label(l);
+#let deserializer(l, ctx) = {
+  utils.assert_type(l, str)
+  return label(l)
 };
 
 #let test(cycle) = {
-  cycle(<abc>);
+  cycle(<abc>)
 };

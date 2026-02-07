@@ -1,7 +1,7 @@
 use crate::Item;
 
 /// For more information visit the typst documentation: [bool](https://typst.app/docs/reference/foundations/bool/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq, Default, Hash)]
 pub struct Boolean(pub bool);
 
 impl From<bool> for Boolean {

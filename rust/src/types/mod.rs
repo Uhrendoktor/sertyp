@@ -42,7 +42,7 @@ pub use crate::types::generic::{AutoOr, Box, NoneOr, Or, Result, TypedArray};
 use crate::types::selector::Selector;
 pub use crate::types::r#type::{TypstType, TypstTypeLike};
 pub use crate::types::{
-    alignment::Alignment, angle::Angle, arguments::Arguments, array::Array, auto::Auto,
+    alignment::Alignment, angle::Angle, arguments::Arguments, array::*, auto::Auto,
     boolean::Boolean, bytes::Bytes, color::Color, content::*, datetime::Datetime, decimal::Decimal,
     dictionary::Dictionary, direction::Direction, duration::Duration, float::Float,
     fraction::Fraction, function::Function, gradient::Gradient, integer::Integer, label::Label,
@@ -186,7 +186,7 @@ macro_rules! define_enum {
         }
     ) => {
         paste::paste!{
-            #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+            #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Hash)]
             $(#[$meta])*
             $vis enum [<$name __>]<$lt> {
                 $(
@@ -201,7 +201,7 @@ macro_rules! define_enum {
         }
 
         paste::paste!{
-            #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+            #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Hash)]
             #[serde(untagged)]
             pub enum [<$name _>]<$lt> {
                 #[serde(borrow)]
@@ -214,7 +214,7 @@ macro_rules! define_enum {
         }
 
         paste::paste!{
-            #[derive(Clone, Debug)]
+            #[derive(Clone, Debug, Hash)]
             pub enum $name<$lt> {
                 $(
                     $var$(($ty))?,
@@ -258,12 +258,12 @@ macro_rules! define_enum {
                     match value {
                         [<$name _>]::Typed(t) => match t {
                             $(
-                                [<$name __>]::$var $(($crate::define_enum!(@make_arg $ty, r)))? => $name::$var$(($crate::define_enum!(@make_arg $ty, r.into())))?,
+                                [<$name __>]::$var $(($crate::if_else!($ty, r)))? => $name::$var$(($crate::if_else!($ty, r.into())))?,
                             )*
                             $(
-                                [<$name __>]::$varr1 $(($crate::define_enum!(@make_arg $tyr1, r)))? => $crate::define_enum!(
-                                    @make_arg $($tyr2)?,
-                                    $name::$varr2($crate::define_enum!(@make_arg $($tyr1)?, r.into(), {Default::default()})),
+                                [<$name __>]::$varr1 $(($crate::if_else!($tyr1, r)))? => $crate::if_else!(
+                                    $($tyr2)?,
+                                    $name::$varr2($crate::if_else!($($tyr1)?, r.into(), {Default::default()})),
                                     {$name::$varr2}
                                 ),
                             )*
@@ -281,11 +281,11 @@ macro_rules! define_enum {
                 fn from(v: $name<$lt>) -> [<$name _>]<$lt> {
                     match v {
                         $(
-                            $name::$var $(($crate::define_enum!(@make_arg $ty, r)))? => [<$name _>]::Typed([<$name __>]::$var$(($crate::define_enum!(@make_arg $ty, r.into())))?),
+                            $name::$var $(($crate::if_else!($ty, r)))? => [<$name _>]::Typed([<$name __>]::$var$(($crate::if_else!($ty, r.into())))?),
                         )*
                         $(
                             #[allow(unused)]
-                            $name::$varr2(r) => [<$name _>]::Typed([<$name __>]::$varr1$(($crate::define_enum!(@make_arg $tyr1, r.into())))?),
+                            $name::$varr2(r) => [<$name _>]::Typed([<$name __>]::$varr1$(($crate::if_else!($tyr1, r.into())))?),
                         )*
                         $(
                             $name::$varu(r) => [<$name _>]::$varu(r),
@@ -296,11 +296,11 @@ macro_rules! define_enum {
         }
 
         paste::paste!{
-            #[derive(Clone, Debug, Default)]
+            #[derive(Clone, Debug, Default, Hash)]
             pub struct [<Typed $name>]<T>(pub T);
 
-            impl<$lt, T: TryFrom<$name<$lt>, Error=std::string::String>> TryFrom<$name<$lt>> for [<Typed $name>]<T> {
-                type Error = std::string::String;
+            impl<$lt, T: TryFrom<$name<$lt>>> TryFrom<$name<$lt>> for [<Typed $name>]<T> {
+                type Error = T::Error;
 
                 fn try_from(value: $name<$lt>) -> std::result::Result<Self, Self::Error> {
                     let typed: T = value.try_into()?;
@@ -314,7 +314,10 @@ macro_rules! define_enum {
                 }
             }
 
-            impl<$lt, 'de: $lt, T: serde::Deserialize<'de> + TryFrom<$name<$lt>, Error=std::string::String>> serde::Deserialize<'de> for [<Typed $name>]<T> {
+            impl<$lt, 'de: $lt, T: TryFrom<$name<$lt>>> serde::Deserialize<'de> for [<Typed $name>]<T>
+            where
+                T::Error: std::fmt::Display
+            {
                 fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
                 where
                     D: serde::Deserializer<'de>,
@@ -354,12 +357,43 @@ macro_rules! define_enum {
                     &mut self.0
                 }
             }
+
+            impl<T> [<Typed $name>]<T> {
+                /// Consumes the typed wrapper and returns the inner value.
+                pub fn into_inner(self) -> T {
+                    self.0
+                }
+            }
         }
     };
-    (@make_arg $ty:ty, $r:tt $(, $else:tt)?) => { $r };
-    (@make_arg $ty:ty, $r:expr $(, $else:tt)?) => { $r };
-    (@make_arg , $r:tt, $else:expr) => { $else };
-    (@make_arg , $r:expr, $else:expr) => { $else };
+}
+
+#[macro_export]
+macro_rules! if_else {
+    ($cond:ty, $if:tt $(, $else:tt)?) => {
+        $if
+    };
+    ($cond:ty, $if:expr $(, $else:tt)?) => {
+        $if
+    };
+    ($cond:tt, $if:tt $(, $else:tt)?) => {
+        $if
+    };
+    ($cond:tt, $if:expr $(, $else:tt)?) => {
+        $if
+    };
+    (, $if:tt, $else:expr) => {
+        $else
+    };
+    (, $if:expr, $else:expr) => {
+        $else
+    };
+    (, $if:tt, $else:tt) => {
+        $else
+    };
+    (, $if:expr, $else:tt) => {
+        $else
+    };
 }
 
 #[macro_export]
@@ -392,16 +426,52 @@ macro_rules! impl_into {
 }
 
 #[macro_export]
+/// Implement utility conversion for Typed`enum_name`<T> types.
+/// T -> Typed`enum_name`<T>
+/// T -> Typed`enum_name`<Box<T>>
+/// T -> Typed`enum_name`<std::boxed::Box<T>>
+/// T -> Typed`enum_name`<std::option::Option<T>>
+macro_rules! impl_into_typed {
+    ($ity:ident, $ty:ty) => {
+        paste::paste! {impl<'a> From<$ty> for $crate::[<Typed $ity>]<$ty> {
+            fn from(value: $ty) -> $crate::[<Typed $ity>]<$ty> {
+                $crate::[<Typed $ity>](value)
+            }
+        }}
+
+        paste::paste! {impl<'a> From<$ty> for $crate::[<Typed $ity>]<$crate::Box<$ty>> {
+            fn from(value: $ty) -> $crate::[<Typed $ity>]<$crate::Box<$ty>> {
+                $crate::[<Typed $ity>](value.into())
+            }
+        }}
+
+        paste::paste! {impl<'a> From<$ty> for $crate::[<Typed $ity>]<std::boxed::Box<$ty>> {
+            fn from(value: $ty) -> $crate::[<Typed $ity>]<std::boxed::Box<$ty>> {
+                $crate::[<Typed $ity>](value.into())
+            }
+        }}
+
+        paste::paste! {impl<'a> From<$ty> for $crate::[<Typed $ity>]<std::option::Option<$ty>> {
+            fn from(value: $ty) -> $crate::[<Typed $ity>]<std::option::Option<$ty>> {
+                $crate::[<Typed $ity>](Some(value))
+            }
+        }}
+    };
+}
+
+#[macro_export]
 /// Implement `TryFrom<Item<'a>>`, `Into<Item<'a>>`, and `TypstTypeLike`.
 macro_rules! impl_all {
     ($sty:ident$(<$slt:lifetime>)?::$variant:ident, $ty:ty{$($g:tt),*}, $name:expr) => {
         $crate::impl_try_from!($sty$(<$slt>)?::$variant, $ty);
         $crate::impl_into!($sty$(<$slt>)?::$variant, $ty);
         $crate::impl_typst_type!($ty{$($g),*}, $name);
+        $crate::impl_into_typed!($sty, $ty);
     };
     (typst_like $sty:ident$(<$slt:lifetime>)?::$variant:ident, $ty:ty{$($g:tt),*}, $name:expr) => {
         $crate::impl_try_from!($sty$(<$slt>)?::$variant, $ty);
         $crate::impl_into!($sty$(<$slt>)?::$variant, $ty);
         $crate::impl_typst_type!(typst_like $ty{$($g),*}, $name);
+        $crate::impl_into_typed!($sty, $ty);
     };
 }

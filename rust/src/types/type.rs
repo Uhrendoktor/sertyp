@@ -3,7 +3,7 @@ use std::{borrow::Cow, ops::Deref};
 use crate::{Item, types::string::String};
 
 /// For more information visit the typst documentation: [type](https://typst.app/docs/reference/foundations/type/)
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Default, Hash)]
 pub struct Type<'a>(#[serde(borrow)] pub String<'a>);
 
 crate::impl_all!(Item<'a>::Type, Type<'a>{'a}, "type");

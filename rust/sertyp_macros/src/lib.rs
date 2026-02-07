@@ -66,20 +66,29 @@ pub fn typst_func(
     };
 
     item.sig.ident = format_ident!("__impl_{}", wrapper_sig.ident);
+    let orig_ident = &wrapper_sig.ident;
     let ident = &item.sig.ident;
 
     quote! {
         #[wasm_func]
         #wrapper_sig {
             let value = match sertyp::deserialize_cbor(data) {
-                Ok(v) => match v.try_into() {
-                    Ok(v) => v,
-                    Err(e) => {
-                        sertyp::error!("Type Conversion Error: {}", &e);
+                Ok(v) => {
+                    let p: std::result::Result<sertyp::Panic, _> = v.clone().try_into();
+                    match v.try_into() {
+                        Ok(v) => v,
+                        Err(e) => match p {
+                            Ok(p) => {
+                                sertyp::error!("Cascading Error", "[{} {}:{}:{}] failed because of previous error:\n{}: {}", stringify!(#orig_ident), file!(), line!(), column!(), p.ty, p.msg);
+                            }
+                            Err(_) => {
+                                sertyp::error!("Type Conversion Error", "{}", &e);
+                            }
+                        }
                     }
                 },
                 Err(e) => {
-                    sertyp::error!("Deserialization Error: {}", &e);
+                    sertyp::error!("Deserialization Error", "{}", &e);
                 }
             };
 
@@ -88,7 +97,7 @@ pub fn typst_func(
             match sertyp::serialize_cbor(&result.into()) {
                 Ok(data) => data,
                 Err(e) => {
-                    sertyp::error!("Serialization Error: {}", &e);
+                    sertyp::error!("Serialization Error", "{}", &e);
                 }
             }
         }

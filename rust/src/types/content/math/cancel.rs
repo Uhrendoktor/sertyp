@@ -4,10 +4,10 @@ use crate::{
 };
 
 /// For more information visit the typst documentation: [math.cancel](https://typst.app/docs/reference/math/cancel/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
 pub struct Cancel<'a> {
     #[serde(borrow)]
-    pub body: Box<TypedItem<Content<'a>>>,
+    pub body: TypedItem<Box<Content<'a>>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub length: Option<TypedItem<Relative>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -23,7 +23,7 @@ pub struct Cancel<'a> {
 crate::impl_all!(Content<'a>::MathCancel, Cancel<'a>{'a}, "math.cancel");
 
 crate::auto_impl! {
-    #[derive(Clone, Debug)]
+    #[derive(Clone, Debug, Hash)]
     pub enum CancelStroke<'a> {
         try_from{},
         Length(Length=>Length),

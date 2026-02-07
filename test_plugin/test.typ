@@ -48,6 +48,7 @@
     alignment,
     direction,
     stroke,
+    "panic",
   ) {
     let mod = generic.type_mod(t)
     let null = mod.test(cycle)
@@ -72,6 +73,15 @@
       $ sqrt(2) / 12 a^3 $, [$a$: edge length],
     )
   ])
+
+  // cause nested/cascaded errors
+  sertyp.call(
+    test_plugin.not_expecting_error,
+    sertyp.call(test_plugin.not_expecting_error, sertyp.error-box(
+      "Test Error",
+      "This is an intended test error message.",
+    )),
+  )
 }
 
 #test()

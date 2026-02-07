@@ -6,7 +6,7 @@ use crate::{
 };
 
 /// For more information visit the typst documentation: [math.mat](https://typst.app/docs/reference/math/mat/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
 pub struct Matrix<'a> {
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
     pub delim: Option<Delim<'a>>,
@@ -27,10 +27,12 @@ pub struct Matrix<'a> {
 crate::impl_all!(Content<'a>::MathMatrix, Matrix<'a>{'a}, "math.mat");
 
 impl<'a> Matrix<'a> {
+    /// Returns the number of rows in the matrix.
     pub fn rows(&self) -> usize {
         self.rows.len()
     }
 
+    /// Returns the number of columns in the matrix or an error if not all rows have the same length.
     pub fn columns(&self) -> Result<usize, std::string::String> {
         if self.rows.is_empty() {
             Ok(0)
@@ -45,18 +47,24 @@ impl<'a> Matrix<'a> {
         }
     }
 
+    /// Clears and resizes the matrix to the specified number of rows and columns, filling new entries with default [Content].
+    pub fn resize(&mut self, rows: usize, columns: usize) {
+        self.rows = vec![vec![Content::default(); columns].into(); rows].into();
+    }
+
+    /// Creates a new matrix with the specified number of rows and columns, initialized with default [Content].
     pub fn with_dimensions(rows: usize, columns: usize) -> Self {
-        let row_array = vec![Content::default(); columns].into();
-        let rows_array = vec![row_array; rows].into();
-        Matrix {
+        let mut m = Matrix {
             delim: None,
             align: None,
             augment: None,
             gap: None,
             row_gap: None,
             column_gap: None,
-            rows: rows_array,
-        }
+            rows: vec![].into(),
+        };
+        m.resize(rows, columns);
+        m
     }
 }
 

@@ -10,7 +10,7 @@ use crate::{Item, types::string::String};
 /// Note: A deserialized function in typst **is callable**.
 ///
 /// For more information visit the typst documentation: [function](https://typst.app/docs/reference/foundations/function/)
-#[derive(Default, Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Hash)]
 #[serde(from = "String", into = "String")]
 pub enum Function<'a> {
     #[default]

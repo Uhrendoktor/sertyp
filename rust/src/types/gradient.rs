@@ -11,7 +11,7 @@ use crate::{
 };
 
 /// For more information visit the typst documentation: [gradient](https://typst.app/docs/reference/visualize/gradient/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Hash)]
 #[serde(tag = "kind", rename_all = "lowercase")]
 pub enum Gradient<'a> {
     /// For more information visit the typst documentation: [gradient.linear](https://typst.app/docs/reference/visualize/gradient/#definitions-linear)

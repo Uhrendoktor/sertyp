@@ -2,14 +2,14 @@
 #import "../utils.typ" as utils;
 
 #let serializer(n) = {
-  utils.assert_type(n, type(none));
-  return generic.no_value;
+  utils.assert_type(n, type(none))
+  return generic.no_value
 }
 
-#let deserializer() = {
-  return none;
+#let deserializer(ctx) = {
+  return none
 };
 
 #let test(cycle) = {
-  cycle(none);
+  cycle(none)
 }

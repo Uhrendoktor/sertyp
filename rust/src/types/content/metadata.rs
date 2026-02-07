@@ -1,7 +1,7 @@
 use crate::{Content, Item, Label, TypedItem};
 
 /// For more information visit the typst documentation: [metadata](https://typst.app/docs/reference/introspection/metadata/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
 pub struct Metadata<'a> {
     #[serde(borrow)]
     pub value: std::boxed::Box<Item<'a>>,

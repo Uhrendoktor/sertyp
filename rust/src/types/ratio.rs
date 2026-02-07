@@ -3,7 +3,7 @@ use std::fmt::Display;
 use crate::{Item, types::float::Float};
 
 /// For more information visit the typst documentation: [ratio](https://typst.app/docs/reference/layout/ratio/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Default, Hash)]
 pub struct Ratio {
     pub value: Float,
     pub unit: RatioUnit,
@@ -12,7 +12,7 @@ pub struct Ratio {
 crate::impl_all!(Item<'a>::Ratio, Ratio {}, "ratio");
 
 /// Unit of a ratio value. Typst only supports percentages (`%`).
-#[derive(Default, serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Default, serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum RatioUnit {
     #[default]
     #[serde(rename = "%")]

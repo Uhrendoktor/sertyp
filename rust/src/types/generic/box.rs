@@ -5,14 +5,20 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Item, TypstTypeLike};
 
-/// A `std::boxed::Box` that implements `TryFrom<Item>` and `Into<Item>` and therefore supports most of sertyp's internal serialization/deserialization magic.
+/// A `std::boxed::Box` wrapper that implements `TryFrom<Item>` and `Into<Item>` and therefore supports most of sertyp's internal serialization/deserialization magic.
 /// Unless you write your own type variants, you probably won't need this.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Hash)]
 pub struct Box<T>(pub std::boxed::Box<T>);
+impl<T> Box<T> {
+    pub fn into_inner(self) -> T {
+        *self.0
+    }
+}
 impl<'a, 'de: 'a, T> Deserialize<'de> for Box<T>
 where
     Self: 'a,
-    Box<T>: TryFrom<Item<'a>, Error = std::string::String>,
+    Box<T>: TryFrom<Item<'a>>,
+    <Box<T> as TryFrom<Item<'a>>>::Error: std::fmt::Display,
 {
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -46,9 +52,9 @@ impl<T> DerefMut for Box<T> {
     }
 }
 
-impl<T> From<std::boxed::Box<T>> for Box<T> {
-    fn from(value: std::boxed::Box<T>) -> Self {
-        Box(value)
+impl<T> From<T> for Box<T> {
+    fn from(value: T) -> Self {
+        Box(std::boxed::Box::new(value))
     }
 }
 
@@ -60,10 +66,10 @@ impl<'a, T: Clone + Into<Item<'a>>> From<Box<T>> for Item<'a> {
 }
 
 impl<'a, T: TryFrom<Item<'a>, Error = std::string::String>> TryFrom<Item<'a>> for Box<T> {
-    type Error = std::string::String;
+    type Error = T::Error;
 
     fn try_from(value: Item<'a>) -> std::result::Result<Self, Self::Error> {
-        T::try_from(value.clone()).map(|t| Box(std::boxed::Box::new(t)))
+        T::try_from(value.clone()).map(|t| t.into())
     }
 }
 

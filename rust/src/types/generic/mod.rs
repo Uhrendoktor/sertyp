@@ -13,7 +13,7 @@ use std::fmt::Debug;
 
 use crate::types::{Color, Dictionary, Gradient, Length, Stroke, Tiling};
 crate::auto_impl! {
-    #[derive(Clone, Debug)]
+    #[derive(Clone, Debug, Hash)]
     pub enum FillColor<'a> {
         try_from{},
         Color(Color=>Color<'a>),
@@ -23,7 +23,7 @@ crate::auto_impl! {
 }
 
 crate::auto_impl! {
-    #[derive(Clone, Debug)]
+    #[derive(Clone, Debug, Hash)]
     pub enum StrokeColor<'a> {
         try_from{},
         Length(Length=>Length),
@@ -131,7 +131,8 @@ macro_rules! auto_impl {
 
         impl<'a, 'de: 'a> serde::Deserialize<'de> for $name$(<$lt>)?
         where
-            $name$(<$lt>)?: TryFrom<$crate::Item<'a>, Error=std::string::String>,
+            $name$(<$lt>)?: TryFrom<$crate::Item<'a>>,
+            <$name$(<$lt>)? as TryFrom<$crate::Item<'a>>>::Error: std::fmt::Display,
         {
             fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
             where
@@ -154,12 +155,6 @@ macro_rules! auto_impl {
                 item.serialize(serializer)
             }
         }
-    };
-    (@lt_or_a, $lt:lifetime) => {
-        <$lt>
-    };
-    (@lt_or_a, ) => {
-        'a
     };
 }
 
@@ -188,7 +183,7 @@ macro_rules! auto_impl_str {
         }
     ) => {
         $(#[$meta])*
-        #[derive(serde::Deserialize, serde::Serialize, Debug, Clone, PartialEq, Eq)]
+        #[derive(serde::Deserialize, serde::Serialize, Debug, Clone, PartialEq, Eq, Hash)]
         #[serde(try_from = "crate::String", into = "crate::String")]
         $vis enum $name {
             $(

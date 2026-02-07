@@ -3,11 +3,11 @@
 
 #let serializer = generic.str_serializer(decimal);
 
-#let deserializer(s) = {
-  utils.assert_type(s, str);
-  return decimal(s);
+#let deserializer(s, ctx) = {
+  utils.assert_type(s, str)
+  return decimal(s)
 };
 
 #let test(cycle) = {
-  cycle(decimal("12.34"));
+  cycle(decimal("12.34"))
 };

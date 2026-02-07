@@ -2,28 +2,28 @@
 #import "../utils.typ" as utils;
 
 #let serializer(l) = {
-  utils.assert_type(l, length);
-  
-  import "float.typ" as float_;
+  utils.assert_type(l, length)
 
-  let dict = generic.value_unit_serializer(repr(l.abs));
-  dict.insert("em", float_.serializer(float(l.em)));
-  
-  return generic.raw_serializer(dictionary)(dict);
+  import "float.typ" as float_
+
+  let dict = generic.value_unit_serializer(repr(l.abs))
+  dict.insert("em", float_.serializer(float(l.em)))
+
+  return generic.raw_serializer(dictionary)(dict)
 };
 
-#let deserializer(l) = {
-  utils.assert_type(l, dictionary);
+#let deserializer(l, ctx) = {
+  utils.assert_type(l, dictionary)
 
-  import "float.typ" as float_;
+  import "float.typ" as float_
 
-  let value_unit = generic.value_unit_deserializer(l);
-  let em = float_.deserializer(l.at("em"));
-  return value_unit + eval(str(em) + "em");
+  let value_unit = generic.value_unit_deserializer(l, ctx)
+  let em = float_.deserializer(l.at("em"), ctx)
+  return value_unit + eval(str(em) + "em")
 };
 
 #let test(cycle) = {
-  import "float.typ" as float_;
+  import "float.typ" as float_
 
   for v in (10pt + 2em, 5.5pt + 0em, 0pt + 1.2em, -3.3cm + 4em) {
     let null = cycle(v)

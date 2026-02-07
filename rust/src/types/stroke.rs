@@ -4,7 +4,7 @@ use crate::{
 };
 
 /// For more information visit the typst documentation: [stroke](https://typst.app/docs/reference/visualize/stroke/)
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, Hash)]
 pub struct Stroke<'a> {
     #[serde(borrow)]
     pub paint: AutoOr<FillColor<'a>>,
@@ -51,7 +51,7 @@ crate::auto_impl_str! {
 
 crate::auto_impl!(
     /// For more information visit the typst documentation: [stroke.dash](https://typst.app/docs/reference/visualize/stroke/#constructor-dash)
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, Hash)]
     pub enum StrokeDash<'a> {
         try_from {
             Variant(StrokeDashVariant),

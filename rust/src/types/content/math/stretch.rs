@@ -1,10 +1,10 @@
 use crate::{Content, Relative, TypedItem};
 
 /// For more information visit the typst documentation: [math.stretch](https://typst.app/docs/reference/math/stretch/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
 pub struct Stretch<'a> {
     #[serde(borrow)]
-    pub body: Box<TypedItem<Content<'a>>>,
+    pub body: TypedItem<Box<Content<'a>>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<TypedItem<Relative>>,
 }

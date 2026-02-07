@@ -3,13 +3,13 @@
 
 #let serializer = generic.repr_serializer(direction);
 
-#let deserializer(s) = {
-  utils.assert_type(s, str);
-  return eval(s);
+#let deserializer(s, ctx) = {
+  utils.assert_type(s, str)
+  return eval(s)
 };
 
 #let test(cycle) = {
   for v in (ltr, rtl) {
-    let null = cycle(v);
+    let null = cycle(v)
   }
 }

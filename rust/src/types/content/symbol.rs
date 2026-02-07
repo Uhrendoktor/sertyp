@@ -1,15 +1,15 @@
-use crate::{Content, String, Symbol};
+use crate::{Content, Symbol};
 
 /// A content version of [Symbol]. See the [Symbol] type for more information.
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq, Default, Hash)]
 pub struct Symbol_<'a> {
     #[serde(borrow)]
-    pub text: String<'a>,
+    pub text: std::borrow::Cow<'a, char>,
 }
 
 impl<'a> From<Symbol_<'a>> for Symbol<'a> {
     fn from(val: Symbol_<'a>) -> Self {
-        val.text.into()
+        Symbol(val.text)
     }
 }
 

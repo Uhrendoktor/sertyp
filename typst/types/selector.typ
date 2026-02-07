@@ -2,12 +2,12 @@
 #import "../utils.typ" as utils;
 
 #let serializer(s) = {
-  utils.assert_type(s, selector);
-  
-  panic("Selector serialization is not yet supported");
+  utils.assert_type(s, selector)
+
+  panic("Selector serialization is not yet supported")
 };
 
-#let deserializer(s) = {
+#let deserializer(s, ctx) = {
   panic("Selector deserialization is not yet supported")
 }
 

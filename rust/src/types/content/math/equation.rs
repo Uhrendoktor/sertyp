@@ -1,7 +1,7 @@
 use crate::{Alignment, AutoOr, Boolean, Box, Content, Function, Or, String, TypedItem};
 
 /// For more information visit the typst documentation: [math.equation](https://typst.app/docs/reference/math/equation/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
 pub struct Equation<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub block: Option<TypedItem<Boolean>>,
@@ -13,7 +13,7 @@ pub struct Equation<'a> {
     pub supplement: Option<AutoOr<Or<Box<Content<'a>>, Function<'a>>>>,
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
     pub alt: Option<TypedItem<String<'a>>>,
-    pub body: Box<Content<'a>>,
+    pub body: TypedItem<Box<Content<'a>>>,
 }
 
 crate::impl_all!(Content<'a>::MathEquation, Equation<'a>{'a}, "math.equation");

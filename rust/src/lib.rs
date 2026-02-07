@@ -138,7 +138,7 @@ pub fn serialize_cbor(ty: &Item<'_>) -> serde_cbor::Result<Vec<u8>> {
 /// pub fn example(cbor_bytes: &[u8]) -> Vec<u8> {
 ///     let item = match sertyp::deserialize_cbor(cbor_bytes) {
 ///         Ok(item) => item,
-///         Err(e) => error!("Deserialization failed: {e}"),
+///         Err(e) => error!("Deserialization Error", "deserialization failed: {e}"),
 ///     };
 ///     // Further processing...
 ///     vec![]
@@ -146,10 +146,13 @@ pub fn serialize_cbor(ty: &Item<'_>) -> serde_cbor::Result<Vec<u8>> {
 /// ```
 #[macro_export]
 macro_rules! error {
-    ($($arg:tt)*) => {{
+    ($ty:tt, $($arg:tt)*) => {{
         let err = format!($($arg)*);
-        let s: sertyp::String = err.as_str().into();
-        let p: sertyp::Panic = s.into();
+        let msg: sertyp::String = err.as_str().into();
+        let p = sertyp::Panic{
+            ty: $ty.into(),
+            msg,
+        };
         return sertyp::serialize_cbor(&p.into()).unwrap();
     }};
 }

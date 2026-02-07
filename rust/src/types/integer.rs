@@ -3,7 +3,7 @@ use std::{fmt::Display, num::TryFromIntError};
 use crate::Item;
 
 /// For more information visit the typst documentation: [integer](https://typst.app/docs/reference/foundations/int/)
-#[derive(Copy, Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Copy, Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Hash)]
 #[allow(non_camel_case_types)]
 #[serde(untagged)]
 pub enum Integer {

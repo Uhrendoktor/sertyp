@@ -19,7 +19,7 @@ use crate::{Array, Item, TypstTypeLike};
 ///         .into())
 /// }
 /// ```
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Hash)]
 pub struct TypedArray<T>(pub Vec<T>);
 
 impl<T> IntoIterator for TypedArray<T> {
@@ -31,8 +31,15 @@ impl<T> IntoIterator for TypedArray<T> {
     }
 }
 
-impl<'a, 'de: 'a, T: TryFrom<Item<'a>, Error = std::string::String>> serde::Deserialize<'de>
-    for TypedArray<T>
+impl<T> TypedArray<T> {
+    pub fn into_inner(self) -> Vec<T> {
+        self.0
+    }
+}
+
+impl<'a, 'de: 'a, T: TryFrom<Item<'a>>> serde::Deserialize<'de> for TypedArray<T>
+where
+    T::Error: std::fmt::Display,
 {
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -73,8 +80,8 @@ impl<T> From<Vec<T>> for TypedArray<T> {
     }
 }
 
-impl<'a, T: TryFrom<Item<'a>, Error = std::string::String>> TryFrom<Array<'a>> for TypedArray<T> {
-    type Error = std::string::String;
+impl<'a, T: TryFrom<Item<'a>>> TryFrom<Array<'a>> for TypedArray<T> {
+    type Error = T::Error;
 
     fn try_from(value: Array<'a>) -> std::result::Result<Self, Self::Error> {
         Ok(value
@@ -97,14 +104,15 @@ impl<'a, T: Into<Item<'a>>> From<TypedArray<T>> for Array<'a> {
     }
 }
 
-impl<'a, T: TypstTypeLike + TryFrom<Item<'a>, Error = std::string::String>> TryFrom<Item<'a>>
-    for TypedArray<T>
+impl<'a, T: TypstTypeLike + TryFrom<Item<'a>>> TryFrom<Item<'a>> for TypedArray<T>
+where
+    <T as TryFrom<Item<'a>>>::Error: Into<std::string::String>,
 {
     type Error = std::string::String;
 
     fn try_from(value: Item<'a>) -> std::result::Result<Self, Self::Error> {
         match value {
-            Item::Array(arr) => Ok(arr.try_into()?),
+            Item::Array(arr) => Ok(arr.try_into().map_err(Into::into)?),
             other => Err(format!(
                 "Type was expected to be {}, found {:?}",
                 <Self as TypstTypeLike>::static_type_name(),

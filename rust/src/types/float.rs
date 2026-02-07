@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, hash::Hash};
 
 use crate::Item;
 
@@ -14,6 +14,15 @@ pub enum Float {
 }
 
 crate::impl_all!(Item<'a>::Float, Float {}, "float");
+
+impl Hash for Float {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            // Float::f32(f) => f.to_bits().hash(state),
+            Float::f64(f) => f.to_bits().hash(state),
+        }
+    }
+}
 
 impl Default for Float {
     fn default() -> Self {

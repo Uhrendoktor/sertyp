@@ -1,7 +1,7 @@
 use crate::{Boolean, Content, Or, Relative, String, TypedItem};
 
 /// For more information visit the typst documentation: [math.accent](https://typst.app/docs/reference/math/accent/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
 pub struct Accent<'a> {
     #[serde(borrow)]
     pub base: TypedItem<Box<Content<'a>>>,

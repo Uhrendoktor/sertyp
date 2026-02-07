@@ -2,31 +2,31 @@
 #import "../utils.typ" as utils;
 
 #let serializer(a) = {
-  utils.assert_type(a, arguments);
-  
-  import "dictionary.typ" as dict_;
-  import "array.typ" as array_;
+  utils.assert_type(a, arguments)
+
+  import "dictionary.typ" as dict_
+  import "array.typ" as array_
   return generic.raw_serializer(dictionary)((
     pos: array_.serializer(a.pos()),
-    named: dict_.serializer(a.named())
-  ));
+    named: dict_.serializer(a.named()),
+  ))
 };
 
-#let deserializer(a) = {
-  utils.assert_type(a, dictionary);
+#let deserializer(a, ctx) = {
+  utils.assert_type(a, dictionary)
 
-  import "dictionary.typ" as dict_;
-  import "array.typ" as array_;
+  import "dictionary.typ" as dict_
+  import "array.typ" as array_
   return arguments(
-    ..array_.deserializer(a.at("pos")),
-    ..dict_.deserializer(a.at("named"))
-  );
+    ..array_.deserializer(a.at("pos"), ctx),
+    ..dict_.deserializer(a.at("named"), ctx),
+  )
 }
 
 #let test(cycle) = {
-  import "dictionary.typ" as dict_;
-  import "array.typ" as array_;
+  import "dictionary.typ" as dict_
+  import "array.typ" as array_
 
-  let args = arguments(3, 4, foo: "bar", baz: 42, qux: (1, 2));
-  cycle(args); 
+  let args = arguments(3, 4, foo: "bar", baz: 42, qux: (1, 2))
+  cycle(args)
 };

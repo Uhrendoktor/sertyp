@@ -1,7 +1,7 @@
 use crate::{Item, types::string::String};
 
 /// For more information visit the typst documentation: [decimal](https://typst.app/docs/reference/foundations/decimal/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Eq, PartialEq, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Eq, PartialEq, Default, Hash)]
 pub struct Decimal<'a>(#[serde(borrow)] pub String<'a>);
 
 crate::impl_all!(Item<'a>::Decimal, Decimal<'a>{'a}, "decimal");

@@ -74,47 +74,47 @@
 )
 
 #let serializer(f, ctx: none) = {
-  utils.assert_type(f, function);
+  utils.assert_type(f, function)
 
   for (group, values) in SUPER_TYPES.pairs() {
     if f in values {
-      ctx = group;
-      break;
+      ctx = group
+      break
     }
   }
   if repr(f) == "styled" {
     ctx = "math"
   }
-  
-  import "string.typ" as string_;
-  return string_.serializer(if ctx != none { ctx + "." } else { "" } + repr(f));
+
+  import "string.typ" as string_
+  return string_.serializer(if ctx != none { ctx + "." } else { "" } + repr(f))
 };
 
-#let deserializer(s) = {
-  utils.assert_type(s, str);
+#let deserializer(s, ctx) = {
+  utils.assert_type(s, str)
 
   if s == "(..) => .." {
-    panic(s, "Inline function deserialization is not supported");
+    panic(s, "Inline function deserialization is not supported")
   }
-  return eval(s);
+  return eval(s)
 };
 
 #let test(cycle) = {
   utils.assert(
-      serializer((x: int) => { return "test"; }),
-      "(..) => .."
-  );
-  utils.assert(
-    serializer(table.cell),
-    "table.cell"
+    serializer((x: int) => { return "test" }),
+    "(..) => ..",
   )
   utils.assert(
-    deserializer("repr"),
-    repr
-  );
+    serializer(table.cell),
+    "table.cell",
+  )
+  utils.assert(
+    deserializer("repr", (panic: false)),
+    repr,
+  )
 
   let a = generic.serializer(color.hsl)
 
-  let null = cycle(repr);
+  let null = cycle(repr)
   let null = cycle(color.hsl)
 };

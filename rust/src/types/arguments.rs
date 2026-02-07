@@ -4,7 +4,7 @@ use crate::{
 };
 
 /// For more information visit the typst documentation: [arguments](https://typst.app/docs/reference/foundations/arguments/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
 pub struct Arguments<'a> {
     #[serde(borrow)]
     pub pos: Array<'a>,

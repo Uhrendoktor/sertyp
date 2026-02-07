@@ -6,7 +6,7 @@ use crate::{
 };
 
 /// For more information visit the typst documentation: [module](https://typst.app/docs/reference/foundations/module/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
 pub struct Module<'a> {
     #[serde(borrow)]
     pub name: String<'a>,

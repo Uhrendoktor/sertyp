@@ -2,30 +2,30 @@
 #import "../utils.typ" as utils;
 
 #let serializer(r) = {
-  utils.assert_type(r, relative);
+  utils.assert_type(r, relative)
 
-  let relative = repr(r);
-  let parts = relative.split(" + ").map(p => eval(p));
-  
-  import "array.typ" as array_;
-  return array_.serializer(parts);      
+  let relative = repr(r)
+  let parts = relative.split(" + ").map(p => eval(p))
+
+  import "array.typ" as array_
+  return array_.serializer(parts)
 };
 
-#let deserializer(r) = {
-  utils.assert_type(r, array);
+#let deserializer(r, ctx) = {
+  utils.assert_type(r, array)
 
-  import "array.typ" as array_;
+  import "array.typ" as array_
 
-  let parts = array_.deserializer(r);
-  let relative = 0%;
+  let parts = array_.deserializer(r, ctx)
+  let relative = 0%
   for part in parts {
-    relative = relative + part;
+    relative = relative + part
   }
-  return relative;
+  return relative
 }
 
 #let test(cycle) = {
-  for v in (0% + 2cm, 5% - 1cm + 2% -3pt) {
-    let null = cycle(v);
+  for v in (0% + 2cm, 5% - 1cm + 2% - 3pt) {
+    let null = cycle(v)
   }
 };

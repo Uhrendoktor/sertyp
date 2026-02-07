@@ -6,7 +6,7 @@ use crate::{
 };
 
 /// For more information visit the typst documentation: [text](https://typst.app/docs/reference/text/text/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
 pub struct Text<'a> {
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
     pub font: Option<TextFont<'a>>,
@@ -87,13 +87,26 @@ pub struct Text<'a> {
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
     pub features: Option<Or<Array<'a>, Dictionary<'a>>>,
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
-    pub body: Option<Content<'a>>,
+    pub body: Option<TypedItem<Content<'a>>>,
     #[serde(borrow)]
     pub text: TypedItem<String<'a>>,
 }
 
+impl<'a> Text<'a> {
+    pub fn from_string<S: Into<String<'a>>>(s: S) -> Self {
+        Text {
+            text: TypedItem(s.into()),
+            ..Default::default()
+        }
+    }
+
+    pub fn as_string(&self) -> &String<'a> {
+        &self.text.0
+    }
+}
+
 crate::auto_impl! {
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, Hash)]
     pub enum TextFont<'a> {
         try_from{},
         String(String=>String<'a>),
@@ -172,7 +185,7 @@ impl<'a> From<Text<'a>> for Content<'a> {
 }
 
 impl<'a> TryFrom<Content<'a>> for Text<'a> {
-    type Error = std::string::String;
+    type Error = <std::boxed::Box<Text<'a>> as TryFrom<Content<'a>>>::Error;
 
     fn try_from(value: Content<'a>) -> Result<Self, Self::Error> {
         let text: std::boxed::Box<Text<'a>> = value.try_into()?;

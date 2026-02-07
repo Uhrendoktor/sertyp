@@ -11,7 +11,7 @@ pub struct Array_<'a>(#[serde(borrow)] pub Vec<Item_<'a>>);
 /// For more information visit the typst documentation: [array](https://typst.app/docs/reference/foundations/array/)
 /// # Note
 /// For homogenous known types, consider using [crate::TypedArray] instead.
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
 #[serde(from = "Array_", into = "Array_")]
 pub struct Array<'a>(#[serde(borrow)] Vec<Item<'a>>);
 
@@ -58,12 +58,12 @@ impl<'a> From<Vec<Item<'a>>> for Array<'a> {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Hash)]
 pub struct Pair<T>(pub T, pub T);
 
-impl<'a, T: Clone> TryFrom<Array<'a>> for Pair<T>
+impl<'a, T: Clone + TryFrom<Item<'a>>> TryFrom<Array<'a>> for Pair<T>
 where
-    T: TryFrom<Item<'a>, Error = std::string::String>,
+    T::Error: std::fmt::Display,
 {
     type Error = std::string::String;
 
@@ -90,13 +90,14 @@ impl<'a, T: Clone + Into<Item<'a>>> From<Pair<T>> for Array<'a> {
 
 impl<'a, T> TryFrom<Item<'a>> for Pair<T>
 where
-    Pair<T>: TryFrom<Array<'a>, Error = std::string::String>,
+    Pair<T>: TryFrom<Array<'a>>,
+    <Pair<T> as TryFrom<Array<'a>>>::Error: Into<std::string::String>,
 {
     type Error = std::string::String;
 
     fn try_from(value: Item<'a>) -> Result<Self, Self::Error> {
         match value {
-            Item::Array(arr) => Pair::try_from(arr),
+            Item::Array(arr) => Pair::try_from(arr).map_err(Into::into),
             other => Err(format!("Tried to convert Item to Pair, found {other:?}")),
         }
     }
@@ -111,7 +112,8 @@ impl<'a, T: Clone + Into<Item<'a>>> From<Pair<T>> for Item<'a> {
 
 impl<'a, 'de: 'a, T> serde::Deserialize<'de> for Pair<T>
 where
-    Pair<T>: TryFrom<Array<'a>, Error = std::string::String>,
+    Pair<T>: TryFrom<Array<'a>>,
+    <Pair<T> as TryFrom<Array<'a>>>::Error: std::fmt::Display,
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

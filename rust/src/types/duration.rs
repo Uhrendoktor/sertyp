@@ -3,7 +3,7 @@ use std::ops::{Deref, DerefMut};
 use crate::{Item, types::float::Float};
 
 /// For more information visit the typst documentation: [duration](https://typst.app/docs/reference/foundations/duration/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Default, Hash)]
 pub struct Duration(pub Float);
 
 impl Deref for Duration {

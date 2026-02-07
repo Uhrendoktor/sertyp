@@ -6,7 +6,7 @@ use crate::{Item, TypstTypeLike};
 /// When constructing values owned strings can be used as well.
 ///
 /// For more information visit the typst documentation: [string](https://typst.app/docs/reference/foundations/str/)
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct String<'a>(pub std::borrow::Cow<'a, str>);
 crate::impl_all!(Item<'a>::String, String<'a>{'a}, "string");
 
@@ -68,6 +68,12 @@ impl<'a> From<&'a str> for String<'a> {
 impl<'a> From<std::string::String> for String<'a> {
     fn from(value: std::string::String) -> Self {
         String(std::borrow::Cow::Owned(value))
+    }
+}
+
+impl<'a> From<String<'a>> for std::string::String {
+    fn from(value: String<'a>) -> Self {
+        value.0.into_owned()
     }
 }
 

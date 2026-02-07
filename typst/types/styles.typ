@@ -2,14 +2,14 @@
 #import "generic.typ" as generic;
 
 #let serializer(s) = {
-  utils.assert(str(type(s)), "styles");
-  
-  return generic.serialize(s.child);
+  utils.assert(str(type(s)), "styles")
+
+  return generic.serialize(s.child)
 }
 
-#let deserializer(s) = {
-  utils.assert_type(s, str);
-  return eval(s);
+#let deserializer(s, ctx) = {
+  utils.assert_type(s, str)
+  return eval(s)
 }
 
 #let test(cycle) = {

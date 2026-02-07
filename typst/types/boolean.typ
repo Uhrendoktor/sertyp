@@ -3,9 +3,9 @@
 
 #let serializer = generic.raw_serializer(bool);
 
-#let deserializer = generic.raw_serializer(bool);
+#let deserializer = generic.raw_deserializer(bool);
 
 #let test(cycle) = {
-  let null = cycle(true);
-  let null = cycle(false);
+  let null = cycle(true)
+  let null = cycle(false)
 };

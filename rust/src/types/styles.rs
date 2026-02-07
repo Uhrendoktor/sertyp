@@ -5,7 +5,7 @@ use crate::types::Item;
 /// Used within typst's internals to apply styles to `Content`. The stylistic aspects cannot yet be parsed as they are not exposed. This struct simply contains the wrapped [Item].
 ///
 /// For more information visit the typst documentation: [styles](https://typst.app/docs/reference/math/styles/)
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default, Hash)]
 pub struct Styles<'a>(#[serde(borrow)] pub Box<Item<'a>>);
 
 impl<'a> Deref for Styles<'a> {

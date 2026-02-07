@@ -29,7 +29,7 @@
   if fields.len() > 0 {
     dict = (
       ..dict,
-      fields: dict_.serializer(fields)
+      fields: dict_.serializer(fields),
     )
   }
 
@@ -241,24 +241,24 @@
 );
 
 
-#let deserializer(d) = {
+#let deserializer(d, ctx) = {
   utils.assert_type(d, dictionary)
 
   import "dictionary.typ" as dict_
-  let args = if "fields" in d { 
-    dict_.deserializer(d.at("fields"))
-  } else { 
-    utils.str_dict() 
+  let args = if "fields" in d {
+    dict_.deserializer(d.at("fields"), ctx)
+  } else {
+    utils.str_dict()
   }
   let args = split_positional(("body", "text"), arguments(..args))
 
   import "function.typ" as func_
-  let func = if d.func in FN { FN.at(d.func) } else { func_.deserializer(d.func) }
+  let func = if d.func in FN { FN.at(d.func) } else { func_.deserializer(d.func, ctx) }
   return func(..args)
 }
 
 #let test(cycle) = {
-  cycle([123]);
+  cycle([123])
   cycle(strong("Bold Text"))
   cycle($1/2$)
   cycle([abc #auto $root(2+1, 3) alpha$])
@@ -270,11 +270,13 @@
 
   // math.attach
   cycle($a_b$)
-  cycle($attach(
-    Pi, t: alpha, b: beta,
-    tl: 1, tr: 2+3, bl: 4+5, br: 6,
-  )$)
-  
+  cycle(
+    $attach(
+      Pi, t: alpha, b: beta,
+      tl: 1, tr: 2+3, bl: 4+5, br: 6,
+    )$,
+  )
+
   // math.binom
   cycle($binom(n, k, k_2)$)
 
@@ -305,16 +307,18 @@
   cycle($lr(a, size: #10%)$)
 
   // math.mat
-  cycle($mat(1,2;2)$);
-  cycle($mat(
-    (a, b), (c, d),
-    delim: #symbol("|"),
-    align: #center,
-    augment: #2,
-    gap: #5%,
-    row-gap: #10pt,
-    column-gap: #15pt,
-  )$);
+  cycle($mat(1, 2; 2)$)
+  cycle(
+    $mat(
+      (a, b), (c, d),
+      delim: #symbol("|"),
+      align: #center,
+      augment: #2,
+      gap: #5%,
+      row-gap: #10pt,
+      column-gap: #15pt,
+    )$,
+  )
 
   // math.op
   cycle($sin(4)$)
@@ -324,7 +328,7 @@
   cycle($primes(#3)$)
 
   // math.root
-  cycle($sqrt(2), root(3,2)$)
+  cycle($sqrt(2), root(3, 2)$)
 
   // match.stretch
   cycle($stretch(=>)$)
@@ -378,8 +382,9 @@
 
   // text
   cycle(text("Sample Text"))
-  cycle(text("Sample Text", 
-    alternates: true, 
+  cycle(text(
+    "Sample Text",
+    alternates: true,
     baseline: 2pt,
     bottom-edge: "baseline",
     cjk-latin-spacing: auto,
@@ -403,5 +408,5 @@
     style: "normal",
     tracking: 0em,
     weight: 400,
-  ))  
+  ))
 };

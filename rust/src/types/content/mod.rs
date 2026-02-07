@@ -5,6 +5,8 @@ pub mod math;
 #[cfg(feature = "content")]
 mod metadata;
 #[cfg(feature = "content")]
+mod parbreak;
+#[cfg(feature = "content")]
 mod raw;
 #[cfg(feature = "content")]
 mod sequence;
@@ -23,18 +25,22 @@ mod v;
 
 #[cfg(feature = "content")]
 pub use crate::types::content::{
-    h::H, metadata::Metadata, raw::Raw, sequence::Sequence, space::Space, stack::Stack,
-    strong::Strong, v::V,
+    h::H, metadata::Metadata, raw::Raw, sequence::*, space::Space, stack::Stack, strong::Strong,
+    text::Text, v::V,
 };
 #[cfg(feature = "content")]
 use crate::{
     Item, Symbol,
-    types::content::{symbol::Symbol_, text::Text},
+    types::content::{parbreak::Parbreak, symbol::Symbol_},
 };
 
 pub use crate::types::{dictionary::Dictionary, function::Function};
 
-#[derive(Default, serde::Serialize, serde::Deserialize, Clone, Debug)]
+/// the raw presentation of any content. This is the default type if the `content` feature is not enabled.
+/// Typst represents content as a `function` with `arguments`, which renders arbitrary content.
+///
+/// For more information visit the typst documentation: [content](https://typst.app/docs/reference/foundations/content/)
+#[derive(Default, serde::Serialize, serde::Deserialize, Clone, Debug, Hash)]
 pub struct RawContent<'a> {
     #[serde(borrow)]
     pub func: Function<'a>,
@@ -48,10 +54,11 @@ pub type Content<'a> = RawContent<'a>;
 pub type ItemContent<'a> = RawContent<'a>;
 
 #[cfg(feature = "content")]
-crate::impl_all!(typst_like Item<'a>::Content, std::boxed::Box<Content<'a>>{'a}, "content");
-#[cfg(feature = "content")]
 pub type ItemContent<'a> = std::boxed::Box<Content<'a>>;
 #[cfg(feature = "content")]
+crate::impl_into_typed!(Item, Content<'a>);
+
+crate::impl_all!(typst_like Item<'a>::Content, ItemContent<'a>{'a}, "content");
 crate::impl_typst_type!(Content<'a>{'a}, "content");
 
 #[cfg(feature = "content")]
@@ -94,6 +101,7 @@ crate::define_enum! {
         H(H),
         #[serde(borrow)]
         Metadata(Metadata<'a>),
+        Parbreak(Parbreak),
         #[serde(borrow)]
         Raw(Raw<'a>),
         #[serde(borrow)]
@@ -149,10 +157,10 @@ impl<'a> Default for Content<'a> {
 }
 
 #[cfg(feature = "content")]
-impl<'a, T: TryFrom<Content<'a>, Error = std::string::String>> TryFrom<Item<'a>>
-    for TypedContent<T>
+impl<'a, T: TryFrom<Content<'a>, Error = <Content<'a> as TryFrom<Item<'a>>>::Error>>
+    TryFrom<Item<'a>> for TypedContent<T>
 {
-    type Error = std::string::String;
+    type Error = T::Error;
 
     fn try_from(value: Item<'a>) -> Result<Self, Self::Error> {
         let content: Content<'a> = value.try_into()?;

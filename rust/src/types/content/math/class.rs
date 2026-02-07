@@ -1,11 +1,11 @@
 use crate::{Box, Content, TypedItem};
 
 /// For more information visit the typst documentation: [math.class](https://typst.app/docs/reference/math/class/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
 pub struct Class<'a> {
     pub class: TypedItem<ClassVariant>,
     #[serde(borrow)]
-    pub body: Box<Content<'a>>,
+    pub body: TypedItem<Box<Content<'a>>>,
 }
 
 crate::auto_impl_str! {
