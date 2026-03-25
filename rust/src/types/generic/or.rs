@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    Auto, Content, Item, None, ParsedSequence, Sequence, SequenceView, StructuredSequence,
-    TypstTypeLike,
-};
+use crate::{Auto, Content, Item, None, TypstTypeLike};
+#[cfg(feature = "content")]
+use crate::{ParsedSequence, Sequence, SequenceView, StructuredSequence};
 
 /// Utility for specifying a type that can be one of two possible [Item] variants. In case more variants are needed, consider using [crate::auto_impl].
 /// # Example
@@ -158,9 +157,12 @@ macro_rules! impl_conversion {
 
 impl_conversion! { Item<'a> }
 impl_conversion! { Content<'a> }
+#[cfg(feature = "content")]
 impl_conversion! { Sequence<'a> }
+#[cfg(feature = "content")]
 impl_conversion! { StructuredSequence<'a> }
 
+#[cfg(feature = "content")]
 impl<T1, T2> SequenceView for Or<T1, T2>
 where
     T1: SequenceView,

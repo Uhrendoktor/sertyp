@@ -8,7 +8,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 wasm-minimal-protocol = "0.1.0"
-sertyp = { path = "../rust", features=["content"] }
+sertyp = { path = "../rust", features = ["content"] }
 
 [features]
 content = []

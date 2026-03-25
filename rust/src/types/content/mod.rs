@@ -23,6 +23,7 @@ mod text;
 #[cfg(feature = "content")]
 mod v;
 
+use crate::Item;
 #[cfg(feature = "content")]
 pub use crate::types::content::{
     h::H, metadata::Metadata, raw::Raw, sequence::*, space::Space, stack::Stack, strong::Strong,
@@ -30,7 +31,7 @@ pub use crate::types::content::{
 };
 #[cfg(feature = "content")]
 use crate::{
-    Item, Symbol,
+    Symbol,
     types::content::{parbreak::Parbreak, symbol::Symbol_},
 };
 
@@ -59,6 +60,7 @@ pub type ItemContent<'a> = std::boxed::Box<Content<'a>>;
 crate::impl_into_typed!(Item, Content<'a>);
 
 crate::impl_all!(typst_like Item<'a>::Content, ItemContent<'a>{'a}, "content");
+#[cfg(feature = "content")]
 crate::impl_typst_type!(Content<'a>{'a}, "content");
 
 #[cfg(feature = "content")]
