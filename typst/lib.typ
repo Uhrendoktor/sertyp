@@ -17,7 +17,7 @@
 ///
 /// Example:
 /// ```typst
-/// #import "@preview/sertyp:0.1.2";
+/// #import "@preview/sertyp:0.1.3";
 /// #let content = [
 ///     Total displaced soil by glacial flow:
 ///     $ 7.32 beta + sum_(i=0)^nabla (Q_i (a_i - epsilon)) / 2 $
@@ -60,7 +60,7 @@
 ///
 /// Example:
 /// ```typst
-/// #import "@preview/sertyp:0.1.2";
+/// #import "@preview/sertyp:0.1.3";
 /// #let plugin = plugin("...");
 ///
 /// #let I = $mat(1,0;0,1)$

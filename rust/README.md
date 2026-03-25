@@ -122,7 +122,7 @@ Writing those wrapper functions is highly recommended, as it makes the
 interaction with your plugin much more intuitive.
 
 ```typst
-#import "@preview/sertyp:0.1.2";
+#import "@preview/sertyp:0.1.3";
 
 #let fibonacci(n) = {
     let plugin = plugin("<...>.wasm");

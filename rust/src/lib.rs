@@ -47,7 +47,7 @@
 ///
 /// From Typst:
 /// ```typst
-/// #import "@preview/sertyp:0.1.2"
+/// #import "@preview/sertyp:0.1.3"
 /// #let plugin = plugin("<...>.wasm")
 /// #let result = sertyp.call(plugin.fibonacci, 10)
 /// #assert(result == 89)

@@ -29,6 +29,10 @@ use quote::{format_ident, quote};
 ///     Ok(v1.into())
 /// }
 /// ```
+///
+/// # Error Cascading
+/// If the user function expects a type that does not implement [TryFrom]<[sertyp::Panic]>, the macro will automatically abort and create a traceable error message that includes the original error.
+/// If the user function does implement [TryFrom]<[sertyp::Panic]> (e.g. [sertyp::Item] as input), it will be called normally with the panic as input argument.
 #[proc_macro_attribute]
 pub fn typst_func(
     _attr: proc_macro::TokenStream,

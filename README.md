@@ -49,7 +49,7 @@ pub fn fibonacci<'a>(
 ### In Typst
 
 ```typst
-#import "@preview/sertyp:0.1.2";
+#import "@preview/sertyp:0.1.3";
 #let fibonacci(n) = {
     let plugin = plugin("<...>.wasm");
     sertyp.call(plugin.fibonacci, n);

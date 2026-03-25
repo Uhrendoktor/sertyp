@@ -23,7 +23,7 @@ with actual Typst types instead of manual parsing efforts.
 ## Usage
 
 ```typst
-#import "@preview/sertyp:0.1.2"
+#import "@preview/sertyp:0.1.3"
 ```
 
 ## Examples
@@ -31,7 +31,7 @@ with actual Typst types instead of manual parsing efforts.
 ### Basic serialization
 
 ```typst
-#import "@preview/sertyp:0.1.2"
+#import "@preview/sertyp:0.1.3"
 
 // Serialize and deserialize complex content
 #let value = [
@@ -71,7 +71,7 @@ pub fn fibonacci<'a>(n: Integer) -> Result<Integer, String<'a>> {
 ### Type preservation examples
 
 ```typst
-#import "@preview/sertyp:0.1.2"
+#import "@preview/sertyp:0.1.3"
 
 #let color = rgb(255, 128, 0)
 #let restored = sertyp.deserialize(sertyp.serialize(color))
