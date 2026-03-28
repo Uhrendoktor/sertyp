@@ -1,9 +1,9 @@
 #import "../typst/lib.typ" as sertyp;
 #import "../typst/types/generic.typ" as generic;
 
-#let test() = {
-  let test_plugin = plugin("./target/wasm32-unknown-unknown/release/test_plugin.wasm")
+#let test_plugin = plugin("./target/wasm32-unknown-unknown/release/test_plugin.wasm")
 
+#let test() = {
   let cycle(data) = {
     let cycled = sertyp.call(test_plugin.cycle, data)
 
@@ -85,3 +85,7 @@
 }
 
 #test()
+#sertyp.call(
+  test_plugin.test_sequence,
+  $#[#[123 a#[$a$ #rgb(1, 2, 3)]]123] + 3$,
+)

@@ -159,14 +159,17 @@ impl<'a> Default for Content<'a> {
 }
 
 #[cfg(feature = "content")]
-impl<'a, T: TryFrom<Content<'a>, Error = <Content<'a> as TryFrom<Item<'a>>>::Error>>
-    TryFrom<Item<'a>> for TypedContent<T>
+impl<'a, T: TryFrom<Content<'a>>> TryFrom<Item<'a>> for TypedContent<T>
+where
+    T::Error: std::fmt::Display,
 {
-    type Error = T::Error;
+    type Error = String;
 
     fn try_from(value: Item<'a>) -> Result<Self, Self::Error> {
         let content: Content<'a> = value.try_into()?;
-        let typed: T = content.try_into()?;
+        let typed: T = content
+            .try_into()
+            .map_err(|e: <T as TryFrom<Content<'a>>>::Error| e.to_string())?;
         Ok(TypedContent(typed))
     }
 }

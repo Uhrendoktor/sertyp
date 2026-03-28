@@ -188,7 +188,7 @@ macro_rules! define_enum {
         paste::paste!{
             #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Hash)]
             $(#[$meta])*
-            $vis enum [<$name __>]<$lt> {
+            enum [<$name __>]<$lt> {
                 $(
                     $(#[$metav])*
                     $var $(($ty))?,
@@ -203,7 +203,7 @@ macro_rules! define_enum {
         paste::paste!{
             #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Hash)]
             #[serde(untagged)]
-            pub enum [<$name _>]<$lt> {
+            enum [<$name _>]<$lt> {
                 #[serde(borrow)]
                 Typed([<$name __>]<$lt>),
                 $(
@@ -304,7 +304,7 @@ macro_rules! define_enum {
 
                 fn try_from(value: $name<$lt>) -> std::result::Result<Self, Self::Error> {
                     let typed: T = value.try_into()?;
-                    Ok([<Typed $name>](typed) )
+                    Ok([<Typed $name>](typed))
                 }
             }
 
