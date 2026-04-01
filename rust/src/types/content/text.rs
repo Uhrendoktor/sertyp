@@ -95,13 +95,13 @@ pub struct Text<'a> {
 impl<'a> Text<'a> {
     pub fn from_string<S: Into<String<'a>>>(s: S) -> Self {
         Text {
-            text: TypedItem(s.into()),
+            text: TypedItem::new(s.into()),
             ..Default::default()
         }
     }
 
     pub fn as_string(&self) -> &String<'a> {
-        &self.text.0
+        &self.text
     }
 }
 

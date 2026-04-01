@@ -13,6 +13,40 @@ pub struct Length {
 
 crate::impl_all!(Item<'a>::Length, Length {}, "length");
 
+impl Length {
+    pub fn pt(value: impl Into<Float>) -> Self {
+        Length {
+            abs: value.into(),
+            unit: AbsUnit::Points,
+            em: 0.0.into(),
+        }
+    }
+
+    pub fn inches(value: impl Into<Float>) -> Self {
+        Length {
+            abs: value.into(),
+            unit: AbsUnit::Inches,
+            em: 0.0.into(),
+        }
+    }
+
+    pub fn cm(value: impl Into<Float>) -> Self {
+        Length {
+            abs: value.into(),
+            unit: AbsUnit::Centimeters,
+            em: 0.0.into(),
+        }
+    }
+
+    pub fn mm(value: impl Into<Float>) -> Self {
+        Length {
+            abs: value.into(),
+            unit: AbsUnit::Millimeters,
+            em: 0.0.into(),
+        }
+    }
+}
+
 /// Unit of length. Typst automatically casts into `pt` even if another unit was specified.
 /// The other variants can still be used when constructing values in rust.
 #[derive(Default, serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]

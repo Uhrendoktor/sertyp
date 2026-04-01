@@ -1,4 +1,6 @@
 #[cfg(feature = "content")]
+mod r#box;
+#[cfg(feature = "content")]
 mod h;
 #[cfg(feature = "content")]
 pub mod math;
@@ -6,6 +8,8 @@ pub mod math;
 mod metadata;
 #[cfg(feature = "content")]
 mod parbreak;
+#[cfg(feature = "content")]
+mod place;
 #[cfg(feature = "content")]
 mod raw;
 #[cfg(feature = "content")]
@@ -26,12 +30,12 @@ mod v;
 use crate::Item;
 #[cfg(feature = "content")]
 pub use crate::types::content::{
-    h::H, metadata::Metadata, raw::Raw, sequence::*, space::Space, stack::Stack, strong::Strong,
-    text::Text, v::V,
+    r#box::Box, h::H, metadata::Metadata, place::Place, raw::Raw, sequence::*, space::Space,
+    stack::Stack, strong::Strong, text::Text, v::V,
 };
 #[cfg(feature = "content")]
 use crate::{
-    Symbol,
+    Panic, Symbol,
     types::content::{parbreak::Parbreak, symbol::Symbol_},
 };
 
@@ -83,7 +87,7 @@ impl<'a> TryFrom<Item<'a>> for Content<'a> {
 #[cfg(feature = "content")]
 impl<'a> From<Content<'a>> for Item<'a> {
     fn from(val: Content<'a>) -> Self {
-        let content: std::boxed::Box<Content<'a>> = Box::new(val);
+        let content: std::boxed::Box<Content<'a>> = std::boxed::Box::new(val);
         content.into()
     }
 }
@@ -100,10 +104,13 @@ crate::define_enum! {
             Symbol(Symbol_<'a>) => Symbol(Symbol<'a>),
             Space => Space(Space),
         },
+        Box(std::boxed::Box<Box<'a>>),
         H(H),
         #[serde(borrow)]
         Metadata(Metadata<'a>),
         Parbreak(Parbreak),
+        #[serde(borrow)]
+        Place(Place<'a>),
         #[serde(borrow)]
         Raw(Raw<'a>),
         #[serde(borrow)]
@@ -148,13 +155,15 @@ crate::define_enum! {
         MathOp(math::Op<'a>),
         #[serde(borrow, rename="math.vec")]
         MathVector(math::Vector<'a>),
+
+        Panic(Panic<'a>),
     }
 }
 
 #[cfg(feature = "content")]
 impl<'a> Default for Content<'a> {
     fn default() -> Self {
-        Box::new(Text::default()).into()
+        std::boxed::Box::new(Text::default()).into()
     }
 }
 
@@ -170,14 +179,14 @@ where
         let typed: T = content
             .try_into()
             .map_err(|e: <T as TryFrom<Content<'a>>>::Error| e.to_string())?;
-        Ok(TypedContent(typed))
+        Ok(TypedContent::new(typed))
     }
 }
 
 #[cfg(feature = "content")]
 impl<'a, T: Into<Content<'a>>> From<TypedContent<T>> for Item<'a> {
     fn from(val: TypedContent<T>) -> Self {
-        let content: Content<'a> = val.0.into();
+        let content: Content<'a> = val.into();
         content.into()
     }
 }

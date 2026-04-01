@@ -3,7 +3,7 @@ use std::{collections::HashMap, hash::Hash};
 
 /// Pre-deserialization / post-serialization helper struct for [Dictionary]. You probably want to use [Dictionary] instead.
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
-pub struct Dictionary_<'a>(#[serde(borrow)] pub HashMap<&'a str, Item_<'a>>);
+struct Dictionary_<'a>(#[serde(borrow)] pub HashMap<&'a str, Item_<'a>>);
 
 /// For more information visit the typst documentation: [dictionary](https://typst.app/docs/reference/foundations/dictionary/)
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]

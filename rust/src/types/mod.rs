@@ -38,7 +38,7 @@ mod version;
 
 mod panic;
 
-pub use crate::types::generic::{AutoOr, Box, NoneOr, Or, Result, TypedArray};
+pub use crate::types::generic::{AutoOr, Box as RBox, NoneOr, Or, Result, TypedArray};
 use crate::types::selector::Selector;
 pub use crate::types::r#type::{TypstType, TypstTypeLike};
 pub use crate::types::{
@@ -363,6 +363,10 @@ macro_rules! define_enum {
                 pub fn into_inner(self) -> T {
                     self.0
                 }
+
+                pub fn new(value: T) -> Self {
+                    [<Typed $name>](value)
+                }
             }
         }
     };
@@ -435,25 +439,25 @@ macro_rules! impl_into_typed {
     ($ity:ident, $ty:ty) => {
         paste::paste! {impl<'a> From<$ty> for $crate::[<Typed $ity>]<$ty> {
             fn from(value: $ty) -> $crate::[<Typed $ity>]<$ty> {
-                $crate::[<Typed $ity>](value)
+                $crate::[<Typed $ity>]::new(value)
             }
         }}
 
-        paste::paste! {impl<'a> From<$ty> for $crate::[<Typed $ity>]<$crate::Box<$ty>> {
-            fn from(value: $ty) -> $crate::[<Typed $ity>]<$crate::Box<$ty>> {
-                $crate::[<Typed $ity>](value.into())
+        paste::paste! {impl<'a> From<$ty> for $crate::[<Typed $ity>]<$crate::RBox<$ty>> {
+            fn from(value: $ty) -> $crate::[<Typed $ity>]<$crate::RBox<$ty>> {
+                $crate::[<Typed $ity>]::new(value.into())
             }
         }}
 
         paste::paste! {impl<'a> From<$ty> for $crate::[<Typed $ity>]<std::boxed::Box<$ty>> {
             fn from(value: $ty) -> $crate::[<Typed $ity>]<std::boxed::Box<$ty>> {
-                $crate::[<Typed $ity>](value.into())
+                $crate::[<Typed $ity>]::new(value.into())
             }
         }}
 
         paste::paste! {impl<'a> From<$ty> for $crate::[<Typed $ity>]<std::option::Option<$ty>> {
             fn from(value: $ty) -> $crate::[<Typed $ity>]<std::option::Option<$ty>> {
-                $crate::[<Typed $ity>](Some(value))
+                $crate::[<Typed $ity>]::new(Some(value))
             }
         }}
     };

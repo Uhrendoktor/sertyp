@@ -6,7 +6,7 @@ mod winnow;
 pub use structured::{
     ParsedSequence, Sequence as StructuredSequence, SequenceView, TypedStructuredSequence,
 };
-pub use winnow::{LocatingSequence, Token};
+pub use winnow::{LocatingSequence, LocatingToken, Token, TypstError, error_box};
 
 /// Used within typst's internals to represent a space seperated sequence of different content items within a single content block. This is basically an array of `Content`.
 /// # Example of Typst Behavior
@@ -18,6 +18,14 @@ pub use winnow::{LocatingSequence, Token};
 pub struct Sequence<'a> {
     #[serde(borrow)]
     pub children: TypedArray<Content<'a>>,
+}
+
+impl<'a> Sequence<'a> {
+    pub fn new() -> Self {
+        Sequence {
+            children: TypedArray::default(),
+        }
+    }
 }
 
 crate::impl_into!(Content<'a>::Sequence, Sequence<'a>);

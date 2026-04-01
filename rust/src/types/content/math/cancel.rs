@@ -1,5 +1,5 @@
 use crate::{
-    Angle, AutoOr, Boolean, Box, Color, Content, Dictionary, Function, Length, Or, Relative,
+    Angle, AutoOr, Boolean, Color, Content, Dictionary, Function, Length, Or, RBox, Relative,
     Stroke, Tiling, TypedItem, types::Gradient,
 };
 
@@ -7,7 +7,7 @@ use crate::{
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
 pub struct Cancel<'a> {
     #[serde(borrow)]
-    pub body: TypedItem<Box<Content<'a>>>,
+    pub body: TypedItem<RBox<Content<'a>>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub length: Option<TypedItem<Relative>>,
     #[serde(skip_serializing_if = "Option::is_none")]

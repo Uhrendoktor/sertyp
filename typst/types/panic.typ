@@ -11,6 +11,7 @@
         .pairs()
         .find(((k, v)) => (
           k == "body"
+            and "children" in v.fields()
             and v
               .fields()
               .at("children")
@@ -39,7 +40,7 @@
   ))
 };
 
-#let error-box(ty, msg) = {
+#let error-box(ty, msg, small: false) = {
   let bg = rgb("#fdecea")
   let border = rgb("#f5c2c7")
   let text-color = rgb("#842029")
@@ -49,23 +50,28 @@
     fill: bg,
     stroke: border,
     radius: 8pt,
-    inset: 12pt,
+    inset: if small { 5pt } else { 12pt },
   )[
     #stack(
       dir: ltr,
-      spacing: 10pt,
+      spacing: if small { 4pt } else { 10pt },
       [
         #circle(
-          radius: 10pt,
+          radius: if small { 8pt } else { 10pt },
           fill: icon-red,
         )[
-          #set text(fill: white, weight: "extrabold", size: 13pt, baseline: -2pt)
+          #set text(
+            fill: white,
+            weight: "extrabold",
+            size: if small { 10pt } else { 13pt },
+            baseline: if small { -2.5pt } else { -2pt },
+          )
           #align(center, [!])
         ]
       ],
       [
-        #set text(fill: text-color, weight: "regular", baseline: 0pt)
-        #strong(ty) #parbreak() #v(-8pt) #msg
+        #set text(fill: text-color, weight: "regular", baseline: 0pt, size: if small { 8pt } else { 11pt })
+        #strong(ty) #parbreak() #v(if small { -5pt } else { -8pt }) #msg
       ],
     )
     #metadata((
@@ -84,10 +90,10 @@
   let (ty, msg) = (m.at("type"), m.at("msg"))
   utils.assert_type(ty, str)
   utils.assert_type(msg, str)
-  if ctx.at("panic") == true {
+  if ctx.at("panic", default: false) == true {
     panic(ty + ": " + msg)
   }
-  error-box(ty, msg)
+  error-box(ty, msg, small: ctx.at("small", default: false))
 };
 
 #let test(cycle) = {

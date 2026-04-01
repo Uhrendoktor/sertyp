@@ -236,7 +236,7 @@ impl<'a> Sequence<'a> {
                     // ignore. WARNING: this will lead to wrong visual deserialization
                 }
                 Content::MathLR(LR { body, .. }) | Content::MathEquation(Equation { body, .. }) => {
-                    queue.push_front(*body.0.0);
+                    queue.push_front(body.into_inner().into_inner());
                 }
                 Content::Symbol(Symbol(symbol)) => {
                     queue.push_front(Text::from_string(symbol.to_string()).into());

@@ -1,4 +1,5 @@
 use quote::{format_ident, quote};
+use syn::parse_macro_input;
 
 /// Exposes a function as typst-wasm function with automatic serialization and deserialization.
 /// The function must take exactly one argument and return a value.
@@ -30,15 +31,28 @@ use quote::{format_ident, quote};
 /// }
 /// ```
 ///
+/// # References
+/// Sometimes it may be usefull to keep the ownership of the input data within the macro instead of shipping it to the user function. This is helpfull in cases where the return value references the input lifetimes. In this case, the `&` or `&mut` modifiers may be used to change the ownership semantics.
+/// ```rust
+/// use sertyp::typst_func;
+///
+/// //#[typst_func(&)]
+/// pub fn not_owning<'a>(n: &'a sertyp::Integer) -> Result<&'a sertyp::Integer, sertyp::String<'a>> {
+///     Ok(n)
+/// }
+/// ```
+///
 /// # Error Cascading
 /// If the user function expects a type that does not implement [TryFrom]<[sertyp::Panic]>, the macro will automatically abort and create a traceable error message that includes the original error.
 /// If the user function does implement [TryFrom]<[sertyp::Panic]> (e.g. [sertyp::Item] as input), it will be called normally with the panic as input argument.
 #[proc_macro_attribute]
 pub fn typst_func(
-    _attr: proc_macro::TokenStream,
+    attr: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
-    let mut item: syn::ItemFn = syn::parse(item).unwrap();
+    let modifier: proc_macro2::TokenStream = attr.into();
+
+    let mut item: syn::ItemFn = parse_macro_input!(item);
     item.attrs.retain(|attr| !attr.path().is_ident("wasm_func"));
     let mut wrapper_sig = item.sig.clone();
 
@@ -97,7 +111,7 @@ pub fn typst_func(
             };
 
             #item
-            let result = #ident(value);
+            let result = #ident(#modifier value);
             match sertyp::serialize_cbor(&result.into()) {
                 Ok(data) => data,
                 Err(e) => {

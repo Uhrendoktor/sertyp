@@ -39,6 +39,30 @@ crate::auto_impl! {
     }
 }
 
+impl From<Length> for RelativeItem {
+    fn from(value: Length) -> Self {
+        RelativeItem::Length(value)
+    }
+}
+
+impl From<Ratio> for RelativeItem {
+    fn from(value: Ratio) -> Self {
+        RelativeItem::Ratio(value)
+    }
+}
+
+impl From<Length> for Relative {
+    fn from(value: Length) -> Self {
+        Relative(vec![RelativeItem::Length(value)].into())
+    }
+}
+
+impl From<Ratio> for Relative {
+    fn from(value: Ratio) -> Self {
+        Relative(vec![RelativeItem::Ratio(value)].into())
+    }
+}
+
 impl Default for RelativeItem {
     fn default() -> Self {
         RelativeItem::Ratio(Ratio::default())

@@ -30,20 +30,34 @@ impl Default for Float {
     }
 }
 
-impl From<Float> for f64 {
-    fn from(val: Float) -> Self {
-        match val {
-            // Float::f32(f) => f as f64,
-            Float::f64(f) => f,
-        }
-    }
+macro_rules! impl_into {
+    ($($t:ty),*) => {
+        $(
+            impl From<Float> for $t {
+                fn from(val: Float) -> Self {
+                    match val {
+                        // Float::f32(f) => f as $t,
+                        Float::f64(f) => f as $t,
+                    }
+                }
+            }
+        )*
+    };
 }
+impl_into!(i8, i16, i32, i64, u8, u16, u32, u64, f32, f64);
 
-impl From<f64> for Float {
-    fn from(value: f64) -> Self {
-        Float::f64(value)
-    }
+macro_rules! impl_from {
+    ($($t:ty),*) => {
+        $(
+            impl From<$t> for Float {
+                fn from(value: $t) -> Self {
+                    Float::f64(value as f64)
+                }
+            }
+        )*
+    };
 }
+impl_from!(i8, i16, i32, i64, u8, u16, u32, u64, f32, f64);
 
 impl Display for Float {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

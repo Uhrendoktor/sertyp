@@ -6,7 +6,7 @@ use std::{
 
 /// Pre-deserialization / post-serialization helper struct for [Array]. You probably want to use [Array] instead.
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
-pub struct Array_<'a>(#[serde(borrow)] pub Vec<Item_<'a>>);
+struct Array_<'a>(#[serde(borrow)] pub Vec<Item_<'a>>);
 
 /// For more information visit the typst documentation: [array](https://typst.app/docs/reference/foundations/array/)
 /// # Note

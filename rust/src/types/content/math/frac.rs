@@ -1,12 +1,12 @@
-use crate::{Box, Content, TypedItem};
+use crate::{Content, RBox, TypedItem};
 
 /// For more information visit the typst documentation: [math.frac](https://typst.app/docs/reference/math/frac/)
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
 pub struct Frac<'a> {
     #[serde(borrow)]
-    pub num: TypedItem<Box<Content<'a>>>,
+    pub num: TypedItem<RBox<Content<'a>>>,
     #[serde(borrow)]
-    pub denom: TypedItem<Box<Content<'a>>>,
+    pub denom: TypedItem<RBox<Content<'a>>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub style: Option<TypedItem<FracStyle>>,
 }

@@ -14,6 +14,11 @@ impl<T> Box<T> {
         *self.0
     }
 }
+impl<T> Box<T> {
+    pub fn new(value: T) -> Self {
+        Box(std::boxed::Box::new(value))
+    }
+}
 impl<'a, 'de: 'a, T> Deserialize<'de> for Box<T>
 where
     Self: 'a,

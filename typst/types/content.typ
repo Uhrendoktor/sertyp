@@ -250,6 +250,11 @@
   } else {
     utils.str_dict()
   }
+  if d.func == "panic" {
+    import "panic.typ" as panic_
+    return panic_.deserializer(d.fields, (..ctx, small: true))
+  }
+
   let args = split_positional(("body", "text"), arguments(..args))
 
   import "function.typ" as func_

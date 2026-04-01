@@ -85,7 +85,20 @@
 }
 
 #test()
-#sertyp.call(
-  test_plugin.test_sequence,
-  $#[#[123 a#[$a$ #rgb(1, 2, 3)]]123] + 3$,
+
+
+#let b = sertyp.serialize(place(box()))
+
+#let annotate(..args) = {
+  box(place(..args))
+  h(0pt, weak: true)
+}
+
+#let a = [A placed #annotate(square(), dy: 2pt)
+  square in my text.]
+
+#let a = sertyp.call-debug(
+  test_plugin.test_sequence2,
+  [a,,,,,,,,,,asdasdasd,],
 )
+#sertyp.call(test_plugin.test_sequence2, [[] [aasdad,,,,,,asdasdasd,]])
