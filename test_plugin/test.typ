@@ -89,16 +89,10 @@
 
 #let b = sertyp.serialize(place(box()))
 
-#let annotate(..args) = {
-  box(place(..args))
-  h(0pt, weak: true)
-}
-
-#let a = [A placed #annotate(square(), dy: 2pt)
-  square in my text.]
+#sertyp.serialize(underline(stroke: red, extent: 1pt, evade: false)[,])
 
 #let a = sertyp.call-debug(
   test_plugin.test_sequence2,
-  [a,,,,,,,,,,asdasdasd,],
+  [a,,,,,,,,,asdasdasd,],
 )
-#sertyp.call(test_plugin.test_sequence2, [[] [aasdad,,,,,,asdasdasd,]])
+#sertyp.call(test_plugin.test_sequence2, [[] [aasda,,,,,asdasdasd,]])

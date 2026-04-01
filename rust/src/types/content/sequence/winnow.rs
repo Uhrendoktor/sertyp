@@ -15,8 +15,10 @@ use winnow::{
 };
 
 use crate::{
-    Box, Color, Content, Length, Or, Panic, Place, RBox, Raw, Sequence, Space, Text, TypedContent,
-    TypedItem, math::Equation, types::generic::FillColor,
+    Box, Color, Content, Length, Or, Panic, Place, RBox, Raw, Sequence, Space, Stroke, Text,
+    TypedContent, TypedItem, Underline,
+    math::Equation,
+    types::generic::{FillColor, StrokeColor},
 };
 
 impl<'a, T: TryFrom<Content<'a>>> Parser<&'a Sequence<'a>, T, ContextError> for TypedContent<T>
@@ -355,10 +357,15 @@ impl TypstError {
                         }
                         push(
                             &stack,
-                            Box {
-                                fill: Some(Or::Right(FillColor::Color(
-                                    Color::rgba_hex("#FF0000").unwrap(),
-                                ))),
+                            Underline {
+                                stroke: Some(Or::Right(Stroke {
+                                    paint: Or::Right(FillColor::Color(
+                                        Color::rgba_hex("#FF0000").unwrap(),
+                                    )),
+                                    ..Default::default()
+                                })),
+                                evade: Some(TypedItem(false.into())),
+                                extent: Some(TypedItem(Length::pt(1.5))),
                                 body: Some(RBox::new(error.into())),
                                 ..Default::default()
                             }

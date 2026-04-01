@@ -25,13 +25,15 @@ mod symbol;
 #[cfg(feature = "content")]
 mod text;
 #[cfg(feature = "content")]
+mod underline;
+#[cfg(feature = "content")]
 mod v;
 
 use crate::Item;
 #[cfg(feature = "content")]
 pub use crate::types::content::{
     r#box::Box, h::H, metadata::Metadata, place::Place, raw::Raw, sequence::*, space::Space,
-    stack::Stack, strong::Strong, text::Text, v::V,
+    stack::Stack, strong::Strong, text::Text, underline::Underline, v::V,
 };
 #[cfg(feature = "content")]
 use crate::{
@@ -121,6 +123,8 @@ crate::define_enum! {
         Strong(Strong<'a>),
         #[serde(borrow)]
         Text(std::boxed::Box<Text<'a>>),
+        #[serde(borrow)]
+        Underline(Underline<'a>),
         V(V),
 
         #[serde(borrow, rename="math.accent")]
