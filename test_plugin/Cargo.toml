@@ -10,6 +10,7 @@ crate-type = ["cdylib"]
 wasm-minimal-protocol = "0.1.0"
 sertyp = { path = "../rust", features = ["content"] }
 winnow = "1.0.0"
+num-traits = "0.2.19"
 
 [features]
 content = []

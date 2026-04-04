@@ -85,14 +85,3 @@
 }
 
 #test()
-
-
-#let b = sertyp.serialize(place(box()))
-
-#sertyp.serialize(underline(stroke: red, extent: 1pt, evade: false)[,])
-
-#let a = sertyp.call-debug(
-  test_plugin.test_sequence2,
-  [a,,,,,,,,,asdasdasd,],
-)
-#sertyp.call(test_plugin.test_sequence2, [[] [aasda,,,,,asdasdasd,]])

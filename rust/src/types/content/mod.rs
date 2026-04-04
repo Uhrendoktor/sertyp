@@ -164,6 +164,12 @@ crate::define_enum! {
     }
 }
 
+impl<'a> Content<'a> {
+    pub fn from_text(text: impl Into<crate::String<'a>>) -> Self {
+        Text::from_string(text).into()
+    }
+}
+
 #[cfg(feature = "content")]
 impl<'a> Default for Content<'a> {
     fn default() -> Self {

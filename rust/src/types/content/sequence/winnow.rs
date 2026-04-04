@@ -233,6 +233,20 @@ pub struct TypstError {
     pub len: usize,
     pub inner: ContextError,
 }
+impl TypstError {
+    pub fn context(mut self, context: StrContext) -> Self {
+        self.inner.push(context);
+        self
+    }
+
+    pub fn from_token(token: &LocatingToken<'_>) -> Self {
+        TypstError {
+            offset: token.offset,
+            len: token.len,
+            inner: ContextError::new(),
+        }
+    }
+}
 impl ParserError<LocatingSequence<'_>> for TypstError {
     type Inner = Self;
 
@@ -240,7 +254,7 @@ impl ParserError<LocatingSequence<'_>> for TypstError {
         TypstError {
             offset: input.global_pos(),
             len: 1,
-            inner: ContextError::from_input(input),
+            inner: ContextError::new(),
         }
     }
 
@@ -330,25 +344,15 @@ impl TypstError {
                     if (*start <= self.offset) && (self.offset < start + len) {
                         let (pre, error, post): (Option<Content<'_>>, _, Option<Content<'_>>) =
                             match token {
-                                Content::Text(text) => (
-                                    Some(
-                                        Text::from_string(
-                                            &text.as_string()[..self.offset - *start - 1],
-                                        )
-                                        .into(),
-                                    ),
-                                    Text::from_string(
-                                        &text.as_string()
-                                            [self.offset - *start - 1..self.offset - *start],
+                                Content::Text(text) => {
+                                    let b1 = self.offset.saturating_sub(*start);
+                                    let b2 = b1.saturating_add(self.len);
+                                    (
+                                        Some(Text::from_string(&text.as_string()[..b1]).into()),
+                                        Text::from_string(&text.as_string()[b1..b2]).into(),
+                                        Some(Text::from_string(&text.as_string()[b2..]).into()),
                                     )
-                                    .into(),
-                                    Some(
-                                        Text::from_string(
-                                            &text.as_string()[self.offset - *start..],
-                                        )
-                                        .into(),
-                                    ),
-                                ),
+                                }
                                 token => (None, (*token).clone(), None),
                             };
 

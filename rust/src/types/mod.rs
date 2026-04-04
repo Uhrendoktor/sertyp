@@ -364,8 +364,14 @@ macro_rules! define_enum {
                     self.0
                 }
 
+                /// Creates a new instance from a value of type T.
                 pub fn new(value: T) -> Self {
                     [<Typed $name>](value)
+                }
+
+                /// Creates a new boxed instance from a value of type T.
+                pub fn new_boxed(value: T) -> std::boxed::Box<Self> {
+                    std::boxed::Box::new([<Typed $name>]::new(value.into()))
                 }
             }
         }
