@@ -88,7 +88,7 @@ pub fn typst_func(
     let ident = &item.sig.ident;
 
     quote! {
-        #[wasm_func]
+        #[wasm_minimal_protocol::wasm_func]
         #wrapper_sig {
             let value = match sertyp::deserialize_cbor(data) {
                 Ok(v) => {

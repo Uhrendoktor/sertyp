@@ -16,47 +16,27 @@ use winnow::{
 
 use crate::{
     Box, Color, Content, Length, Or, Panic, Place, RBox, Raw, Sequence, Space, Stroke, Text,
-    TypedContent, TypedItem, Underline,
-    math::Equation,
-    types::generic::{FillColor, StrokeColor},
+    TypedItem, Underline, math::Equation, types::generic::FillColor,
 };
 
-impl<'a, T: TryFrom<Content<'a>>> Parser<&'a Sequence<'a>, T, ContextError> for TypedContent<T>
-where
-    <T as TryFrom<Content<'a>>>::Error: std::fmt::Display,
-{
-    fn parse_next(&mut self, input: &mut &'a Sequence<'a>) -> winnow::Result<T, ContextError> {
-        let checkpoint = input.as_slice().checkpoint();
-        match input.as_slice().next_token() {
-            Some(content) => match content.try_into() {
-                Ok(typed_item) => Ok(typed_item),
-                Err(err) => Err(ContextError::from_input(&input.as_slice())
-                    .add_context(
-                        &input.as_slice(),
-                        &checkpoint,
-                        StrContext::Label("TryFrom conversion"),
-                    )
-                    .add_context(
-                        &input.as_slice(),
-                        &checkpoint,
-                        // This has to leak to create 'static lifetime
-                        StrContext::Expected(StrContextValue::Description(std::boxed::Box::leak(
-                            err.to_string().into_boxed_str(),
-                        ))),
-                    )),
-            },
-            None => Err(ParserError::from_input(&input.as_slice())),
-        }
-    }
-}
-
-/// For each char in the input, try to parse a token by using the supplied parser, otherwise accumulate the char into a word token until the parser succeeds or the input is exhausted.  
+/// Token parser adapter with word fallback.
+///
+/// # Purpose
+/// - Try `P` at the current position.
+/// - If `P` fails, accumulate characters into `Token::Word`.
+/// - Stop accumulation when `P` succeeds or input is exhausted.
+///
+/// # Behavior
+/// - If `P` succeeds at the current position: forwards `P` result.
+/// - If `P` succeeds later: returns preceding `Token::Word`.
+/// - If `P` never succeeds: returns remaining input as `Token::Word`.
 pub struct WordFallbackParser<'a, P: Parser<&'a str, Token<'a>, ContextError> = DefaultTokenParser>
 {
     parser: P,
     _marker: std::marker::PhantomData<&'a ()>,
 }
 impl<'a, P: Parser<&'a str, Token<'a>, ContextError>> WordFallbackParser<'a, P> {
+    /// Creates a fallback parser using `parser` as primary token parser.
     pub fn new(parser: P) -> Self {
         WordFallbackParser {
             parser,
@@ -96,10 +76,16 @@ impl<'a> Default for WordFallbackParser<'a> {
     }
 }
 
-/// Default implementation for parsing the text elements of a sequence
+/// Default token parser for textual sequence fragments.
+///
+/// # Produces
+/// - `Token::Delimiter` for operator/punctuation symbols.
+/// - `Token::Number` for floating-point literals.
+/// - `Token::GroupOpen` / `Token::GroupClose` for grouping symbols.
+/// - `Token::Raw(&SPACE)` for one or more whitespace characters.
 pub struct DefaultTokenParser;
-impl<'a> Parser<&'a str, Token<'a>, ContextError> for DefaultTokenParser {
-    fn parse_next(&mut self, input: &mut &'a str) -> Result<Token<'a>, ContextError> {
+impl<'a, E: ParserError<&'a str>> Parser<&'a str, Token<'a>, E> for DefaultTokenParser {
+    fn parse_next(&mut self, input: &mut &'a str) -> Result<Token<'a>, E> {
         alt((
             one_of([
                 '+', '-', '*', '/', '%', '=', '<', '>', '!', '?', '&', '|', '^', '~',
@@ -133,8 +119,6 @@ impl<'a> Parser<&'a str, Token<'a>, ContextError> for DefaultTokenParser {
 enum PreToken<'a> {
     Token {
         token: &'a Content<'a>,
-        /// Index of the [Content] in the original sequence, can be used for error reporting
-        index: usize,
         start: usize,
         len: usize,
     },
@@ -143,6 +127,7 @@ enum PreToken<'a> {
     SequenceOpen,
     SequenceClose,
 }
+/// Impls pointer compare for PreTokens, as equals is only used when inserting Tokens into the rangemap.
 impl<'a> PartialEq for PreToken<'a> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -161,15 +146,12 @@ impl<'a> Eq for PreToken<'a> {}
 
 #[derive(Debug, Clone)]
 struct PreTokenMap<'a> {
-    /// reverse lookup from token index to offset, used for offset_at
-    lookup: Vec<usize>,
     /// indexing is done by inbetween-token offsets. Each character in a string has a offset
     tokens: rangemap::RangeMap<usize, PreToken<'a>>,
 }
 impl<'a> PreTokenMap<'a> {
     fn new() -> Self {
         PreTokenMap {
-            lookup: vec![],
             tokens: rangemap::RangeMap::new(),
         }
     }
@@ -179,18 +161,17 @@ impl<'a> PreTokenMap<'a> {
             PreToken::Token {
                 token: content,
                 start: range.start,
-                index: self.lookup.len(),
                 len: range.end - range.start,
             },
         );
-        self.lookup.push(range.start);
     }
     fn get(&self, offset: &usize) -> Option<&PreToken<'a>> {
         self.tokens.get(offset)
     }
 }
 
-/// Wrapper type for usize to enable implementation of [Offset] trait
+/// Newtype wrapper for `usize` used as stream checkpoints.
+/// Enables implementing winnow's `Offset` trait for checkpoint math.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Usize(usize);
 impl Deref for Usize {
@@ -217,28 +198,40 @@ impl Offset for Usize {
 }
 
 #[derive(Debug, Clone)]
+/// Stream adapter over `Sequence` with stable position tracking.
+///
+/// # Purpose
+/// - Expose sequence content as a winnow `Stream`.
+/// - Preserve token offsets for precise parser errors.
+/// - Support lookahead and slicing without losing global positions.
 pub struct LocatingSequence<'a> {
     /// unparsed tokens represented by [Content]
     tokens: PreTokenMap<'a>,
-    /// Shared Reference of position.
-    /// [Rc<AtomicUsize>] Neccessary for correct error reporting.
-    /// `iter_offsets` only provides a & reference.
-    /// To still correctly alter the position this workaround is required.
+    /// shared reference of position.
+    /// [Rc<AtomicUsize>] Neccessary for interior mutability and correct error reporting,
+    /// as `iter_offsets` only provides a `&` reference.
     pos: Rc<AtomicUsize>,
+    /// cummulative length or [PreToken]s. [Text] contribute their respective number of [char]s, everything else has length=1.
     len: usize,
+    /// starting position in relation to indices used in [PreTokenMap]. Can be unequal to 0 in cases where sub-sequences are created (lookahead, etc.).
     offset: usize,
 }
 pub struct TypstError {
+    /// Global token/character offset where parsing failed.
     pub offset: usize,
+    /// Span length of the failing token/segment.
     pub len: usize,
+    /// Underlying winnow context error.
     pub inner: ContextError,
 }
 impl TypstError {
+    /// Appends a context entry to the underlying error and returns `self`.
     pub fn context(mut self, context: StrContext) -> Self {
         self.inner.push(context);
         self
     }
 
+    /// Creates an error positioned at `token`.
     pub fn from_token(token: &LocatingToken<'_>) -> Self {
         TypstError {
             offset: token.offset,
@@ -275,6 +268,7 @@ impl AddContext<LocatingSequence<'_>, StrContext> for TypstError {
     }
 }
 
+/// Builds an absolute positioned floating Typst error. Similar to a normal [Panic].
 pub fn error_box<'a>(error: &TypstError) -> Content<'a> {
     let expression: Option<&&'static str> = error.inner.context().find_map(|c| match c {
         StrContext::Label(c) => Some(c),
@@ -312,7 +306,12 @@ pub fn error_box<'a>(error: &TypstError) -> Content<'a> {
     )
 }
 impl TypstError {
-    /// Renders the [LocatingSequence] back into a [Sequence] and adds error boxes at the error positions.
+    /// Reconstructs a `Sequence` and injects visual error annotations.
+    ///
+    /// # Behavior
+    /// - Preserves original structure (`sequence`, `math`, raw/content tokens).
+    /// - Underlines the error span in red.
+    /// - Inserts [`error_box`] after the highlighted span.
     pub fn render<'a>(&self, sequence: &LocatingSequence<'a>) -> Sequence<'a> {
         let mut seq: Sequence = Sequence::new();
         let mut stack = vec![&mut seq as *mut Sequence<'a>];
@@ -496,23 +495,119 @@ impl<'a> Offset<Usize> for LocatingSequence<'a> {
 }
 
 #[derive(Debug, Clone)]
+/// Token plus source-location metadata used by `LocatingSequence`.
 pub struct LocatingToken<'a> {
+    /// Parsed token value.
     pub token: Token<'a>,
+    /// Global offset of token start.
     pub offset: usize,
+    /// Token width in stream units. Only >1 for subtokens of [Text].
     pub len: usize,
 }
 #[derive(Debug, Clone)]
+/// Token kind emitted by text/content sequence tokenization.
 pub enum Token<'a> {
+    /// Fallback token for all [Content] that does not have a direct textual representation. Treated as a single token with length=1.
     Raw(&'a Content<'a>),
+    /// Delimiter or operator symbol.
     Delimiter(char),
+    /// Floating-point numeric literal.
     Number(f32),
+    /// Fallback token for unrecognized sequences of characters. Contains the raw string slice.
     Word(&'a str),
+    /// Opening grouping symbol.
     GroupOpen(char),
+    /// Closing grouping symbol.
     GroupClose(char),
+    /// Start marker for embedded math sequence.
     MathOpen,
+    /// End marker for embedded math sequence.
     MathClose,
+    /// Start marker for nested sequence.
     SequenceOpen,
+    /// End marker for nested sequence.
     SequenceClose,
+}
+impl<'a> Parser<LocatingSequence<'a>, Self, TypstError> for Token<'a> {
+    fn parse_next(&mut self, input: &mut LocatingSequence<'a>) -> Result<Self, TypstError> {
+        match (self, input.next_token()) {
+            (
+                Token::Delimiter(c1),
+                Some(
+                    token @ LocatingToken {
+                        token: Token::Delimiter(c2),
+                        ..
+                    },
+                ),
+            ) if *c1 == c2 => Ok(token.token),
+            (
+                Token::Number(n1),
+                Some(
+                    token @ LocatingToken {
+                        token: Token::Number(n2),
+                        ..
+                    },
+                ),
+            ) if *n1 == n2 => Ok(token.token),
+            (
+                Token::Word(w1),
+                Some(
+                    token @ LocatingToken {
+                        token: Token::Word(w2),
+                        ..
+                    },
+                ),
+            ) if *w1 == w2 => Ok(token.token),
+            (
+                Token::GroupOpen(g1),
+                Some(
+                    token @ LocatingToken {
+                        token: Token::GroupOpen(g2),
+                        ..
+                    },
+                ),
+            ) if *g1 == g2 => Ok(token.token),
+            (
+                Token::GroupClose(g1),
+                Some(
+                    token @ LocatingToken {
+                        token: Token::GroupClose(g2),
+                        ..
+                    },
+                ),
+            ) if *g1 == g2 => Ok(token.token),
+            (
+                Token::MathOpen,
+                Some(LocatingToken {
+                    token: Token::MathOpen,
+                    ..
+                }),
+            ) => Ok(Token::MathOpen),
+            (
+                Token::MathClose,
+                Some(LocatingToken {
+                    token: Token::MathClose,
+                    ..
+                }),
+            ) => Ok(Token::MathClose),
+            (
+                Token::SequenceOpen,
+                Some(LocatingToken {
+                    token: Token::SequenceOpen,
+                    ..
+                }),
+            ) => Ok(Token::SequenceOpen),
+            (
+                Token::SequenceClose,
+                Some(LocatingToken {
+                    token: Token::SequenceClose,
+                    ..
+                }),
+            ) => Ok(Token::SequenceClose),
+            (_, Some(token)) => Err(TypstError::from_token(&token)),
+            (_, None) => Err(TypstError::from_input(input)),
+        }
+    }
 }
 impl<'a> Iterator for LocatingSequence<'a> {
     type Item = (usize, LocatingToken<'a>);
@@ -525,6 +620,11 @@ impl<'a> Iterator for LocatingSequence<'a> {
 
 static SPACE: Content = Content::Space(Space);
 impl<'a> LocatingSequence<'a> {
+    /// Creates an independent cursor over the same token storage.
+    ///
+    /// # Notes
+    /// - Copies current position into a new atomic cursor.
+    /// - Advancing the clone does not modify the original cursor.
     pub fn lookahead(&self) -> LocatingSequence<'a> {
         // creates new position tracker for lookahead, to not affect the original one.
         LocatingSequence {
@@ -535,10 +635,12 @@ impl<'a> LocatingSequence<'a> {
         }
     }
 
+    /// Returns absolute stream position.
     pub fn global_pos(&self) -> usize {
         self.pos.load(Ordering::Relaxed)
     }
 
+    /// Returns position relative to this view's local offset.
     pub fn pos(&self) -> usize {
         self.pos.fetch_sub(self.offset, Ordering::Relaxed)
     }
@@ -642,13 +744,14 @@ impl<'a> Stream for LocatingSequence<'a> {
     }
 
     fn offset_at(&self, tokens: usize) -> Result<usize, winnow::error::Needed> {
-        // This uses the amount of pretokens to calculate the offset, which is not the same as the amount of tokens, as some pretokens can expand to multiple tokens.
-        // Since the tokens are parsed lazily, the offset cannot be calculated correctly here.
-        self.tokens
-            .lookup
-            .get(tokens)
-            .cloned()
-            .ok_or(winnow::error::Needed::Unknown)
+        let mut lookahead = self.lookahead();
+        lookahead.pos.store(lookahead.offset, Ordering::Relaxed);
+        for _ in 0..tokens {
+            if lookahead.next_token().is_none() {
+                break;
+            }
+        }
+        Ok(lookahead.pos.load(Ordering::Relaxed))
     }
 
     fn next_slice(&mut self, offset: usize) -> Self::Slice {

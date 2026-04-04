@@ -1,11 +1,7 @@
 use crate::{Content, Item, types::generic::TypedArray};
 use std::ops::{Deref, DerefMut};
 
-mod structured;
 mod winnow;
-pub use structured::{
-    ParsedSequence, Sequence as StructuredSequence, SequenceView, TypedStructuredSequence,
-};
 pub use winnow::{LocatingSequence, LocatingToken, Token, TypstError, error_box};
 
 /// Used within typst's internals to represent a space seperated sequence of different content items within a single content block. This is basically an array of `Content`.

@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{Auto, Content, Item, None, TypstTypeLike};
 #[cfg(feature = "content")]
-use crate::{ParsedSequence, Sequence, SequenceView, StructuredSequence};
+use crate::Sequence;
+use crate::{Auto, Content, Item, None, TypstTypeLike};
 
 /// Utility for specifying a type that can be one of two possible [Item] variants. In case more variants are needed, consider using [crate::auto_impl].
 /// # Example
@@ -159,31 +159,6 @@ impl_conversion! { Item<'a> }
 impl_conversion! { Content<'a> }
 #[cfg(feature = "content")]
 impl_conversion! { Sequence<'a> }
-#[cfg(feature = "content")]
-impl_conversion! { StructuredSequence<'a> }
-
-#[cfg(feature = "content")]
-impl<T1, T2> SequenceView for Or<T1, T2>
-where
-    T1: SequenceView,
-    T2: SequenceView,
-{
-    fn parse<'a>(
-        seq: StructuredSequence<'a>,
-    ) -> std::result::Result<ParsedSequence<'a, Or<T1, T2>>, std::string::String> {
-        if let Ok(parsed) = T1::parse(seq.clone()) {
-            return Ok(ParsedSequence {
-                value: Or::Left(parsed.value),
-                remaining: parsed.remaining,
-            });
-        }
-        let parsed = T2::parse(seq)?;
-        Ok(ParsedSequence {
-            value: Or::Right(parsed.value),
-            remaining: parsed.remaining,
-        })
-    }
-}
 
 impl<T1, T2> TypstTypeLike for Or<T1, T2>
 where
