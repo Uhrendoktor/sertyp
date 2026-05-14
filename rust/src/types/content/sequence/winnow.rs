@@ -7,16 +7,18 @@ use std::{
 
 use winnow::{
     Parser, Result,
-    ascii::{float, multispace1},
+    ascii::{Caseless, multispace1},
     combinator::alt,
-    error::{AddContext, ContextError, ParserError, StrContext, StrContextValue},
-    stream::{Offset, Stream, StreamIsPartial},
+    error::{AddContext, ContextError, ParserError},
+    stream::{Compare, Offset, ParseSlice, Stream, StreamIsPartial},
     token::one_of,
 };
 
 use crate::{
-    Box, Color, Content, Length, Or, Panic, Place, RBox, Raw, Sequence, Space, Stroke, Text,
-    TypedItem, Underline, math::Equation, types::generic::FillColor,
+    Box, CharStream, Color, Content, Length, Or, Panic, Place, RBox, Raw, Sequence, Space, Stroke,
+    Symbol, Text, TypedItem, Underline, float,
+    math::{Equation, LR},
+    types::generic::FillColor,
 };
 
 /// Token parser adapter with word fallback.
@@ -30,6 +32,7 @@ use crate::{
 /// - If `P` succeeds at the current position: forwards `P` result.
 /// - If `P` succeeds later: returns preceding `Token::Word`.
 /// - If `P` never succeeds: returns remaining input as `Token::Word`.
+#[derive(Debug, Clone)]
 pub struct WordFallbackParser<'a, P: Parser<&'a str, Token<'a>, ContextError> = DefaultTokenParser>
 {
     parser: P,
@@ -70,11 +73,6 @@ impl<'a, P: Parser<&'a str, Token<'a>, ContextError>> Parser<&'a str, Token<'a>,
         }
     }
 }
-impl<'a> Default for WordFallbackParser<'a> {
-    fn default() -> Self {
-        WordFallbackParser::new(DefaultTokenParser)
-    }
-}
 
 /// Default token parser for textual sequence fragments.
 ///
@@ -83,9 +81,18 @@ impl<'a> Default for WordFallbackParser<'a> {
 /// - `Token::Number` for floating-point literals.
 /// - `Token::GroupOpen` / `Token::GroupClose` for grouping symbols.
 /// - `Token::Raw(&SPACE)` for one or more whitespace characters.
+#[derive(Debug, Clone)]
 pub struct DefaultTokenParser;
-impl<'a, E: ParserError<&'a str>> Parser<&'a str, Token<'a>, E> for DefaultTokenParser {
-    fn parse_next(&mut self, input: &mut &'a str) -> Result<Token<'a>, E> {
+impl<
+    'a,
+    I: Stream<Token = char> + StreamIsPartial + Compare<Caseless<&'static str>> + Compare<char>,
+    E: ParserError<I>,
+> Parser<I, Token<'a>, E> for DefaultTokenParser
+where
+    <I as Stream>::Slice: ParseSlice<f32>,
+    <I as Stream>::IterOffsets: Clone,
+{
+    fn parse_next(&mut self, input: &mut I) -> Result<Token<'a>, E> {
         alt((
             one_of([
                 '+', '-', '*', '/', '%', '=', '<', '>', '!', '?', '&', '|', '^', '~',
@@ -216,38 +223,54 @@ pub struct LocatingSequence<'a> {
     /// starting position in relation to indices used in [PreTokenMap]. Can be unequal to 0 in cases where sub-sequences are created (lookahead, etc.).
     offset: usize,
 }
-pub struct TypstError {
+#[derive(Debug, Clone)]
+pub struct TypstError<'a> {
     /// Global token/character offset where parsing failed.
     pub offset: usize,
     /// Span length of the failing token/segment.
     pub len: usize,
     /// Underlying winnow context error.
-    pub inner: ContextError,
+    pub inner: Vec<Context<'a>>,
 }
-impl TypstError {
+impl<'a> TypstError<'a> {
     /// Appends a context entry to the underlying error and returns `self`.
-    pub fn context(mut self, context: StrContext) -> Self {
+    pub fn context(mut self, context: Context<'a>) -> Self {
         self.inner.push(context);
         self
     }
 
     /// Creates an error positioned at `token`.
-    pub fn from_token(token: &LocatingToken<'_>) -> Self {
+    pub fn from_token<T>(token: &Locatable<T>) -> Self {
         TypstError {
             offset: token.offset,
             len: token.len,
-            inner: ContextError::new(),
+            inner: vec![],
+        }
+    }
+
+    pub fn manual(offset: usize, len: usize) -> Self {
+        TypstError {
+            offset,
+            len,
+            inner: vec![],
         }
     }
 }
-impl ParserError<LocatingSequence<'_>> for TypstError {
+impl<'a> ParserError<LocatingSequence<'a>> for TypstError<'a> {
     type Inner = Self;
+
+    fn assert(input: &LocatingSequence<'a>, message: &'static str) -> Self
+    where
+        LocatingSequence<'a>: core::fmt::Debug,
+    {
+        TypstError::from_input(input).context(Context::Label(message.into()))
+    }
 
     fn from_input(input: &LocatingSequence<'_>) -> Self {
         TypstError {
             offset: input.global_pos(),
             len: 1,
-            inner: ContextError::new(),
+            inner: vec![],
         }
     }
 
@@ -255,13 +278,20 @@ impl ParserError<LocatingSequence<'_>> for TypstError {
         Ok(self)
     }
 }
-impl AddContext<LocatingSequence<'_>, StrContext> for TypstError {
+
+#[derive(Debug, Clone)]
+pub enum Context<'a> {
+    Label(crate::String<'a>),
+    Expected(crate::String<'a>),
+    Found(crate::String<'a>),
+}
+impl<'a> AddContext<LocatingSequence<'a>, Context<'a>> for TypstError<'a> {
     #[inline]
     fn add_context(
         mut self,
-        _input: &LocatingSequence<'_>,
-        _token_start: &<LocatingSequence<'_> as Stream>::Checkpoint,
-        context: StrContext,
+        _input: &LocatingSequence<'a>,
+        _token_start: &<LocatingSequence<'a> as Stream>::Checkpoint,
+        context: Context<'a>,
     ) -> Self {
         self.inner.push(context);
         self
@@ -269,19 +299,28 @@ impl AddContext<LocatingSequence<'_>, StrContext> for TypstError {
 }
 
 /// Builds an absolute positioned floating Typst error. Similar to a normal [Panic].
-pub fn error_box<'a>(error: &TypstError) -> Content<'a> {
-    let expression: Option<&&'static str> = error.inner.context().find_map(|c| match c {
-        StrContext::Label(c) => Some(c),
+pub fn error_box<'a>(error: &TypstError<'a>) -> Content<'a> {
+    let expression: Option<_> = error.inner.iter().find_map(|c| match c {
+        Context::Label(c) => Some(c),
         _ => None,
     });
     let expected = error
         .inner
-        .context()
+        .iter()
         .filter_map(|c| match c {
-            StrContext::Expected(StrContextValue::Description(d)) => Some(*d),
+            Context::Expected(c) => Some(c.to_string()),
             _ => None,
         })
-        .collect::<Vec<_>>()
+        .collect::<Vec<String>>()
+        .join(", ");
+    let found = error
+        .inner
+        .iter()
+        .filter_map(|c| match c {
+            Context::Found(f) => Some(f.to_string()),
+            _ => None,
+        })
+        .collect::<Vec<String>>()
         .join(", ");
     Content::Box(
         Box {
@@ -289,8 +328,9 @@ pub fn error_box<'a>(error: &TypstError) -> Content<'a> {
                 TypedItem::new(Content::Place(Place {
                     body: Some(
                         TypedItem::new(Content::Panic(Panic {
-                            ty: format!("invalid {}", *expression.unwrap_or(&"<unknown>")).into(),
-                            msg: format!("expected {}", expected).into(),
+                            ty: format!("invalid {}", expression.unwrap_or(&"<unknown>".into()))
+                                .into(),
+                            msg: format!("expected {}, found {}", expected, found).into(),
                         }))
                         .into(),
                     ),
@@ -305,14 +345,14 @@ pub fn error_box<'a>(error: &TypstError) -> Content<'a> {
         .into(),
     )
 }
-impl TypstError {
+impl<'a> TypstError<'a> {
     /// Reconstructs a `Sequence` and injects visual error annotations.
     ///
     /// # Behavior
     /// - Preserves original structure (`sequence`, `math`, raw/content tokens).
     /// - Underlines the error span in red.
     /// - Inserts [`error_box`] after the highlighted span.
-    pub fn render<'a>(&self, sequence: &LocatingSequence<'a>) -> Sequence<'a> {
+    pub fn render(&self, sequence: &LocatingSequence<'a>) -> Sequence<'a> {
         let mut seq: Sequence = Sequence::new();
         let mut stack = vec![&mut seq as *mut Sequence<'a>];
 
@@ -334,6 +374,7 @@ impl TypstError {
             stack.push(seq_ptr);
         }
 
+        let mut hit = false;
         let mut offset = 0;
         while let Some(token) = sequence.tokens.get(&offset) {
             match token {
@@ -341,6 +382,7 @@ impl TypstError {
                     token, start, len, ..
                 } => {
                     if (*start <= self.offset) && (self.offset < start + len) {
+                        hit = true;
                         let (pre, error, post): (Option<Content<'_>>, _, Option<Content<'_>>) =
                             match token {
                                 Content::Text(text) => {
@@ -418,6 +460,26 @@ impl TypstError {
             };
         }
 
+        // special case if error was thrown on invisible token
+        if !hit {
+            return Sequence {
+                children: vec![
+                    Underline {
+                        stroke: Some(Or::Right(Stroke {
+                            paint: Or::Right(FillColor::Color(Color::rgba_hex("#FF0000").unwrap())),
+                            ..Default::default()
+                        })),
+                        evade: Some(TypedItem(false.into())),
+                        extent: Some(TypedItem(Length::pt(1.5))),
+                        body: Some(RBox::new(TypedItem(seq.into()))),
+                        ..Default::default()
+                    }
+                    .into(),
+                    error_box(self),
+                ]
+                .into(),
+            };
+        }
         seq
     }
 }
@@ -461,6 +523,9 @@ impl<'a> From<&'a Sequence<'a>> for LocatingSequence<'a> {
                     tokens.tokens.insert(*pos..*pos + 1, PreToken::MathClose);
                     *pos += 1;
                 }
+                Content::MathLR(LR { body, .. }) => {
+                    insert_content(pos, body, tokens);
+                }
                 content => {
                     tokens.insert_token(content, *pos..*pos + 1);
                     *pos += 1;
@@ -495,15 +560,37 @@ impl<'a> Offset<Usize> for LocatingSequence<'a> {
 }
 
 #[derive(Debug, Clone)]
-/// Token plus source-location metadata used by `LocatingSequence`.
-pub struct LocatingToken<'a> {
-    /// Parsed token value.
-    pub token: Token<'a>,
+pub struct Locatable<T> {
+    pub inner: T,
     /// Global offset of token start.
     pub offset: usize,
     /// Token width in stream units. Only >1 for subtokens of [Text].
     pub len: usize,
 }
+impl<T> Locatable<T> {
+    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Locatable<U> {
+        Locatable {
+            inner: f(self.inner),
+            offset: self.offset,
+            len: self.len,
+        }
+    }
+}
+impl<T> Deref for Locatable<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+impl<T> DerefMut for Locatable<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
+    }
+}
+
+/// Token plus source-location metadata used by `LocatingSequence`.
+pub type LocatingToken<'a> = Locatable<Token<'a>>;
 #[derive(Debug, Clone)]
 /// Token kind emitted by text/content sequence tokenization.
 pub enum Token<'a> {
@@ -528,84 +615,147 @@ pub enum Token<'a> {
     /// End marker for nested sequence.
     SequenceClose,
 }
-impl<'a> Parser<LocatingSequence<'a>, Self, TypstError> for Token<'a> {
-    fn parse_next(&mut self, input: &mut LocatingSequence<'a>) -> Result<Self, TypstError> {
+impl<'a> Parser<LocatingSequence<'a>, Self, TypstError<'a>> for Token<'a> {
+    fn parse_next(&mut self, input: &mut LocatingSequence<'a>) -> Result<Self, TypstError<'a>> {
         match (self, input.next_token()) {
             (
                 Token::Delimiter(c1),
                 Some(
                     token @ LocatingToken {
-                        token: Token::Delimiter(c2),
+                        inner: Token::Delimiter(c2),
                         ..
                     },
                 ),
-            ) if *c1 == c2 => Ok(token.token),
+            ) => {
+                if *c1 == c2 {
+                    Ok(token.inner)
+                } else {
+                    Err(TypstError::from_token(&token)
+                        .context(Context::Label("delimiter".into()))
+                        .context(Context::Expected((*c1).to_string().into()))
+                        .context(Context::Found(c2.to_string().into())))
+                }
+            }
             (
                 Token::Number(n1),
                 Some(
                     token @ LocatingToken {
-                        token: Token::Number(n2),
+                        inner: Token::Number(n2),
                         ..
                     },
                 ),
-            ) if *n1 == n2 => Ok(token.token),
+            ) => {
+                if *n1 == n2 {
+                    Ok(token.inner)
+                } else {
+                    Err(TypstError::from_token(&token)
+                        .context(Context::Label("number".into()))
+                        .context(Context::Expected((*n1).to_string().into()))
+                        .context(Context::Found(n2.to_string().into())))
+                }
+            }
             (
                 Token::Word(w1),
                 Some(
                     token @ LocatingToken {
-                        token: Token::Word(w2),
+                        inner: Token::Word(w2),
                         ..
                     },
                 ),
-            ) if *w1 == w2 => Ok(token.token),
+            ) => {
+                if *w1 == w2 {
+                    Ok(token.inner)
+                } else {
+                    Err(TypstError::from_token(&token)
+                        .context(Context::Label("word".into()))
+                        .context(Context::Expected((*w1).to_string().into()))
+                        .context(Context::Found(w2.to_string().into())))
+                }
+            }
             (
                 Token::GroupOpen(g1),
                 Some(
                     token @ LocatingToken {
-                        token: Token::GroupOpen(g2),
+                        inner: Token::GroupOpen(g2),
                         ..
                     },
                 ),
-            ) if *g1 == g2 => Ok(token.token),
+            ) => {
+                if *g1 == g2 {
+                    Ok(token.inner)
+                } else {
+                    Err(TypstError::from_token(&token)
+                        .context(Context::Label("group open".into()))
+                        .context(Context::Expected((*g1).to_string().into()))
+                        .context(Context::Found(g2.to_string().into())))
+                }
+            }
             (
                 Token::GroupClose(g1),
                 Some(
                     token @ LocatingToken {
-                        token: Token::GroupClose(g2),
+                        inner: Token::GroupClose(g2),
                         ..
                     },
                 ),
-            ) if *g1 == g2 => Ok(token.token),
+            ) => {
+                if *g1 == g2 {
+                    Ok(token.inner)
+                } else {
+                    Err(TypstError::from_token(&token)
+                        .context(Context::Label("group close".into()))
+                        .context(Context::Expected((*g1).to_string().into()))
+                        .context(Context::Found(g2.to_string().into())))
+                }
+            }
             (
                 Token::MathOpen,
                 Some(LocatingToken {
-                    token: Token::MathOpen,
+                    inner: Token::MathOpen,
                     ..
                 }),
             ) => Ok(Token::MathOpen),
+            (Token::MathOpen, t) => Err(TypstError::from_input(input)
+                .context(Context::Label("math open".into()))
+                .context(Context::Found(format!("{t:#?}").into()))),
             (
                 Token::MathClose,
                 Some(LocatingToken {
-                    token: Token::MathClose,
+                    inner: Token::MathClose,
                     ..
                 }),
             ) => Ok(Token::MathClose),
+            (Token::MathClose, t) => Err(TypstError::from_input(input)
+                .context(Context::Label("math close".into()))
+                .context(Context::Found(format!("{t:#?}").into()))),
             (
                 Token::SequenceOpen,
                 Some(LocatingToken {
-                    token: Token::SequenceOpen,
+                    inner: Token::SequenceOpen,
                     ..
                 }),
             ) => Ok(Token::SequenceOpen),
+            (Token::SequenceOpen, t) => Err(TypstError::from_input(input)
+                .context(Context::Label("sequence open".into()))
+                .context(Context::Found(format!("{t:#?}").into()))),
             (
                 Token::SequenceClose,
                 Some(LocatingToken {
-                    token: Token::SequenceClose,
+                    inner: Token::SequenceClose,
                     ..
                 }),
             ) => Ok(Token::SequenceClose),
-            (_, Some(token)) => Err(TypstError::from_token(&token)),
-            (_, None) => Err(TypstError::from_input(input)),
+            (Token::SequenceClose, t) => Err(TypstError::from_input(input)
+                .context(Context::Label("sequence close".into()))
+                .context(Context::Found(format!("{t:#?}").into()))),
+            (t, Some(token)) => Err(TypstError::from_token(&token)
+                .context(Context::Label("parser".into()))
+                .context(Context::Expected(format!("{t:#?}").into()))
+                .context(Context::Found(format!("{token:#?}").into()))),
+            (t, None) => Err(TypstError::from_input(input)
+                .context(Context::Label("parser".into()))
+                .context(Context::Expected(format!("{t:#?}").into()))
+                .context(Context::Found("end of input".into()))),
         }
     }
 }
@@ -650,11 +800,11 @@ impl<'a> LocatingSequence<'a> {
             return None;
         }
         fn parser<'a>(text: &'a str, pos: &usize, start: &usize) -> Option<LocatingToken<'a>> {
-            WordFallbackParser::default()
+            WordFallbackParser::new(DefaultTokenParser)
                 .with_taken()
                 .parse_next(&mut &text[pos - *start..])
                 .map(|(token, v)| LocatingToken {
-                    token,
+                    inner: token,
                     offset: *pos,
                     len: v.len(),
                 })
@@ -671,28 +821,41 @@ impl<'a> LocatingSequence<'a> {
                 start,
                 ..
             } => parser(text, &self.pos(), start),
+            PreToken::Token {
+                token: Content::Symbol(Symbol(s)),
+                ..
+            } => {
+                let r: Result<_, ContextError> = DefaultTokenParser
+                    .parse_next(&mut CharStream::from(s))
+                    .map(|token| LocatingToken {
+                        inner: token,
+                        offset: self.pos(),
+                        len: 1,
+                    });
+                r.ok()
+            }
             PreToken::Token { token, .. } => Some(LocatingToken {
-                token: Token::Raw(token),
+                inner: Token::Raw(token),
                 offset: self.pos(),
                 len: 1,
             }),
             PreToken::MathOpen => Some(LocatingToken {
-                token: Token::MathOpen,
+                inner: Token::MathOpen,
                 offset: self.pos(),
                 len: 1,
             }),
             PreToken::MathClose => Some(LocatingToken {
-                token: Token::MathClose,
+                inner: Token::MathClose,
                 offset: self.pos(),
                 len: 1,
             }),
             PreToken::SequenceOpen => Some(LocatingToken {
-                token: Token::SequenceOpen,
+                inner: Token::SequenceOpen,
                 offset: self.pos(),
                 len: 1,
             }),
             PreToken::SequenceClose => Some(LocatingToken {
-                token: Token::SequenceClose,
+                inner: Token::SequenceClose,
                 offset: self.pos(),
                 len: 1,
             }),
@@ -711,7 +874,7 @@ impl<'a> Stream for LocatingSequence<'a> {
     }
 
     fn eof_offset(&self) -> usize {
-        self.len
+        self.len.saturating_sub(self.pos())
     }
 
     fn next_token(&mut self) -> Option<Self::Token> {

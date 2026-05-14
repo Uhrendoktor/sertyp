@@ -138,7 +138,9 @@
   }
   let ty = if is_panic {
     "panic"
-  } else { type_.serializer(type(content)) }
+  } else {
+    type_.serializer(type(content))
+  }
   if value == no_value {
     return (
       type: ty,
@@ -170,9 +172,6 @@
   let deserializer = type_mod(ty).deserializer
   if "value" not in content {
     return deserializer(ctx)
-  }
-  if ty == "panic" {
-    return deserializer(content.at("value"), ctx)
   }
   return deserializer(content.at("value"), ctx)
 }

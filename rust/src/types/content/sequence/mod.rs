@@ -1,8 +1,12 @@
 use crate::{Content, Item, types::generic::TypedArray};
 use std::ops::{Deref, DerefMut};
 
+mod charstream;
+pub use charstream::{CharStream, float};
 mod winnow;
-pub use winnow::{LocatingSequence, LocatingToken, Token, TypstError, error_box};
+pub use winnow::{
+    Context, Locatable, LocatingSequence, LocatingToken, Token, TypstError, error_box,
+};
 
 /// Used within typst's internals to represent a space seperated sequence of different content items within a single content block. This is basically an array of `Content`.
 /// # Example of Typst Behavior
