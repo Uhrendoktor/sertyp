@@ -97,7 +97,18 @@ pub fn typst_func(
                         Ok(v) => v,
                         Err(e) => match p {
                             Ok(p) => {
-                                sertyp::error!("Cascading Error", "[{} {}:{}:{}] failed because of previous error:\n{}: {}", stringify!(#orig_ident), file!(), line!(), column!(), p.ty, p.msg);
+                                return sertyp::serialize_cbor(&sertyp::Panic{
+                                    ty: "Cascading Error".into(),
+                                    msg: sertyp::Content::from(sertyp::Sequence::from(vec![
+                                        sertyp::Link{
+                                            dest: Some(sertyp::LinkDestination::String(format!("file://{}:{}:{}", concat!(env!("CARGO_MANIFEST_DIR"), "/", file!()), line!(), column!()).into()).into()),
+                                            body: Some(sertyp::TypedItem::new(sertyp::Text::from_string(format!("[{} {}:{}:{}]",  stringify!(#orig_ident), file!(), line!(), column!())).into()))
+                                        }.into(),
+                                        sertyp::Content::from(sertyp::Text::from_string(" failed because of previous error:\n")),
+                                        sertyp::Text::from_string(format!("{}\n", p.ty)).bold().into(),
+                                        p.msg.into_inner().into_inner()
+                                    ])).into(),
+                                }.into()).unwrap();
                             }
                             Err(_) => {
                                 sertyp::error!("Type Conversion Error", "{}", &e);

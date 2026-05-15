@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use std::ops::{Deref, DerefMut};
 
 use serde::{Deserialize, Serialize};
@@ -12,6 +12,14 @@ pub struct Box<T>(pub std::boxed::Box<T>);
 impl<T> Box<T> {
     pub fn into_inner(self) -> T {
         *self.0
+    }
+
+    pub fn as_ref(&self) -> &T {
+        &self.0
+    }
+
+    pub fn as_mut(&mut self) -> &mut T {
+        &mut self.0
     }
 }
 impl<T> Box<T> {
@@ -81,5 +89,11 @@ impl<'a, T: TryFrom<Item<'a>, Error = std::string::String>> TryFrom<Item<'a>> fo
 impl<T: TypstTypeLike> TypstTypeLike for Box<T> {
     fn static_type_name() -> std::borrow::Cow<'static, str> {
         T::static_type_name()
+    }
+}
+
+impl<T: Display> Display for Box<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
     }
 }

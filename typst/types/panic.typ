@@ -36,7 +36,7 @@
 
   return generic.raw_serializer(dictionary)((
     type: meta.at("type"),
-    msg: meta.at("msg"),
+    msg: generic.serializer(meta.at("msg")),
   ))
 };
 
@@ -87,9 +87,9 @@
   m,
   ctx,
 ) = {
-  let (ty, msg) = (m.at("type"), m.at("msg"))
+  let (ty, msg) = (m.at("type"), generic.deserializer(m.at("msg"), ctx))
   utils.assert_type(ty, str)
-  utils.assert_type(msg, str)
+  utils.assert_type(msg, content)
   if ctx.at("panic", default: false) == true {
     panic(ty + ": " + msg)
   }
@@ -98,9 +98,10 @@
 
 #let test(cycle) = {
   let ty = "Test Error"
-  let msg = "This is a test error message."
+  let msg = [This is a test error message.]
   let box = error-box(ty, msg)
   utils.assert(is_panic(box), true)
-  utils.assert(generic.serializer(box), (type: "panic", value: (type: ty, msg: msg)))
+
+  utils.assert(generic.serializer(box), (type: "panic", value: (type: ty, msg: generic.serializer(msg))))
   cycle(box)
 };

@@ -1,4 +1,4 @@
-use crate::{Array, Content, Dictionary, String};
+use crate::{Array, Content, Dictionary, RBox, String};
 
 use crate::{
     AutoOr, Boolean, Direction, Integer, Item, Length, Or, Ratio, Relative, TypedItem,
@@ -103,6 +103,13 @@ impl<'a> Text<'a> {
     pub fn as_string(&self) -> &String<'a> {
         &self.text
     }
+
+    pub fn bold(self) -> Self {
+        Text {
+            weight: Some(Or::Right(TextWeight::Bold)),
+            ..self
+        }
+    }
 }
 
 crate::auto_impl! {
@@ -181,6 +188,12 @@ crate::impl_all!(Content<'a>::Text, std::boxed::Box<Text<'a>>{'a}, "text");
 impl<'a> From<Text<'a>> for Content<'a> {
     fn from(val: Text<'a>) -> Self {
         Content::Text(val.into())
+    }
+}
+
+impl<'a> From<Text<'a>> for RBox<Content<'a>> {
+    fn from(val: Text<'a>) -> Self {
+        RBox::new(val.into())
     }
 }
 

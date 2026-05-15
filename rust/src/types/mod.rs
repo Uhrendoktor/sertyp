@@ -299,6 +299,12 @@ macro_rules! define_enum {
             #[derive(Clone, Debug, Default, Hash)]
             pub struct [<Typed $name>]<T>(pub T);
 
+            impl<T: std::fmt::Display> std::fmt::Display for [<Typed $name>]<T> {
+                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    self.0.fmt(f)
+                }
+            }
+
             impl<$lt, T: TryFrom<$name<$lt>>> TryFrom<$name<$lt>> for [<Typed $name>]<T> {
                 type Error = T::Error;
 
@@ -430,6 +436,12 @@ macro_rules! impl_into {
         impl<'a> From<$ty> for $ity$(<$ilt>)? {
             fn from(value: $ty) -> $ity$(<$ilt>)? {
                 $ity::$(<$ilt>)?::$variant(value)
+            }
+        }
+
+        impl<'a> From<$ty> for $crate::types::RBox<$ity$(<$ilt>)?> {
+            fn from(value: $ty) -> $crate::types::RBox<$ity$(<$ilt>)?> {
+                $crate::types::RBox::new(value.into())
             }
         }
     };

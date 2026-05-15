@@ -3,6 +3,8 @@ mod r#box;
 #[cfg(feature = "content")]
 mod h;
 #[cfg(feature = "content")]
+pub mod link;
+#[cfg(feature = "content")]
 pub mod math;
 #[cfg(feature = "content")]
 mod metadata;
@@ -32,12 +34,13 @@ mod v;
 use crate::Item;
 #[cfg(feature = "content")]
 pub use crate::types::content::{
-    r#box::Box, h::H, metadata::Metadata, place::Place, raw::Raw, sequence::*, space::Space,
-    stack::Stack, strong::Strong, text::Text, underline::Underline, v::V,
+    r#box::Box, h::H, link::Link, link::LinkDestination, metadata::Metadata, place::Place,
+    raw::Raw, sequence::*, space::Space, stack::Stack, strong::Strong, text::Text,
+    underline::Underline, v::V,
 };
 #[cfg(feature = "content")]
 use crate::{
-    Panic, Symbol,
+    Panic, RBox, Symbol,
     types::content::{parbreak::Parbreak, symbol::Symbol_},
 };
 
@@ -95,6 +98,13 @@ impl<'a> From<Content<'a>> for Item<'a> {
 }
 
 #[cfg(feature = "content")]
+impl<'a> From<Content<'a>> for RBox<Item<'a>> {
+    fn from(val: Content<'a>) -> Self {
+        RBox::new(val.into())
+    }
+}
+
+#[cfg(feature = "content")]
 crate::define_enum! {
     #[serde(tag="func", content="fields", rename_all="lowercase")]
     pub enum Content<'a> {
@@ -108,6 +118,8 @@ crate::define_enum! {
         },
         Box(std::boxed::Box<Box<'a>>),
         H(H),
+        #[serde(borrow)]
+        Link(Link<'a>),
         #[serde(borrow)]
         Metadata(Metadata<'a>),
         Parbreak(Parbreak),

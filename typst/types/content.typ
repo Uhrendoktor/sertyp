@@ -238,6 +238,9 @@
   "state-update": (..args) => {
     panic("complex state update deserialization is not supported")
   },
+  "link": (..args) => {
+    link(args.named().dest)[#args.pos().at(0)]
+  },
 );
 
 
@@ -259,6 +262,7 @@
 
   import "function.typ" as func_
   let func = if d.func in FN { FN.at(d.func) } else { func_.deserializer(d.func, ctx) }
+
   return func(..args)
 }
 

@@ -304,24 +304,34 @@ pub fn error_box<'a>(error: &TypstError<'a>) -> Content<'a> {
         Context::Label(c) => Some(c),
         _ => None,
     });
-    let expected = error
-        .inner
-        .iter()
-        .filter_map(|c| match c {
-            Context::Expected(c) => Some(c.to_string()),
-            _ => None,
-        })
-        .collect::<Vec<String>>()
-        .join(", ");
-    let found = error
-        .inner
-        .iter()
-        .filter_map(|c| match c {
-            Context::Found(f) => Some(f.to_string()),
-            _ => None,
-        })
-        .collect::<Vec<String>>()
-        .join(", ");
+    macro_rules! filter_variant {
+        ($variant:ident) => {
+            error
+                .inner
+                .iter()
+                .filter_map(|c| match c {
+                    Context::$variant(c) => Some(c.to_string()),
+                    _ => None,
+                })
+                .collect::<Vec<String>>()
+                .join(", ")
+        };
+    }
+    let expected = filter_variant!(Expected);
+    let found = filter_variant!(Found);
+    let mut msg = vec![];
+    if !expected.is_empty() {
+        msg.push(Text::from_string("expected").bold().into());
+        msg.push(Text::from_string(expected).into());
+        if !found.is_empty() {
+            msg.push(Text::from_string(", ").into());
+        }
+    }
+    if !found.is_empty() {
+        msg.push(Text::from_string("found").bold().into());
+        msg.push(Text::from_string(found).into());
+    }
+
     Content::Box(
         Box {
             body: Some(RBox(
@@ -330,7 +340,7 @@ pub fn error_box<'a>(error: &TypstError<'a>) -> Content<'a> {
                         TypedItem::new(Content::Panic(Panic {
                             ty: format!("invalid {}", expression.unwrap_or(&"<unknown>".into()))
                                 .into(),
-                            msg: format!("expected {}, found {}", expected, found).into(),
+                            msg: Content::from(Sequence::from(msg)).into(),
                         }))
                         .into(),
                     ),

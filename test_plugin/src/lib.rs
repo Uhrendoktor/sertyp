@@ -1,9 +1,5 @@
-use sertyp::{Content, LocatingSequence, LocatingToken, Text, Token, TypstError, typst_func};
+use sertyp::typst_func;
 use wasm_minimal_protocol::*;
-use winnow::{
-    error::{ParserError, StrContext, StrContextValue},
-    stream::Stream,
-};
 
 #[cfg(target_arch = "wasm32")]
 initiate_protocol!();

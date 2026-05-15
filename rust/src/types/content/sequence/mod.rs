@@ -42,6 +42,14 @@ impl<'a> From<Content<'a>> for Sequence<'a> {
     }
 }
 
+impl<'a> From<Vec<Content<'a>>> for Sequence<'a> {
+    fn from(vec: Vec<Content<'a>>) -> Self {
+        Sequence {
+            children: TypedArray::from(vec),
+        }
+    }
+}
+
 impl<'a> Deref for Sequence<'a> {
     type Target = TypedArray<Content<'a>>;
     fn deref(&self) -> &Self::Target {
