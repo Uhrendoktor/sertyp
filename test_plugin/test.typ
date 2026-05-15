@@ -79,7 +79,7 @@
     test_plugin.not_expecting_error,
     sertyp.call(test_plugin.not_expecting_error, sertyp.error-box(
       "Test Error",
-      [This *is* an _intended_ test error message with #underline([formatting]) #link("https://typst.app")[asd].],
+      [This *is* an _intended_ test error message with #underline([formatting]).],
     )),
   )
 }

@@ -15,8 +15,8 @@ use winnow::{
 };
 
 use crate::{
-    Box, CharStream, Color, Content, Length, Or, Panic, Place, RBox, Raw, Sequence, Space, Stroke,
-    Symbol, Text, TypedItem, Underline, float,
+    Box, CharStream, Color, Content, Length, Or, Panic, Place, RBox, Raw, Relative, Sequence,
+    Space, Stroke, Symbol, Text, TypedItem, Underline, float,
     math::{Equation, LR},
     types::generic::FillColor,
 };
@@ -322,14 +322,11 @@ pub fn error_box<'a>(error: &TypstError<'a>) -> Content<'a> {
     let mut msg = vec![];
     if !expected.is_empty() {
         msg.push(Text::from_string("expected").bold().into());
-        msg.push(Text::from_string(expected).into());
-        if !found.is_empty() {
-            msg.push(Text::from_string(", ").into());
-        }
+        msg.push(Text::from_string(format!(": {}\n", expected)).into());
     }
     if !found.is_empty() {
         msg.push(Text::from_string("found").bold().into());
-        msg.push(Text::from_string(found).into());
+        msg.push(Text::from_string(format!(": {}\n", found)).into());
     }
 
     Content::Box(
@@ -344,7 +341,7 @@ pub fn error_box<'a>(error: &TypstError<'a>) -> Content<'a> {
                         }))
                         .into(),
                     ),
-                    dy: Some(TypedItem::new(Length::pt(2.0).into())),
+                    dy: Some(TypedItem::new(Length::pt(3.0).into())),
                     dx: Some(TypedItem::new(Length::pt(-20.0).into())),
                     ..Default::default()
                 }))
@@ -415,13 +412,25 @@ impl<'a> TypstError<'a> {
                             Underline {
                                 stroke: Some(Or::Right(Stroke {
                                     paint: Or::Right(FillColor::Color(
-                                        Color::rgba_hex("#FF0000").unwrap(),
+                                        Color::rgba_hex("#dc3545").unwrap(),
                                     )),
                                     ..Default::default()
                                 })),
                                 evade: Some(TypedItem(false.into())),
                                 extent: Some(TypedItem(Length::pt(1.5))),
-                                body: Some(RBox::new(error.into())),
+                                body: Some(RBox::new(TypedItem(
+                                    Box {
+                                        fill: Some(Or::Right(FillColor::Color(
+                                            Color::rgba_hex("#fdecea").unwrap(),
+                                        ))),
+                                        inset: Some(Or::Left(Length::pt(1.0).into())),
+                                        radius: Some(Or::Left(Length::pt(2.0).into())),
+                                        body: Some(TypedItem(error).into()),
+                                        ..Box::default()
+                                    }
+                                    .into(),
+                                ))),
+                                background: Some(TypedItem(true.into())),
                                 ..Default::default()
                             }
                             .into(),
