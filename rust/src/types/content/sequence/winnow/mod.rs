@@ -1,3 +1,11 @@
+mod charstream;
+pub use charstream::{CharStream, dec_uint};
+
+mod error;
+pub use error::{Context, TypstError, error_box};
+
+pub mod parser;
+
 use core::panic;
 use std::{
     ops::{Deref, DerefMut, Range},
@@ -9,16 +17,14 @@ use winnow::{
     Parser, Result,
     ascii::{Caseless, multispace1},
     combinator::alt,
-    error::{AddContext, ContextError, ParserError},
-    stream::{Compare, Offset, ParseSlice, Stream, StreamIsPartial},
+    error::{ContextError, ParserError},
+    stream::{Compare, ContainsToken, Offset, ParseSlice, Stream, StreamIsPartial},
     token::one_of,
 };
 
 use crate::{
-    Box, CharStream, Color, Content, Length, Or, Panic, Place, RBox, Raw, Relative, Sequence,
-    Space, Stroke, Symbol, Text, TypedItem, Underline, float,
+    Content, Raw, Sequence, Space, Symbol, TypedItem,
     math::{Equation, LR},
-    types::generic::FillColor,
 };
 
 /// Token parser adapter with word fallback.
@@ -89,20 +95,20 @@ impl<
     E: ParserError<I>,
 > Parser<I, Token<'a>, E> for DefaultTokenParser
 where
-    <I as Stream>::Slice: ParseSlice<f32>,
+    <I as Stream>::Slice: ParseSlice<usize>,
     <I as Stream>::IterOffsets: Clone,
 {
     fn parse_next(&mut self, input: &mut I) -> Result<Token<'a>, E> {
         alt((
             one_of([
-                '+', '-', '*', '/', '%', '=', '<', '>', '!', '?', '&', '|', '^', '~',
+                '+', '-', '−', '*', '/', '%', '=', '<', '>', '!', '?', '&', '|', '^', '~',
             ])
             .map(Token::Delimiter),
             one_of([
                 '±', '∓', '×', '÷', '∗', '∙', '≠', '≈', '≃', '≅', '≤', '≥', '∧', '∨', '¬',
             ])
             .map(Token::Delimiter),
-            float.map(Token::Number),
+            dec_uint.map(Token::Number),
             one_of([';', ':', ',', '.', '…', '·', '•', '@', '#', '$']).map(Token::Delimiter),
             one_of([
                 '(', '[', '{', '<', '«', '‹', '“', '‘', '„', '‚', '⟨', '⟪', '⟮', '〈', '⌈', '⌊',
@@ -223,285 +229,6 @@ pub struct LocatingSequence<'a> {
     /// starting position in relation to indices used in [PreTokenMap]. Can be unequal to 0 in cases where sub-sequences are created (lookahead, etc.).
     offset: usize,
 }
-#[derive(Debug, Clone)]
-pub struct TypstError<'a> {
-    /// Global token/character offset where parsing failed.
-    pub offset: usize,
-    /// Span length of the failing token/segment.
-    pub len: usize,
-    /// Underlying winnow context error.
-    pub inner: Vec<Context<'a>>,
-}
-impl<'a> TypstError<'a> {
-    /// Appends a context entry to the underlying error and returns `self`.
-    pub fn context(mut self, context: Context<'a>) -> Self {
-        self.inner.push(context);
-        self
-    }
-
-    /// Creates an error positioned at `token`.
-    pub fn from_token<T>(token: &Locatable<T>) -> Self {
-        TypstError {
-            offset: token.offset,
-            len: token.len,
-            inner: vec![],
-        }
-    }
-
-    pub fn manual(offset: usize, len: usize) -> Self {
-        TypstError {
-            offset,
-            len,
-            inner: vec![],
-        }
-    }
-}
-impl<'a> ParserError<LocatingSequence<'a>> for TypstError<'a> {
-    type Inner = Self;
-
-    fn assert(input: &LocatingSequence<'a>, message: &'static str) -> Self
-    where
-        LocatingSequence<'a>: core::fmt::Debug,
-    {
-        TypstError::from_input(input).context(Context::Label(message.into()))
-    }
-
-    fn from_input(input: &LocatingSequence<'_>) -> Self {
-        TypstError {
-            offset: input.global_pos(),
-            len: 1,
-            inner: vec![],
-        }
-    }
-
-    fn into_inner(self) -> Result<Self::Inner, Self> {
-        Ok(self)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum Context<'a> {
-    Label(crate::String<'a>),
-    Expected(crate::String<'a>),
-    Found(crate::String<'a>),
-}
-impl<'a> AddContext<LocatingSequence<'a>, Context<'a>> for TypstError<'a> {
-    #[inline]
-    fn add_context(
-        mut self,
-        _input: &LocatingSequence<'a>,
-        _token_start: &<LocatingSequence<'a> as Stream>::Checkpoint,
-        context: Context<'a>,
-    ) -> Self {
-        self.inner.push(context);
-        self
-    }
-}
-
-/// Builds an absolute positioned floating Typst error. Similar to a normal [Panic].
-pub fn error_box<'a>(error: &TypstError<'a>) -> Content<'a> {
-    let expression: Option<_> = error.inner.iter().find_map(|c| match c {
-        Context::Label(c) => Some(c),
-        _ => None,
-    });
-    macro_rules! filter_variant {
-        ($variant:ident) => {
-            error
-                .inner
-                .iter()
-                .filter_map(|c| match c {
-                    Context::$variant(c) => Some(c.to_string()),
-                    _ => None,
-                })
-                .collect::<Vec<String>>()
-                .join(", ")
-        };
-    }
-    let expected = filter_variant!(Expected);
-    let found = filter_variant!(Found);
-    let mut msg = vec![];
-    if !expected.is_empty() {
-        msg.push(Text::from_string("expected").bold().into());
-        msg.push(Text::from_string(format!(": {}\n", expected)).into());
-    }
-    if !found.is_empty() {
-        msg.push(Text::from_string("found").bold().into());
-        msg.push(Text::from_string(format!(": {}\n", found)).into());
-    }
-
-    Content::Box(
-        Box {
-            body: Some(RBox(
-                TypedItem::new(Content::Place(Place {
-                    body: Some(
-                        TypedItem::new(Content::Panic(Panic {
-                            ty: format!("invalid {}", expression.unwrap_or(&"<unknown>".into()))
-                                .into(),
-                            msg: Content::from(Sequence::from(msg)).into(),
-                        }))
-                        .into(),
-                    ),
-                    dy: Some(TypedItem::new(Length::pt(3.0).into())),
-                    dx: Some(TypedItem::new(Length::pt(-20.0).into())),
-                    ..Default::default()
-                }))
-                .into(),
-            )),
-            ..Default::default()
-        }
-        .into(),
-    )
-}
-impl<'a> TypstError<'a> {
-    /// Reconstructs a `Sequence` and injects visual error annotations.
-    ///
-    /// # Behavior
-    /// - Preserves original structure (`sequence`, `math`, raw/content tokens).
-    /// - Underlines the error span in red.
-    /// - Inserts [`error_box`] after the highlighted span.
-    pub fn render(&self, sequence: &LocatingSequence<'a>) -> Sequence<'a> {
-        let mut seq: Sequence = Sequence::new();
-        let mut stack = vec![&mut seq as *mut Sequence<'a>];
-
-        unsafe fn cur<'a: 'b, 'b>(stack: &Vec<*mut Sequence<'a>>) -> &'b mut Sequence<'a> {
-            unsafe { &mut **stack.last().unwrap() }
-        }
-
-        fn push<'a>(stack: &Vec<*mut Sequence<'a>>, content: Content<'a>) {
-            unsafe { cur(stack) }.push(content);
-        }
-
-        fn push_group<'a>(
-            stack: &mut Vec<*mut Sequence<'a>>,
-            content: Content<'a>,
-            f: impl for<'b> Fn(&'b mut Content<'a>) -> &'b mut Sequence<'a>,
-        ) {
-            push(stack, content);
-            let seq_ptr = f(unsafe { cur(stack) }.last_mut().unwrap()) as *mut Sequence<'a>;
-            stack.push(seq_ptr);
-        }
-
-        let mut hit = false;
-        let mut offset = 0;
-        while let Some(token) = sequence.tokens.get(&offset) {
-            match token {
-                PreToken::Token {
-                    token, start, len, ..
-                } => {
-                    if (*start <= self.offset) && (self.offset < start + len) {
-                        hit = true;
-                        let (pre, error, post): (Option<Content<'_>>, _, Option<Content<'_>>) =
-                            match token {
-                                Content::Text(text) => {
-                                    let b1 = self.offset.saturating_sub(*start);
-                                    let b2 = b1.saturating_add(self.len);
-                                    (
-                                        Some(Text::from_string(&text.as_string()[..b1]).into()),
-                                        Text::from_string(&text.as_string()[b1..b2]).into(),
-                                        Some(Text::from_string(&text.as_string()[b2..]).into()),
-                                    )
-                                }
-                                token => (None, (*token).clone(), None),
-                            };
-
-                        if let Some(pre) = pre {
-                            push(&stack, pre);
-                        }
-                        push(
-                            &stack,
-                            Underline {
-                                stroke: Some(Or::Right(Stroke {
-                                    paint: Or::Right(FillColor::Color(
-                                        Color::rgba_hex("#dc3545").unwrap(),
-                                    )),
-                                    ..Default::default()
-                                })),
-                                evade: Some(TypedItem(false.into())),
-                                extent: Some(TypedItem(Length::pt(1.5))),
-                                body: Some(RBox::new(TypedItem(
-                                    Box {
-                                        fill: Some(Or::Right(FillColor::Color(
-                                            Color::rgba_hex("#fdecea").unwrap(),
-                                        ))),
-                                        inset: Some(Or::Left(Length::pt(1.0).into())),
-                                        radius: Some(Or::Left(Length::pt(2.0).into())),
-                                        body: Some(TypedItem(error).into()),
-                                        ..Box::default()
-                                    }
-                                    .into(),
-                                ))),
-                                background: Some(TypedItem(true.into())),
-                                ..Default::default()
-                            }
-                            .into(),
-                        );
-                        push(&stack, error_box(self));
-                        if let Some(post) = post {
-                            push(&stack, post);
-                        }
-                    } else {
-                        push(&stack, (*token).clone());
-                    }
-                    offset += len;
-                }
-                PreToken::MathOpen => {
-                    push_group(
-                        &mut stack,
-                        Content::MathEquation(Equation::new(Sequence::new().into())),
-                        |content| match content {
-                            Content::MathEquation(Equation {
-                                body: TypedItem(body),
-                                ..
-                            }) => match &mut **body {
-                                Content::Sequence(seq) => seq,
-                                _ => unreachable!(),
-                            },
-                            _ => unreachable!(),
-                        },
-                    );
-                    offset += 1;
-                }
-                PreToken::SequenceOpen => {
-                    push_group(
-                        &mut stack,
-                        Sequence::new().into(),
-                        |content| match content {
-                            Content::Sequence(seq) => seq,
-                            _ => unreachable!(),
-                        },
-                    );
-                    offset += 1;
-                }
-                PreToken::MathClose | PreToken::SequenceClose => {
-                    stack.pop();
-                    offset += 1;
-                }
-            };
-        }
-
-        // special case if error was thrown on invisible token
-        if !hit {
-            return Sequence {
-                children: vec![
-                    Underline {
-                        stroke: Some(Or::Right(Stroke {
-                            paint: Or::Right(FillColor::Color(Color::rgba_hex("#FF0000").unwrap())),
-                            ..Default::default()
-                        })),
-                        evade: Some(TypedItem(false.into())),
-                        extent: Some(TypedItem(Length::pt(1.5))),
-                        body: Some(RBox::new(TypedItem(seq.into()))),
-                        ..Default::default()
-                    }
-                    .into(),
-                    error_box(self),
-                ]
-                .into(),
-            };
-        }
-        seq
-    }
-}
 
 impl<'a> From<&'a Sequence<'a>> for LocatingSequence<'a> {
     fn from(seq: &'a Sequence<'a>) -> Self {
@@ -578,7 +305,7 @@ impl<'a> Offset<Usize> for LocatingSequence<'a> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Locatable<T> {
     pub inner: T,
     /// Global offset of token start.
@@ -610,6 +337,7 @@ impl<T> DerefMut for Locatable<T> {
 
 /// Token plus source-location metadata used by `LocatingSequence`.
 pub type LocatingToken<'a> = Locatable<Token<'a>>;
+
 #[derive(Debug, Clone)]
 /// Token kind emitted by text/content sequence tokenization.
 pub enum Token<'a> {
@@ -618,7 +346,7 @@ pub enum Token<'a> {
     /// Delimiter or operator symbol.
     Delimiter(char),
     /// Floating-point numeric literal.
-    Number(f32),
+    Number(usize),
     /// Fallback token for unrecognized sequences of characters. Contains the raw string slice.
     Word(&'a str),
     /// Opening grouping symbol.
@@ -634,150 +362,53 @@ pub enum Token<'a> {
     /// End marker for nested sequence.
     SequenceClose,
 }
-impl<'a> Parser<LocatingSequence<'a>, Self, TypstError<'a>> for Token<'a> {
-    fn parse_next(&mut self, input: &mut LocatingSequence<'a>) -> Result<Self, TypstError<'a>> {
-        match (self, input.next_token()) {
-            (
-                Token::Delimiter(c1),
-                Some(
-                    token @ LocatingToken {
-                        inner: Token::Delimiter(c2),
-                        ..
-                    },
-                ),
-            ) => {
-                if *c1 == c2 {
-                    Ok(token.inner)
-                } else {
-                    Err(TypstError::from_token(&token)
-                        .context(Context::Label("delimiter".into()))
-                        .context(Context::Expected((*c1).to_string().into()))
-                        .context(Context::Found(c2.to_string().into())))
-                }
-            }
-            (
-                Token::Number(n1),
-                Some(
-                    token @ LocatingToken {
-                        inner: Token::Number(n2),
-                        ..
-                    },
-                ),
-            ) => {
-                if *n1 == n2 {
-                    Ok(token.inner)
-                } else {
-                    Err(TypstError::from_token(&token)
-                        .context(Context::Label("number".into()))
-                        .context(Context::Expected((*n1).to_string().into()))
-                        .context(Context::Found(n2.to_string().into())))
-                }
-            }
-            (
-                Token::Word(w1),
-                Some(
-                    token @ LocatingToken {
-                        inner: Token::Word(w2),
-                        ..
-                    },
-                ),
-            ) => {
-                if *w1 == w2 {
-                    Ok(token.inner)
-                } else {
-                    Err(TypstError::from_token(&token)
-                        .context(Context::Label("word".into()))
-                        .context(Context::Expected((*w1).to_string().into()))
-                        .context(Context::Found(w2.to_string().into())))
-                }
-            }
-            (
-                Token::GroupOpen(g1),
-                Some(
-                    token @ LocatingToken {
-                        inner: Token::GroupOpen(g2),
-                        ..
-                    },
-                ),
-            ) => {
-                if *g1 == g2 {
-                    Ok(token.inner)
-                } else {
-                    Err(TypstError::from_token(&token)
-                        .context(Context::Label("group open".into()))
-                        .context(Context::Expected((*g1).to_string().into()))
-                        .context(Context::Found(g2.to_string().into())))
-                }
-            }
-            (
-                Token::GroupClose(g1),
-                Some(
-                    token @ LocatingToken {
-                        inner: Token::GroupClose(g2),
-                        ..
-                    },
-                ),
-            ) => {
-                if *g1 == g2 {
-                    Ok(token.inner)
-                } else {
-                    Err(TypstError::from_token(&token)
-                        .context(Context::Label("group close".into()))
-                        .context(Context::Expected((*g1).to_string().into()))
-                        .context(Context::Found(g2.to_string().into())))
-                }
-            }
-            (
-                Token::MathOpen,
-                Some(LocatingToken {
-                    inner: Token::MathOpen,
-                    ..
-                }),
-            ) => Ok(Token::MathOpen),
-            (Token::MathOpen, t) => Err(TypstError::from_input(input)
-                .context(Context::Label("math open".into()))
-                .context(Context::Found(format!("{t:#?}").into()))),
-            (
-                Token::MathClose,
-                Some(LocatingToken {
-                    inner: Token::MathClose,
-                    ..
-                }),
-            ) => Ok(Token::MathClose),
-            (Token::MathClose, t) => Err(TypstError::from_input(input)
-                .context(Context::Label("math close".into()))
-                .context(Context::Found(format!("{t:#?}").into()))),
-            (
-                Token::SequenceOpen,
-                Some(LocatingToken {
-                    inner: Token::SequenceOpen,
-                    ..
-                }),
-            ) => Ok(Token::SequenceOpen),
-            (Token::SequenceOpen, t) => Err(TypstError::from_input(input)
-                .context(Context::Label("sequence open".into()))
-                .context(Context::Found(format!("{t:#?}").into()))),
-            (
-                Token::SequenceClose,
-                Some(LocatingToken {
-                    inner: Token::SequenceClose,
-                    ..
-                }),
-            ) => Ok(Token::SequenceClose),
-            (Token::SequenceClose, t) => Err(TypstError::from_input(input)
-                .context(Context::Label("sequence close".into()))
-                .context(Context::Found(format!("{t:#?}").into()))),
-            (t, Some(token)) => Err(TypstError::from_token(&token)
-                .context(Context::Label("parser".into()))
-                .context(Context::Expected(format!("{t:#?}").into()))
-                .context(Context::Found(format!("{token:#?}").into()))),
-            (t, None) => Err(TypstError::from_input(input)
-                .context(Context::Label("parser".into()))
-                .context(Context::Expected(format!("{t:#?}").into()))
-                .context(Context::Found("end of input".into()))),
+impl<'a> PartialEq for Token<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Raw(l0), Self::Raw(r0)) => std::ptr::eq(*l0, *r0),
+            (Self::Delimiter(l0), Self::Delimiter(r0)) => l0 == r0,
+            (Self::Number(l0), Self::Number(r0)) => l0 == r0,
+            (Self::Word(l0), Self::Word(r0)) => l0 == r0,
+            (Self::GroupOpen(l0), Self::GroupOpen(r0)) => l0 == r0,
+            (Self::GroupClose(l0), Self::GroupClose(r0)) => l0 == r0,
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
         }
     }
 }
+
+impl<'a> Parser<LocatingSequence<'a>, LocatingToken<'a>, TypstError<'a>> for Token<'a> {
+    fn parse_next(
+        &mut self,
+        input: &mut LocatingSequence<'a>,
+    ) -> Result<LocatingToken<'a>, TypstError<'a>> {
+        if let Some(token) = input.next_token() {
+            if self == &token.inner {
+                Ok(token)
+            } else {
+                Err(TypstError::from_token(&token)
+                    .context(Context::Label("token".into()))
+                    .context(Context::Expected(format!("{self:#?}").into()))
+                    .context(Context::Found(format!("{token:#?}").into())))
+            }
+        } else {
+            Err(TypstError::from_input(input)
+                .context(Context::Label("token".into()))
+                .context(Context::Expected(format!("{self:#?}").into()))
+                .context(Context::Found("EOF".into())))
+        }
+    }
+}
+impl<'a, const N: usize> ContainsToken<Token<'a>> for [Token<'a>; N] {
+    fn contains_token(&self, token: Token<'a>) -> bool {
+        self.iter().any(|t| *t == token)
+    }
+}
+impl<'a, const N: usize> ContainsToken<LocatingToken<'a>> for [Token<'a>; N] {
+    fn contains_token(&self, token: LocatingToken<'a>) -> bool {
+        self.contains_token(token.inner)
+    }
+}
+
 impl<'a> Iterator for LocatingSequence<'a> {
     type Item = (usize, LocatingToken<'a>);
 

@@ -1,9 +1,7 @@
 use crate::{Content, Item, types::generic::TypedArray};
 use std::ops::{Deref, DerefMut};
 
-mod charstream;
-pub use charstream::{CharStream, float};
-mod winnow;
+pub mod winnow;
 pub use winnow::{
     Context, Locatable, LocatingSequence, LocatingToken, Token, TypstError, error_box,
 };

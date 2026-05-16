@@ -38,17 +38,19 @@ mod version;
 
 mod panic;
 
-pub use crate::types::generic::{AutoOr, Box as RBox, NoneOr, Or, Result, TypedArray};
+pub use crate::types::generic::{
+    AutoOr, Box as RBox, FillColor, NoneOr, Or, Result, StrokeColor, TypedArray,
+};
 use crate::types::selector::Selector;
 pub use crate::types::r#type::{TypstType, TypstTypeLike};
 pub use crate::types::{
     alignment::Alignment, angle::Angle, arguments::Arguments, array::*, auto::Auto,
-    boolean::Boolean, bytes::Bytes, color::Color, content::*, datetime::Datetime, decimal::Decimal,
+    boolean::Boolean, bytes::Bytes, color::*, content::*, datetime::Datetime, decimal::Decimal,
     dictionary::Dictionary, direction::Direction, duration::Duration, float::Float,
     fraction::Fraction, function::Function, gradient::Gradient, integer::Integer, label::Label,
     length::Length, module::Module, none::None, panic::Panic, ratio::Ratio, regex::Regex,
-    relative::Relative, string::String, stroke::Stroke, styles::Styles, symbol::Symbol,
-    tiling::Tiling, r#type::Type, version::Version,
+    relative::Relative, string::String, stroke::*, styles::Styles, symbol::Symbol, tiling::Tiling,
+    r#type::Type, version::Version,
 };
 
 crate::define_enum! {

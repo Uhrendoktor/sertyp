@@ -2,11 +2,11 @@ use std::borrow::Cow;
 
 use winnow::{
     Parser,
-    ascii::{Caseless, digit1},
-    combinator::{dispatch, empty, opt, peek, trace},
+    ascii::{Caseless, Uint, digit0},
+    combinator::{alt, trace},
     error::ParserError,
     stream::{AsChar, Compare, CompareResult, Offset, ParseSlice, Stream, StreamIsPartial},
-    token::{any, one_of},
+    token::one_of,
 };
 
 #[derive(Debug, Clone)]
@@ -79,8 +79,8 @@ impl<'a> Compare<char> for CharStream<'a> {
         }
     }
 }
-impl<'a> ParseSlice<f32> for CharStream<'a> {
-    fn parse_slice(&self) -> Option<f32> {
+impl<'a> ParseSlice<usize> for CharStream<'a> {
+    fn parse_slice(&self) -> Option<usize> {
         if !self.exhausted {
             let s = self.inner.to_string();
             s.parse().ok()
@@ -174,70 +174,30 @@ impl<'a> Stream for CharStream<'a> {
     }
 }
 
-pub fn float<Input, Output, Error>(input: &mut Input) -> Result<Output, Error>
+pub fn dec_uint<Input, Output, Error>(input: &mut Input) -> Result<Output, Error>
 where
-    Input: StreamIsPartial + Stream + Compare<Caseless<&'static str>> + Compare<char>,
-    <Input as Stream>::Slice: ParseSlice<Output>,
+    Input: StreamIsPartial + Stream,
     <Input as Stream>::Token: AsChar + Clone,
-    <Input as Stream>::IterOffsets: Clone,
+    <Input as Stream>::Slice: ParseSlice<Output>,
+    Output: Uint,
     Error: ParserError<Input>,
 {
-    trace("float", move |input: &mut Input| {
-        let s = take_float_or_exceptions(input)?;
-        s.parse_slice()
+    trace("dec_uint", move |input: &mut Input| {
+        take_dec_uint_or_exceptions(input)?
+            .parse_slice()
             .ok_or_else(|| ParserError::from_input(input))
     })
     .parse_next(input)
 }
 
-fn take_float_or_exceptions<I, E: ParserError<I>>(input: &mut I) -> Result<<I as Stream>::Slice, E>
+fn take_dec_uint_or_exceptions<I, E: ParserError<I>>(
+    input: &mut I,
+) -> Result<<I as Stream>::Slice, E>
 where
-    I: StreamIsPartial,
-    I: Stream,
-    I: Compare<Caseless<&'static str>>,
-    I: Compare<char>,
+    I: StreamIsPartial + Stream,
     <I as Stream>::Token: AsChar + Clone,
-    <I as Stream>::IterOffsets: Clone,
 {
-    dispatch! {opt(peek(any).map(AsChar::as_char));
-        Some('N') | Some('n') => Caseless("nan").void(),
-        Some('+') | Some('-') => (any, take_unsigned_float_or_exceptions).void(),
-        _ => take_unsigned_float_or_exceptions,
-    }
-    .take()
-    .parse_next(input)
-}
-
-#[allow(clippy::trait_duplication_in_bounds)] // HACK: clippy 1.64.0 bug
-fn take_unsigned_float_or_exceptions<I, E: ParserError<I>>(input: &mut I) -> Result<(), E>
-where
-    I: StreamIsPartial,
-    I: Stream,
-    I: Compare<Caseless<&'static str>>,
-    I: Compare<char>,
-    <I as Stream>::Token: AsChar + Clone,
-    <I as Stream>::IterOffsets: Clone,
-{
-    dispatch! {opt(peek(any).map(AsChar::as_char));
-        Some('I') | Some('i') => (Caseless("inf"), opt(Caseless("inity"))).void(),
-        Some('.') => ('.', digit1, take_exp).void(),
-        _ => (digit1, opt(('.', opt(digit1))), take_exp).void(),
-    }
-    .parse_next(input)
-}
-
-#[allow(clippy::trait_duplication_in_bounds)] // HACK: clippy 1.64.0 bug
-fn take_exp<I, E: ParserError<I>>(input: &mut I) -> Result<(), E>
-where
-    I: StreamIsPartial,
-    I: Stream,
-    I: Compare<char>,
-    <I as Stream>::Token: AsChar + Clone,
-    <I as Stream>::IterOffsets: Clone,
-{
-    dispatch! {opt(peek(any).map(AsChar::as_char));
-        Some('E') | Some('e') => (one_of(['e', 'E']), opt(one_of(['+', '-'])), digit1).void(),
-        _ => empty,
-    }
-    .parse_next(input)
+    alt(((one_of('1'..='9'), digit0).void(), one_of('0').void()))
+        .take()
+        .parse_next(input)
 }
