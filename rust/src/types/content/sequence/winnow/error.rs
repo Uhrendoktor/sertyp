@@ -5,8 +5,9 @@ use winnow::{
 
 use crate::{
     Box, Color, Content, FillColor, Length, Locatable, LocatingSequence, Or, Panic, Place, RBox,
-    Sequence, Stroke, Text, TypedItem, Underline, math::Equation,
-    types::content::sequence::winnow::PreToken,
+    Sequence, Stroke, Text, TypedItem, Underline,
+    math::Equation,
+    types::content::{sequence::winnow::PreToken, text::TextWeight},
 };
 
 #[derive(Debug, Clone)]
@@ -107,11 +108,15 @@ pub fn error_box<'a>(error: &TypstError<'a>) -> Content<'a> {
     let found = filter_variant!(Found);
     let mut msg = vec![];
     if !expected.is_empty() {
-        msg.push(Text::from_string("expected").bold().into());
+        msg.push(
+            Text::from_string("expected")
+                .weight(TextWeight::Bold)
+                .into(),
+        );
         msg.push(Text::from_string(format!(": {}\n", expected)).into());
     }
     if !found.is_empty() {
-        msg.push(Text::from_string("found").bold().into());
+        msg.push(Text::from_string("found").weight(TextWeight::Bold).into());
         msg.push(Text::from_string(format!(": {}\n", found)).into());
     }
 
@@ -138,27 +143,63 @@ pub fn error_box<'a>(error: &TypstError<'a>) -> Content<'a> {
         .into(),
     )
 }
+
+/// Wraps the content into a nicely highlighted inline error
+/// - light red box
+/// - red underline
+pub fn inline_error<'a>(body: Content<'a>) -> Content<'a> {
+    Underline {
+        stroke: Some(Or::Right(Stroke {
+            paint: Or::Right(FillColor::Color(Color::rgba_hex("#dc3545").unwrap())),
+            ..Default::default()
+        })),
+        evade: Some(TypedItem(false.into())),
+        extent: Some(TypedItem(Length::pt(1.5))),
+        body: Some(RBox::new(TypedItem(
+            Box {
+                fill: Some(Or::Right(FillColor::Color(
+                    Color::rgba_hex("#fdecea").unwrap(),
+                ))),
+                inset: Some(Or::Left(Length::pt(1.0).into())),
+                radius: Some(Or::Left(Length::pt(2.0).into())),
+                body: Some(TypedItem::new(body).into()),
+                ..Box::default()
+            }
+            .into(),
+        ))),
+        background: Some(TypedItem(true.into())),
+        ..Default::default()
+    }
+    .into()
+}
+
 impl<'a> TypstError<'a> {
     /// Reconstructs a `Sequence` and injects visual error annotations.
     ///
     /// # Behavior
     /// - Preserves original structure (`sequence`, `math`, raw/content tokens).
-    /// - Underlines the error span in red.
+    /// - Underlines the error span and highlights it in red using [`inline_error`].
     /// - Inserts [`error_box`] after the highlighted span.
     pub fn render(&self, sequence: &LocatingSequence<'a>) -> Sequence<'a> {
-        let mut seq: Sequence = Sequence::new();
-        let mut stack = vec![&mut seq as *mut Sequence<'a>];
+        let mut rendered = Sequence::new();
 
-        unsafe fn cur<'a: 'b, 'b>(stack: &Vec<*mut Sequence<'a>>) -> &'b mut Sequence<'a> {
+        // stack for traversing up the sequence tree whenever a sequence is closed
+        type Stack<'a> = Vec<*mut Sequence<'a>>;
+        let mut stack = vec![&mut rendered as *mut Sequence<'a>];
+
+        // helper to get current sequence (top of stack)
+        unsafe fn cur<'a, 'b>(stack: &'b mut Stack<'a>) -> &'b mut Sequence<'a> {
             unsafe { &mut **stack.last().unwrap() }
         }
 
-        fn push<'a>(stack: &Vec<*mut Sequence<'a>>, content: Content<'a>) {
+        // adds content to the current sequence (top of stack)
+        fn push<'a>(stack: &mut Stack<'a>, content: Content<'a>) {
             unsafe { cur(stack) }.push(content);
         }
 
-        fn push_group<'a>(
-            stack: &mut Vec<*mut Sequence<'a>>,
+        // adds an object to the current sequence. this object contains a nested sequence which is set as the new current sequence (pushed to stack)
+        fn open_group_and_push<'a>(
+            stack: &mut Stack<'a>,
             content: Content<'a>,
             f: impl for<'b> Fn(&'b mut Content<'a>) -> &'b mut Sequence<'a>,
         ) {
@@ -167,72 +208,47 @@ impl<'a> TypstError<'a> {
             stack.push(seq_ptr);
         }
 
-        let mut hit = false;
-        let mut offset = 0;
-        while let Some(token) = sequence.tokens.get(&offset) {
-            match token {
-                PreToken::Token {
-                    token, start, len, ..
-                } => {
-                    if (*start <= self.offset) && (self.offset < start + len) {
-                        hit = true;
-                        let (pre, error, post): (Option<Content<'_>>, _, Option<Content<'_>>) =
-                            match token {
-                                Content::Text(text) => {
-                                    let b1 = self.offset.saturating_sub(*start);
-                                    let b2 = b1.saturating_add(self.len);
-                                    (
-                                        Some(Text::from_string(&text.as_string()[..b1]).into()),
-                                        Text::from_string(&text.as_string()[b1..b2]).into(),
-                                        Some(Text::from_string(&text.as_string()[b2..]).into()),
-                                    )
-                                }
-                                token => (None, (*token).clone(), None),
-                            };
+        fn close_group(stack: &mut Stack<'_>) {
+            stack.pop();
+        }
 
-                        if let Some(pre) = pre {
-                            push(&stack, pre);
-                        }
-                        push(
-                            &stack,
-                            Underline {
-                                stroke: Some(Or::Right(Stroke {
-                                    paint: Or::Right(FillColor::Color(
-                                        Color::rgba_hex("#dc3545").unwrap(),
-                                    )),
-                                    ..Default::default()
-                                })),
-                                evade: Some(TypedItem(false.into())),
-                                extent: Some(TypedItem(Length::pt(1.5))),
-                                body: Some(RBox::new(TypedItem(
-                                    Box {
-                                        fill: Some(Or::Right(FillColor::Color(
-                                            Color::rgba_hex("#fdecea").unwrap(),
-                                        ))),
-                                        inset: Some(Or::Left(Length::pt(1.0).into())),
-                                        radius: Some(Or::Left(Length::pt(2.0).into())),
-                                        body: Some(TypedItem(error).into()),
-                                        ..Box::default()
-                                    }
-                                    .into(),
-                                ))),
-                                background: Some(TypedItem(true.into())),
-                                ..Default::default()
-                            }
-                            .into(),
-                        );
-                        push(&stack, error_box(self));
-                        if let Some(post) = post {
-                            push(&stack, post);
-                        }
-                    } else {
-                        push(&stack, (*token).clone());
-                    }
-                    offset += len;
-                }
+        // opens an error box group if not already open.
+        let mut error_present = false;
+        fn try_open_error<'a>(
+            stack: &mut Stack<'a>,
+            error: &TypstError<'a>,
+            error_present: &mut bool,
+        ) {
+            if !*error_present {
+                push(stack, error_box(error));
+                open_group_and_push(stack, inline_error(Sequence::new().into()), |c| match c {
+                    Content::Underline(Underline {
+                        body: Some(body), ..
+                    }) => match &mut ***body {
+                        Content::Box(b) => match &mut **b {
+                            Box {
+                                body: Some(body), ..
+                            } => match &mut ***body {
+                                Content::Sequence(seq) => seq,
+                                _ => unreachable!(),
+                            },
+                            _ => unreachable!(),
+                        },
+                        _ => unreachable!(),
+                    },
+                    _ => unreachable!(),
+                });
+                *error_present = true;
+            }
+        }
+
+        // processes a PreToken
+        fn process_token<'a>(stack: &mut Stack<'a>, token: &PreToken<'a>) {
+            match token {
+                PreToken::Token { token, .. } => push(stack, (*token).clone()),
                 PreToken::MathOpen => {
-                    push_group(
-                        &mut stack,
+                    open_group_and_push(
+                        stack,
                         Content::MathEquation(Equation::new(Sequence::new().into())),
                         |content| match content {
                             Content::MathEquation(Equation {
@@ -245,46 +261,78 @@ impl<'a> TypstError<'a> {
                             _ => unreachable!(),
                         },
                     );
-                    offset += 1;
                 }
                 PreToken::SequenceOpen => {
-                    push_group(
-                        &mut stack,
-                        Sequence::new().into(),
-                        |content| match content {
-                            Content::Sequence(seq) => seq,
-                            _ => unreachable!(),
-                        },
-                    );
-                    offset += 1;
+                    open_group_and_push(stack, Sequence::new().into(), |content| match content {
+                        Content::Sequence(seq) => seq,
+                        _ => unreachable!(),
+                    });
                 }
                 PreToken::MathClose | PreToken::SequenceClose => {
-                    stack.pop();
-                    offset += 1;
+                    close_group(stack);
                 }
-            };
+            }
         }
 
-        // special case if error was thrown on invisible token
-        if !hit {
-            return Sequence {
-                children: vec![
-                    Underline {
-                        stroke: Some(Or::Right(Stroke {
-                            paint: Or::Right(FillColor::Color(Color::rgba_hex("#FF0000").unwrap())),
-                            ..Default::default()
-                        })),
-                        evade: Some(TypedItem(false.into())),
-                        extent: Some(TypedItem(Length::pt(1.5))),
-                        body: Some(RBox::new(TypedItem(seq.into()))),
-                        ..Default::default()
+        let mut i = 0;
+        while let Some((range, token)) = sequence.tokens.tokens.get_key_value(&i) {
+            match (range, (self.offset..self.offset + self.len)) {
+                // token is not covered by error span
+                (t, e) if t.end <= e.start || t.start > e.end => {
+                    process_token(&mut stack, token);
+                }
+                // token is fully covered by error span (also single token non text)
+                (t, e) if t.start >= e.start && t.end <= e.end => {
+                    try_open_error(&mut stack, self, &mut error_present);
+                    process_token(&mut stack, token);
+                    // end error
+                    if e.end <= t.end {
+                        close_group(&mut stack);
                     }
-                    .into(),
-                    error_box(self),
-                ]
-                .into(),
-            };
+                }
+                // token is partially covered by error span
+                (t, e) => {
+                    let text = match token {
+                        PreToken::Token {
+                            token: Content::Text(text),
+                            ..
+                        } => &**text,
+                        _ => panic!("expected text token if token has length > 0"),
+                    };
+                    // split into three parts: Option<a> | b | Option<c> where b is the part covered by the error span
+
+                    // split token at error end if neccessary
+                    let (a, b, c) = text.slice_at(
+                        e.start.saturating_sub(t.start),
+                        e.end.saturating_sub(t.start),
+                    );
+
+                    if let Some(a) = a {
+                        push(&mut stack, a.into());
+                    };
+                    // open error box for b
+                    try_open_error(&mut stack, self, &mut error_present);
+                    push(&mut stack, b.into());
+
+                    // close even if c is 0 chars long
+                    if e.end <= t.end {
+                        close_group(&mut stack);
+                    }
+                    if let Some(c) = c {
+                        push(&mut stack, c.into());
+                    }
+                }
+            }
+
+            // jump to next token
+            i = range.end;
         }
-        seq
+
+        if !error_present {
+            // error was not rendered, probably because it was on an invisible token. render the entire sequence as error.
+            return Sequence::from(vec![error_box(self), inline_error(rendered.into())]);
+        }
+
+        rendered
     }
 }

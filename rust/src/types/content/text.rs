@@ -104,11 +104,39 @@ impl<'a> Text<'a> {
         &self.text
     }
 
-    pub fn bold(self) -> Self {
+    pub fn style(self, style: TextStyle) -> Self {
         Text {
-            weight: Some(Or::Right(TextWeight::Bold)),
+            style: Some(style),
             ..self
         }
+    }
+
+    pub fn weight(self, weight: TextWeight) -> Self {
+        Text {
+            weight: Some(Or::Right(weight)),
+            ..self
+        }
+    }
+
+    pub fn slice_at<'b>(
+        &'b self,
+        start: usize,
+        end: usize,
+    ) -> (Option<Text<'b>>, Text<'b>, Option<Text<'b>>) {
+        (
+            (start > 0).then(|| Text {
+                text: TypedItem::new(self.as_string()[..start].into()),
+                ..self.clone()
+            }),
+            Text {
+                text: TypedItem::new(self.as_string()[start..end].into()),
+                ..self.clone()
+            },
+            (end < self.as_string().len()).then(|| Text {
+                text: TypedItem::new(self.as_string()[end..].into()),
+                ..self.clone()
+            }),
+        )
     }
 }
 

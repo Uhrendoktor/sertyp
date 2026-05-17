@@ -105,7 +105,7 @@ pub fn typst_func(
                                             body: Some(sertyp::TypedItem::new(sertyp::Text::from_string(format!("[{} {}:{}:{}]",  stringify!(#orig_ident), file!(), line!(), column!())).into()))
                                         }.into(),
                                         sertyp::Content::from(sertyp::Text::from_string(" failed because of previous error:\n")),
-                                        sertyp::Text::from_string(format!("{}\n", p.ty)).bold().into(),
+                                        sertyp::Text::from_string(format!("{}\n", p.ty)).weight(sertyp::TextWeight::Bold).into(),
                                         p.msg.into_inner().into_inner()
                                     ])).into(),
                                 }.into()).unwrap();

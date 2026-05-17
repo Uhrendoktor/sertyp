@@ -35,7 +35,7 @@ use crate::Item;
 #[cfg(feature = "content")]
 pub use crate::types::content::{
     r#box::Box, h::H, link::Link, link::LinkDestination, metadata::Metadata, place::Place,
-    raw::Raw, sequence::*, space::Space, stack::Stack, strong::Strong, text::Text,
+    raw::Raw, sequence::*, space::Space, stack::Stack, strong::Strong, text::*,
     underline::Underline, v::V,
 };
 #[cfg(feature = "content")]

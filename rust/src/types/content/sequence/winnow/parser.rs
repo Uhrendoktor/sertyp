@@ -84,7 +84,7 @@ pub fn signed<
                 '−' | '-' => t.inner.neg(),
                 _ => unreachable!(),
             },
-            offset: offset,
+            offset,
             len: len + t.len,
         },
         _ => t,
@@ -111,11 +111,9 @@ where
             })?;
             Ok(t.map(|_| num))
         }
-        _ => {
-            return Err(TypstError::from_input(input)
-                .context(Context::Label("integer".into()))
-                .context(Context::Expected("integer".into())));
-        }
+        _ => Err(TypstError::from_input(input)
+            .context(Context::Label("integer".into()))
+            .context(Context::Expected("integer".into()))),
     }
 }
 
