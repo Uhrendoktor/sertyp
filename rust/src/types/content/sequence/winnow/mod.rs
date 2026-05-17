@@ -133,6 +133,7 @@ enum PreToken<'a> {
     Token {
         token: &'a Content<'a>,
         start: usize,
+        #[allow(unused)]
         len: usize,
     },
     MathOpen,

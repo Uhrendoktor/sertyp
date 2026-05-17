@@ -278,7 +278,7 @@ impl<'a> TypstError<'a> {
         while let Some((range, token)) = sequence.tokens.tokens.get_key_value(&i) {
             match (range, (self.offset..self.offset + self.len)) {
                 // token is not covered by error span
-                (t, e) if t.end <= e.start || t.start > e.end => {
+                (t, e) if t.end <= e.start || t.start >= e.end => {
                     process_token(&mut stack, token);
                 }
                 // token is fully covered by error span (also single token non text)
@@ -286,7 +286,7 @@ impl<'a> TypstError<'a> {
                     try_open_error(&mut stack, self, &mut error_present);
                     process_token(&mut stack, token);
                     // end error
-                    if e.end <= t.end {
+                    if e.end == t.end {
                         close_group(&mut stack);
                     }
                 }
