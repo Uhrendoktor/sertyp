@@ -9,6 +9,8 @@ pub mod math;
 #[cfg(feature = "content")]
 mod metadata;
 #[cfg(feature = "content")]
+mod pagebreak;
+#[cfg(feature = "content")]
 mod parbreak;
 #[cfg(feature = "content")]
 mod place;
@@ -34,15 +36,12 @@ mod v;
 use crate::Item;
 #[cfg(feature = "content")]
 pub use crate::types::content::{
-    r#box::Box, h::H, link::Link, link::LinkDestination, metadata::Metadata, place::Place,
-    raw::Raw, sequence::*, space::Space, stack::Stack, strong::Strong, text::*,
-    underline::Underline, v::V,
+    r#box::Box, h::H, link::Link, link::LinkDestination, metadata::Metadata, pagebreak::Pagebreak,
+    parbreak::Parbreak, place::Place, raw::Raw, sequence::*, space::Space, stack::Stack,
+    strong::Strong, text::*, underline::Underline, v::V,
 };
 #[cfg(feature = "content")]
-use crate::{
-    Panic, RBox, Symbol,
-    types::content::{parbreak::Parbreak, symbol::Symbol_},
-};
+use crate::{Panic, RBox, Symbol, types::content::symbol::Symbol_};
 
 pub use crate::types::{dictionary::Dictionary, function::Function};
 
@@ -122,6 +121,8 @@ crate::define_enum! {
         Link(Link<'a>),
         #[serde(borrow)]
         Metadata(Metadata<'a>),
+        #[serde(borrow)]
+        Pagebreak(Pagebreak<'a>),
         Parbreak(Parbreak),
         #[serde(borrow)]
         Place(Place<'a>),

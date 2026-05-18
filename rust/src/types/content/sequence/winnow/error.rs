@@ -4,8 +4,8 @@ use winnow::{
 };
 
 use crate::{
-    Box, Color, Content, FillColor, Length, Locatable, LocatingSequence, Or, Panic, Place, RBox,
-    Sequence, Stroke, Text, TypedItem, Underline,
+    Box, Color, Content, FillColor, GroupType, Length, Locatable, LocatingSequence, Or, Panic,
+    Place, RBox, Sequence, Stroke, Text, TypedItem, Underline,
     math::Equation,
     types::content::{sequence::winnow::PreToken, text::TextWeight},
 };
@@ -246,7 +246,7 @@ impl<'a> TypstError<'a> {
         fn process_token<'a>(stack: &mut Stack<'a>, token: &PreToken<'a>) {
             match token {
                 PreToken::Token { token, .. } => push(stack, (*token).clone()),
-                PreToken::MathOpen => {
+                PreToken::Open(GroupType::Math) => {
                     open_group_and_push(
                         stack,
                         Content::MathEquation(Equation::new(Sequence::new().into())),
@@ -262,20 +262,20 @@ impl<'a> TypstError<'a> {
                         },
                     );
                 }
-                PreToken::SequenceOpen => {
+                PreToken::Open(GroupType::Sequence) => {
                     open_group_and_push(stack, Sequence::new().into(), |content| match content {
                         Content::Sequence(seq) => seq,
                         _ => unreachable!(),
                     });
                 }
-                PreToken::MathClose | PreToken::SequenceClose => {
+                PreToken::Close(_) => {
                     close_group(stack);
                 }
             }
         }
 
         let mut i = 0;
-        while let Some((range, token)) = sequence.tokens.tokens.get_key_value(&i) {
+        while let Some((range, token)) = sequence.tokens.get_key_value(&i) {
             match (range, (self.offset..self.offset + self.len)) {
                 // token is not covered by error span
                 (t, e) if t.end <= e.start || t.start >= e.end => {

@@ -1,10 +1,14 @@
 use crate::{Content, Item, types::generic::TypedArray};
 use std::ops::{Deref, DerefMut};
 
+pub mod locating;
+pub use locating::LocatingSequence;
+pub(crate) use locating::{GroupType, PreToken, PreTokenMap};
+
 pub mod winnow;
-pub use winnow::{
-    Context, Locatable, LocatingSequence, LocatingToken, Token, TypstError, error_box,
-};
+pub use winnow::{Context, Locatable, LocatingToken, Token, TypstError, error_box};
+
+pub mod chumsky;
 
 /// Used within typst's internals to represent a space seperated sequence of different content items within a single content block. This is basically an array of `Content`.
 /// # Example of Typst Behavior

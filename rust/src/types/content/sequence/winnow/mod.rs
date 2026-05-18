@@ -23,7 +23,7 @@ use winnow::{
 };
 
 use crate::{
-    Content, Raw, Sequence, Space, Symbol, TypedItem,
+    Content, GroupType, LocatingSequence, PreToken, Raw, Sequence, Space, Symbol, TypedItem,
     math::{Equation, LR},
 };
 
@@ -128,62 +128,6 @@ where
     }
 }
 
-#[derive(Debug, Clone)]
-enum PreToken<'a> {
-    Token {
-        token: &'a Content<'a>,
-        start: usize,
-        #[allow(unused)]
-        len: usize,
-    },
-    MathOpen,
-    MathClose,
-    SequenceOpen,
-    SequenceClose,
-}
-/// Impls pointer compare for PreTokens, as equals is only used when inserting Tokens into the rangemap.
-impl<'a> PartialEq for PreToken<'a> {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (PreToken::Token { token: t1, .. }, PreToken::Token { token: t2, .. }) => {
-                std::ptr::eq(t1, t2)
-            }
-            (PreToken::MathOpen, PreToken::MathOpen) => true,
-            (PreToken::MathClose, PreToken::MathClose) => true,
-            (PreToken::SequenceOpen, PreToken::SequenceOpen) => true,
-            (PreToken::SequenceClose, PreToken::SequenceClose) => true,
-            _ => false,
-        }
-    }
-}
-impl<'a> Eq for PreToken<'a> {}
-
-#[derive(Debug, Clone)]
-struct PreTokenMap<'a> {
-    /// indexing is done by inbetween-token offsets. Each character in a string has a offset
-    tokens: rangemap::RangeMap<usize, PreToken<'a>>,
-}
-impl<'a> PreTokenMap<'a> {
-    fn new() -> Self {
-        PreTokenMap {
-            tokens: rangemap::RangeMap::new(),
-        }
-    }
-    fn insert_token(&mut self, content: &'a Content<'a>, range: Range<usize>) {
-        self.tokens.insert(
-            range.clone(),
-            PreToken::Token {
-                token: content,
-                start: range.start,
-                len: range.end - range.start,
-            },
-        );
-    }
-    fn get(&self, offset: &usize) -> Option<&PreToken<'a>> {
-        self.tokens.get(offset)
-    }
-}
-
 /// Newtype wrapper for `usize` used as stream checkpoints.
 /// Enables implementing winnow's `Offset` trait for checkpoint math.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -208,94 +152,6 @@ impl From<usize> for Usize {
 impl Offset for Usize {
     fn offset_from(&self, start: &Self) -> usize {
         self.0 - start.0
-    }
-}
-
-#[derive(Debug, Clone)]
-/// Stream adapter over `Sequence` with stable position tracking.
-///
-/// # Purpose
-/// - Expose sequence content as a winnow `Stream`.
-/// - Preserve token offsets for precise parser errors.
-/// - Support lookahead and slicing without losing global positions.
-pub struct LocatingSequence<'a> {
-    /// unparsed tokens represented by [Content]
-    tokens: PreTokenMap<'a>,
-    /// shared reference of position.
-    /// [Rc<AtomicUsize>] Neccessary for interior mutability and correct error reporting,
-    /// as `iter_offsets` only provides a `&` reference.
-    pos: Rc<AtomicUsize>,
-    /// cummulative length or [PreToken]s. [Text] contribute their respective number of [char]s, everything else has length=1.
-    len: usize,
-    /// starting position in relation to indices used in [PreTokenMap]. Can be unequal to 0 in cases where sub-sequences are created (lookahead, etc.).
-    offset: usize,
-}
-
-impl<'a> From<&'a Sequence<'a>> for LocatingSequence<'a> {
-    fn from(seq: &'a Sequence<'a>) -> Self {
-        let mut tokens = PreTokenMap::new();
-
-        fn insert_content<'a>(
-            pos: &mut usize,
-            content: &'a Content<'a>,
-            tokens: &mut PreTokenMap<'a>,
-        ) {
-            match content {
-                Content::Text(text) => {
-                    let len: usize = text.as_string().len();
-                    tokens.insert_token(content, *pos..*pos + len);
-                    *pos += len;
-                }
-                Content::Raw(Raw {
-                    text: TypedItem(text),
-                    ..
-                }) => {
-                    let len: usize = text.len();
-                    tokens.insert_token(content, *pos..*pos + len);
-                    *pos += len;
-                }
-                Content::Sequence(seq) => {
-                    tokens.tokens.insert(*pos..*pos + 1, PreToken::SequenceOpen);
-                    *pos += 1;
-                    insert_sequence(pos, seq, tokens);
-                    tokens
-                        .tokens
-                        .insert(*pos..*pos + 1, PreToken::SequenceClose);
-                    *pos += 1;
-                }
-                Content::MathEquation(Equation { body, .. }) => {
-                    tokens.tokens.insert(*pos..*pos + 1, PreToken::MathOpen);
-                    *pos += 1;
-                    insert_content(pos, body, tokens);
-                    tokens.tokens.insert(*pos..*pos + 1, PreToken::MathClose);
-                    *pos += 1;
-                }
-                Content::MathLR(LR { body, .. }) => {
-                    insert_content(pos, body, tokens);
-                }
-                content => {
-                    tokens.insert_token(content, *pos..*pos + 1);
-                    *pos += 1;
-                }
-            }
-        }
-        fn insert_sequence<'a>(
-            pos: &mut usize,
-            seq: &'a Sequence<'a>,
-            tokens: &mut PreTokenMap<'a>,
-        ) {
-            for content in seq.as_slice().iter() {
-                insert_content(pos, content, tokens);
-            }
-        }
-        let mut pos = 0;
-        insert_sequence(&mut pos, seq, &mut tokens);
-        LocatingSequence {
-            tokens,
-            pos: Rc::new(0.into()),
-            len: pos,
-            offset: 0,
-        }
     }
 }
 
@@ -346,7 +202,7 @@ pub enum Token<'a> {
     Raw(&'a Content<'a>),
     /// Delimiter or operator symbol.
     Delimiter(char),
-    /// Floating-point numeric literal.
+    /// numeric literal.
     Number(usize),
     /// Fallback token for unrecognized sequences of characters. Contains the raw string slice.
     Word(&'a str),
@@ -401,7 +257,7 @@ impl<'a> Parser<LocatingSequence<'a>, LocatingToken<'a>, TypstError<'a>> for Tok
 }
 impl<'a, const N: usize> ContainsToken<Token<'a>> for [Token<'a>; N] {
     fn contains_token(&self, token: Token<'a>) -> bool {
-        self.iter().any(|t| *t == token)
+        self.contains(&token)
     }
 }
 impl<'a, const N: usize> ContainsToken<LocatingToken<'a>> for [Token<'a>; N] {
@@ -471,7 +327,7 @@ impl<'a> LocatingSequence<'a> {
                 token: Content::Raw(Raw { text, .. }),
                 start,
                 ..
-            } => parser(text, &self.pos(), start),
+            } => parser(&**text, &self.pos(), start),
             PreToken::Token {
                 token: Content::Symbol(Symbol(s)),
                 ..
@@ -490,22 +346,22 @@ impl<'a> LocatingSequence<'a> {
                 offset: self.pos(),
                 len: 1,
             }),
-            PreToken::MathOpen => Some(LocatingToken {
+            PreToken::Open(GroupType::Math) => Some(LocatingToken {
                 inner: Token::MathOpen,
                 offset: self.pos(),
                 len: 1,
             }),
-            PreToken::MathClose => Some(LocatingToken {
+            PreToken::Close(GroupType::Math) => Some(LocatingToken {
                 inner: Token::MathClose,
                 offset: self.pos(),
                 len: 1,
             }),
-            PreToken::SequenceOpen => Some(LocatingToken {
+            PreToken::Open(GroupType::Sequence) => Some(LocatingToken {
                 inner: Token::SequenceOpen,
                 offset: self.pos(),
                 len: 1,
             }),
-            PreToken::SequenceClose => Some(LocatingToken {
+            PreToken::Close(GroupType::Sequence) => Some(LocatingToken {
                 inner: Token::SequenceClose,
                 offset: self.pos(),
                 len: 1,
