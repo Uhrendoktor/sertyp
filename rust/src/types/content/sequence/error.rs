@@ -8,6 +8,11 @@ use crate::{
     types::content::text::TextWeight,
 };
 
+/// A parser error annotated with a span in the locating stream.
+///
+/// `TypstError` is the data structure that `LocatingSequence` ultimately feeds.
+/// The span is expressed in flattened offsets, so it can be replayed against the
+/// original content tree to reconstruct the affected region precisely.
 #[derive(Debug, Clone)]
 pub struct TypstError<'data> {
     pub span: SimpleSpan,
@@ -29,6 +34,13 @@ impl<'a> TypstError<'a> {
         }
     }
 }
+
+/// Human-readable context entries attached to a `TypstError`.
+///
+/// These values are collected while parsing and are later turned into the
+/// rendered error box. The `Label` variant usually identifies the expression or
+/// construct currently being validated, while `Expected` and `Found` are used
+/// to summarize mismatch details.
 #[derive(Debug, Clone)]
 pub enum Context<'data> {
     Label(crate::String<'data>),

@@ -11,6 +11,15 @@ struct Array_<'a>(#[serde(borrow)] pub Vec<Item_<'a>>);
 /// For more information visit the typst documentation: [array](https://typst.app/docs/reference/foundations/array/)
 /// # Note
 /// For homogenous known types, consider using [crate::TypedArray] instead.
+///
+/// # Example
+/// Constructing an `Array` of integers and converting it into an `Item`:
+///
+/// ```rust
+/// use sertyp::{Array, Item, Integer};
+/// let arr: Array = vec![Integer::i32(1).into(), Integer::i32(2).into()].into();
+/// let item: Item = arr.into();
+/// ```
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
 #[serde(from = "Array_", into = "Array_")]
 pub struct Array<'a>(#[serde(borrow)] Vec<Item<'a>>);

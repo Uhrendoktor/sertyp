@@ -6,6 +6,18 @@ use std::{collections::HashMap, hash::Hash};
 struct Dictionary_<'a>(#[serde(borrow)] pub HashMap<&'a str, Item_<'a>>);
 
 /// For more information visit the typst documentation: [dictionary](https://typst.app/docs/reference/foundations/dictionary/)
+///
+/// # Note
+/// The rust representation is built upon a `HashMap<&'a str, Item<'a>>`.
+///
+/// # Example
+/// Create a dictionary and insert a few entries using static keys:
+///
+/// ```rust
+/// use sertyp::{Dictionary, Item, Integer};
+/// let mut dict: Dictionary = Dictionary::default();
+/// dict.insert("count", Integer::i32(3).into());
+/// ```
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 #[serde(from = "Dictionary_", into = "Dictionary_")]
 pub struct Dictionary<'a>(#[serde(borrow)] HashMap<&'a str, Item<'a>>);

@@ -5,6 +5,13 @@ use chumsky::{
 
 use crate::{Content, GroupType, LocatingSequence, PreToken};
 
+pub mod parser;
+
+/// Token representation exposed to the `chumsky` parser.
+///
+/// - `Raw` wraps a reference to a `Content` value (non-text content).
+/// - `Char` represents a single character taken from `Text` content.
+/// - `Open`/`Close` mirror `GroupType` boundaries used for grouped constructs.
 #[derive(Debug, Clone)]
 pub enum Token<'this, 'data> {
     Raw(&'this Content<'data>),
@@ -213,6 +220,9 @@ impl<'this, 'data> SliceInput<'this> for LocatingSequence<'this, 'data> {
     }
 }
 
+/// Helper trait alias used when implementing parsers over a `LocatingSequence`.
+/// It bundles the necessary `chumsky` input traits so implementations can be
+/// generic over either `&LocatingSequence` or `LocatingSequence`.
 pub trait LocatingSequenceLike<'this, 'data: 'this>:
     Input<
         'this,

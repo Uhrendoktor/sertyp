@@ -10,7 +10,7 @@ pub fn cycle<'a>(value: sertyp::Item<'a>) -> sertyp::Item<'a> {
     value
 }
 
-/// Does a full cycle of deserialization and serialization for test purposes.
+/// Test to check that multiple arguments are properly handled.
 #[typst_func]
 pub fn multiarg(value: sertyp::Integer, other: sertyp::Integer) -> sertyp::Integer {
     sertyp::Integer::from(i32::try_from(value).unwrap_or(0) + i32::try_from(other).unwrap_or(0))

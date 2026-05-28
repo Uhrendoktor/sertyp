@@ -54,6 +54,13 @@ pub use crate::types::{
 };
 
 crate::define_enum! {
+    /// Central typed representation of a Typst value in Rust.
+    ///
+    /// `Item<'a>` is the primary enum you will encounter when receiving or
+    /// sending values between Typst and a WASM plugin. It mirrors the Typst
+    /// value space (primitives, compound types and Typst-specific types) and
+    /// supports convenient conversions from and into the more specific typed
+    /// wrappers (e.g. `Integer`, `String`, `Array`, `Dictionary`).
     #[serde(tag = "type", content = "value", rename_all = "lowercase")]
     pub enum Item<'a> {
         untagged {

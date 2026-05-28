@@ -6,6 +6,16 @@ use crate::{Item, TypstTypeLike};
 /// When constructing values owned strings can be used as well.
 ///
 /// For more information visit the typst documentation: [string](https://typst.app/docs/reference/foundations/str/)
+///
+/// # Example
+///
+/// Convert a Rust `&str` into a sertyp `String` and into an `Item`:
+///
+/// ```rust
+/// use sertyp::{String as String, Item};
+/// let s: String = "hello".into();
+/// let item: Item = s.into();
+/// ```
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct String<'a>(pub std::borrow::Cow<'a, str>);
 crate::impl_all!(Item<'a>::String, String<'a>{'a}, "string");
