@@ -105,14 +105,14 @@
 ///
 /// Args:
 /// func (function): The plugin function to call.
-/// arg (any): The argument to pass to the function.
+/// ..args (any): Positional only arguments to pass to the function.
 /// ctx (dict): deserialization context:
 ///  - panic (bool, default=false): If enabled deserialized panic values will cause runtime panics instead of error boxes in the typst document.
 ///
 /// Returns:
 /// (any): The result returned by the function.
-#let call(func, arg, ctx: (panic: false)) = {
-  return deserialize-cbor(func(serialize-cbor(arg)), ctx: ctx)
+#let call(func, ..args, ctx: (panic: false)) = {
+  return deserialize-cbor(func(..args.pos().map(arg => serialize-cbor(arg))), ctx: ctx)
 };
 
 /// Calls a WASM plugin function with a single argument, serializing the argument into CBOR format and deserializing the result from CBOR format into the intermediate sertyp format.
@@ -120,11 +120,11 @@
 ///
 /// Args:
 /// func (function): The plugin function to call.
-/// arg (any): The argument to pass to the function.
+/// ..args (any): Positional only arguments to pass to the function.
 ///
 /// Returns:
 /// (any): The result returned by the function in sertyp intermediate representation.
-#let call-debug(func, arg) = {
-  return cbor(func(serialize-cbor(arg)))
+#let call-debug(func, ..args) = {
+  return cbor(func(..args.pos().map(arg => serialize-cbor(arg))))
 };
 

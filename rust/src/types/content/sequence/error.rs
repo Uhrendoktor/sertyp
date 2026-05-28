@@ -1,23 +1,18 @@
-use winnow::{
-    error::{AddContext, ParserError},
-    stream::Stream,
-};
+use std::mem::transmute;
+
+use chumsky::span::SimpleSpan;
 
 use crate::{
-    Box, Color, Content, FillColor, GroupType, Length, Locatable, LocatingSequence, Or, Panic,
-    Place, RBox, Sequence, Stroke, Text, TypedItem, Underline,
-    math::Equation,
-    types::content::{sequence::winnow::PreToken, text::TextWeight},
+    Box, Color, Content, FillColor, GroupType, Length, LocatingSequence, Or, Panic, Place,
+    PreToken, RBox, Sequence, Stroke, Text, TypedItem, Underline, math::Equation,
+    types::content::text::TextWeight,
 };
 
 #[derive(Debug, Clone)]
-pub struct TypstError<'a> {
-    /// Global token/character offset where parsing failed.
-    pub offset: usize,
-    /// Span length of the failing token/segment.
-    pub len: usize,
+pub struct TypstError<'data> {
+    pub span: SimpleSpan,
     /// Underlying winnow context error.
-    pub inner: Vec<Context<'a>>,
+    pub inner: Vec<Context<'data>>,
 }
 impl<'a> TypstError<'a> {
     /// Appends a context entry to the underlying error and returns `self`.
@@ -27,66 +22,22 @@ impl<'a> TypstError<'a> {
     }
 
     /// Creates an error positioned at `token`.
-    pub fn from_token<T>(token: &Locatable<T>) -> Self {
+    pub fn spanned(span: SimpleSpan) -> Self {
         TypstError {
-            offset: token.offset,
-            len: token.len,
-            inner: vec![],
-        }
-    }
-
-    pub fn manual(offset: usize, len: usize) -> Self {
-        TypstError {
-            offset,
-            len,
+            span,
             inner: vec![],
         }
     }
 }
-impl<'a> ParserError<LocatingSequence<'a>> for TypstError<'a> {
-    type Inner = Self;
-
-    fn assert(input: &LocatingSequence<'a>, message: &'static str) -> Self
-    where
-        LocatingSequence<'a>: core::fmt::Debug,
-    {
-        TypstError::from_input(input).context(Context::Label(message.into()))
-    }
-
-    fn from_input(input: &LocatingSequence<'_>) -> Self {
-        TypstError {
-            offset: input.global_pos(),
-            len: 1,
-            inner: vec![],
-        }
-    }
-
-    fn into_inner(self) -> Result<Self::Inner, Self> {
-        Ok(self)
-    }
-}
-
 #[derive(Debug, Clone)]
-pub enum Context<'a> {
-    Label(crate::String<'a>),
-    Expected(crate::String<'a>),
-    Found(crate::String<'a>),
-}
-impl<'a> AddContext<LocatingSequence<'a>, Context<'a>> for TypstError<'a> {
-    #[inline]
-    fn add_context(
-        mut self,
-        _input: &LocatingSequence<'a>,
-        _token_start: &<LocatingSequence<'a> as Stream>::Checkpoint,
-        context: Context<'a>,
-    ) -> Self {
-        self.inner.push(context);
-        self
-    }
+pub enum Context<'data> {
+    Label(crate::String<'data>),
+    Expected(crate::String<'data>),
+    Found(crate::String<'data>),
 }
 
 /// Builds an absolute positioned floating Typst error. Similar to a normal [Panic].
-pub fn error_box<'a>(error: &TypstError<'a>) -> Content<'a> {
+pub fn error_box<'data>(error: &TypstError<'data>) -> Content<'data> {
     let expression: Option<_> = error.inner.iter().find_map(|c| match c {
         Context::Label(c) => Some(c),
         _ => None,
@@ -147,7 +98,7 @@ pub fn error_box<'a>(error: &TypstError<'a>) -> Content<'a> {
 /// Wraps the content into a nicely highlighted inline error
 /// - light red box
 /// - red underline
-pub fn inline_error<'a>(body: Content<'a>) -> Content<'a> {
+pub fn inline_error<'data>(body: Content<'data>) -> Content<'data> {
     Underline {
         stroke: Some(Or::Right(Stroke {
             paint: Or::Right(FillColor::Color(Color::rgba_hex("#dc3545").unwrap())),
@@ -173,51 +124,67 @@ pub fn inline_error<'a>(body: Content<'a>) -> Content<'a> {
     .into()
 }
 
-impl<'a> TypstError<'a> {
+impl<'data> TypstError<'data> {
     /// Reconstructs a `Sequence` and injects visual error annotations.
     ///
     /// # Behavior
     /// - Preserves original structure (`sequence`, `math`, raw/content tokens).
     /// - Underlines the error span and highlights it in red using [`inline_error`].
     /// - Inserts [`error_box`] after the highlighted span.
-    pub fn render(&self, sequence: &LocatingSequence<'a>) -> Sequence<'a> {
-        let mut rendered = Sequence::new();
+    pub fn render<'this>(
+        &'this self,
+        sequence: &'this LocatingSequence<'this, 'data>,
+    ) -> Sequence<'data> {
+        let mut rendered: Sequence<'data> = Sequence::new();
 
         // stack for traversing up the sequence tree whenever a sequence is closed
-        type Stack<'a> = Vec<*mut Sequence<'a>>;
-        let mut stack = vec![&mut rendered as *mut Sequence<'a>];
+        type Stack = Vec<*mut Sequence<'static>>;
+        let mut stack: Stack = vec![unsafe {
+            transmute::<*mut Sequence<'data>, *mut Sequence<'static>>(
+                &mut rendered as *mut Sequence<'data>,
+            )
+        }];
 
         // helper to get current sequence (top of stack)
-        unsafe fn cur<'a, 'b>(stack: &'b mut Stack<'a>) -> &'b mut Sequence<'a> {
-            unsafe { &mut **stack.last().unwrap() }
+        unsafe fn cur<'this, 'data>(stack: &'this mut Stack) -> &'this mut Sequence<'data> {
+            unsafe {
+                &mut *transmute::<*mut Sequence<'static>, *mut Sequence<'data>>(
+                    *stack.last().unwrap(),
+                )
+            }
         }
 
         // adds content to the current sequence (top of stack)
-        fn push<'a>(stack: &mut Stack<'a>, content: Content<'a>) {
+        fn push<'this, 'data>(stack: &'this mut Stack, content: Content<'data>) {
             unsafe { cur(stack) }.push(content);
         }
 
         // adds an object to the current sequence. this object contains a nested sequence which is set as the new current sequence (pushed to stack)
-        fn open_group_and_push<'a>(
-            stack: &mut Stack<'a>,
-            content: Content<'a>,
-            f: impl for<'b> Fn(&'b mut Content<'a>) -> &'b mut Sequence<'a>,
+        fn open_group_and_push<'this, 'data>(
+            stack: &'this mut Stack,
+            content: Content<'data>,
+            f: impl for<'this2> Fn(&'this2 mut Content<'data>) -> &'this2 mut Sequence<'data>,
         ) {
             push(stack, content);
-            let seq_ptr = f(unsafe { cur(stack) }.last_mut().unwrap()) as *mut Sequence<'a>;
+            let seq_ptr = unsafe {
+                transmute::<*mut Sequence<'data>, *mut Sequence<'static>>(f(cur(stack)
+                    .last_mut()
+                    .unwrap())
+                    as *mut Sequence<'data>)
+            };
             stack.push(seq_ptr);
         }
 
-        fn close_group(stack: &mut Stack<'_>) {
+        fn close_group(stack: &mut Stack) {
             stack.pop();
         }
 
         // opens an error box group if not already open.
         let mut error_present = false;
-        fn try_open_error<'a>(
-            stack: &mut Stack<'a>,
-            error: &TypstError<'a>,
-            error_present: &mut bool,
+        fn try_open_error<'this, 'data>(
+            stack: &'this mut Stack,
+            error: &'this TypstError<'data>,
+            error_present: &'this mut bool,
         ) {
             if !*error_present {
                 push(stack, error_box(error));
@@ -243,7 +210,10 @@ impl<'a> TypstError<'a> {
         }
 
         // processes a PreToken
-        fn process_token<'a>(stack: &mut Stack<'a>, token: &PreToken<'a>) {
+        fn process_token<'this, 'data>(
+            stack: &'this mut Stack,
+            token: &'this PreToken<'this, 'data>,
+        ) {
             match token {
                 PreToken::Token { token, .. } => push(stack, (*token).clone()),
                 PreToken::Open(GroupType::Math) => {
@@ -276,7 +246,7 @@ impl<'a> TypstError<'a> {
 
         let mut i = 0;
         while let Some((range, token)) = sequence.tokens.get_key_value(&i) {
-            match (range, (self.offset..self.offset + self.len)) {
+            match (range, (self.span.start..self.span.end)) {
                 // token is not covered by error span
                 (t, e) if t.end <= e.start || t.start >= e.end => {
                     process_token(&mut stack, token);

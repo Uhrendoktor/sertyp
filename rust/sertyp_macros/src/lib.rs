@@ -2,8 +2,8 @@ use quote::{format_ident, quote};
 use syn::parse_macro_input;
 
 /// Exposes a function as typst-wasm function with automatic serialization and deserialization.
-/// The function must take exactly one argument and return a value.
-/// The argument must implement [TryFrom]<[sertyp::Item]> and the return type must implement [Into]<[sertyp::Item]>.
+/// The function must at least one argument and return a value.
+/// Each argument must implement [TryFrom]<[sertyp::Item]> and the return type must implement [Into]<[sertyp::Item]>.
 ///
 /// Types you may find useful:
 /// - [sertyp::Or]
@@ -56,20 +56,27 @@ pub fn typst_func(
     item.attrs.retain(|attr| !attr.path().is_ident("wasm_func"));
     let mut wrapper_sig = item.sig.clone();
 
-    if item.sig.inputs.len() != 1 {
-        return syn::Error::new_spanned(item.sig.inputs, "Function must have exactly one argument")
+    let inputs = match wrapper_sig
+        .inputs
+        .iter_mut()
+        .enumerate()
+        .map(|(i, input)| match input {
+            syn::FnArg::Typed(pat_type) => {
+                let ident = format_ident!("data{}", i);
+                *pat_type = syn::parse_quote! { #ident: &[u8] };
+                Ok(ident)
+            }
+            syn::FnArg::Receiver(_) => Err(syn::Error::new_spanned(
+                &input,
+                "Function cannot take self argument",
+            )
             .to_compile_error()
-            .into();
-    }
-    match wrapper_sig.inputs.first_mut().unwrap() {
-        syn::FnArg::Typed(pat_type) => {
-            *pat_type = syn::parse_quote! { data: &[u8] };
-        }
-        syn::FnArg::Receiver(_) => {
-            return syn::Error::new_spanned(&item.sig.inputs, "Function cannot take self argument")
-                .to_compile_error()
-                .into();
-        }
+            .into()),
+        })
+        .collect::<Result<Vec<_>, proc_macro::TokenStream>>()
+    {
+        Ok(inputs) => inputs,
+        Err(e) => return e,
     };
 
     match &mut wrapper_sig.output {
@@ -86,11 +93,12 @@ pub fn typst_func(
     item.sig.ident = format_ident!("__impl_{}", wrapper_sig.ident);
     let orig_ident = &wrapper_sig.ident;
     let ident = &item.sig.ident;
+    let modified_inputs = inputs.iter().map(|ident| quote! { #modifier #ident });
 
     quote! {
         #[wasm_minimal_protocol::wasm_func]
         #wrapper_sig {
-            let value = match sertyp::deserialize_cbor(data) {
+            #(let #inputs = match sertyp::deserialize_cbor(#inputs) {
                 Ok(v) => {
                     let p: std::result::Result<sertyp::Panic, _> = v.clone().try_into();
                     match v.try_into() {
@@ -119,10 +127,10 @@ pub fn typst_func(
                 Err(e) => {
                     sertyp::error!("Deserialization Error", "{}", &e);
                 }
-            };
+            };)*
 
             #item
-            let result = #ident(#modifier value);
+            let result = #ident(#(#modified_inputs),*);
             match sertyp::serialize_cbor(&result.into()) {
                 Ok(data) => data,
                 Err(e) => {

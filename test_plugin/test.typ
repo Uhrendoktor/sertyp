@@ -85,3 +85,5 @@
 }
 
 #test()
+
+#let a = sertyp.call-debug(test_plugin.multiarg, 5, 10)

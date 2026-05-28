@@ -1,4 +1,4 @@
-use std::{ops::Range, rc::Rc, sync::atomic::AtomicUsize};
+use std::ops::Range;
 
 use crate::{
     Content, Raw, Sequence, TypedItem,
@@ -25,9 +25,9 @@ impl PartialEq for GroupType {
 }
 
 #[derive(Debug, Clone)]
-pub enum PreToken<'a> {
+pub enum PreToken<'this, 'data: 'this> {
     Token {
-        token: &'a Content<'a>,
+        token: &'this Content<'data>,
         start: usize,
         #[allow(unused)]
         len: usize,
@@ -36,7 +36,7 @@ pub enum PreToken<'a> {
     Close(GroupType),
 }
 /// Impls pointer compare for PreTokens, as equals is only used when inserting Tokens into the rangemap.
-impl<'a> PartialEq for PreToken<'a> {
+impl<'this, 'data> PartialEq for PreToken<'this, 'data> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (PreToken::Token { token: t1, .. }, PreToken::Token { token: t2, .. }) => {
@@ -48,12 +48,15 @@ impl<'a> PartialEq for PreToken<'a> {
         }
     }
 }
-impl<'a> Eq for PreToken<'a> {}
+impl<'this, 'data> Eq for PreToken<'this, 'data> {}
 
-pub type PreTokenMap<'a> = rangemap::RangeMap<usize, PreToken<'a>>;
-pub type PreTokenMapSlice<'a> = rangemap::RangeMap<usize, &'a PreToken<'a>>;
+pub type PreTokenMap<'this, 'data> = rangemap::RangeMap<usize, PreToken<'this, 'data>>;
 
-pub fn insert_token<'a>(map: &mut PreTokenMap<'a>, content: &'a Content<'a>, range: Range<usize>) {
+pub fn insert_token<'this, 'data>(
+    map: &mut PreTokenMap<'this, 'data>,
+    content: &'this Content<'data>,
+    range: Range<usize>,
+) {
     map.insert(
         range.clone(),
         PreToken::Token {
@@ -63,7 +66,10 @@ pub fn insert_token<'a>(map: &mut PreTokenMap<'a>, content: &'a Content<'a>, ran
         },
     );
 }
-pub fn get<'a, 'b>(map: &'b PreTokenMap<'a>, offset: &usize) -> Option<&'b PreToken<'a>> {
+pub fn get<'this, 'data>(
+    map: &'data PreTokenMap<'this, 'data>,
+    offset: &usize,
+) -> Option<&'data PreToken<'this, 'data>> {
     map.get(offset)
 }
 
@@ -74,20 +80,18 @@ pub fn get<'a, 'b>(map: &'b PreTokenMap<'a>, offset: &usize) -> Option<&'b PreTo
 /// - Expose sequence content as a winnow `Stream`.
 /// - Preserve token offsets for precise parser errors.
 /// - Support lookahead and slicing without losing global positions.
-pub struct LocatingSequence<'a> {
+pub struct LocatingSequence<'this, 'data: 'this> {
     /// unparsed tokens represented by [Content]
-    pub tokens: PreTokenMap<'a>,
-    /// shared reference of position.
-    /// [Rc<AtomicUsize>] Neccessary for interior mutability and correct error reporting,
-    /// as `iter_offsets` only provides a `&` reference.
-    pub pos: Rc<AtomicUsize>,
+    pub tokens: PreTokenMap<'this, 'data>,
+    /// current position.
+    pub pos: usize,
     /// cummulative length or [PreToken]s. [Text] contribute their respective number of [char]s, everything else has length=1.
     pub len: usize,
     /// starting position in relation to indices used in [PreTokenMap]. Can be unequal to 0 in cases where sub-sequences are created (lookahead, etc.).
     pub offset: usize,
 }
 
-impl<'a> LocatingSequence<'a> {
+impl<'this, 'data> LocatingSequence<'this, 'data> {
     /// Returns the length of the token stream in terms of offsets.
     /// NOT in terms of the actual number of [`PreTokens`].
     pub fn len(&self) -> usize {
@@ -98,66 +102,80 @@ impl<'a> LocatingSequence<'a> {
     }
 }
 
-impl<'a> From<&'a Sequence<'a>> for LocatingSequence<'a> {
-    fn from(seq: &'a Sequence<'a>) -> Self {
-        let mut tokens = PreTokenMap::new();
+fn insert_content<'this, 'data>(
+    pos: &mut usize,
+    content: &'this Content<'data>,
+    tokens: &mut PreTokenMap<'this, 'data>,
+) {
+    match content {
+        Content::Text(text) => {
+            let len: usize = text.as_string().len();
+            insert_token(tokens, content, *pos..*pos + len);
+            *pos += len;
+        }
+        Content::Raw(Raw {
+            text: TypedItem(text),
+            ..
+        }) => {
+            let len: usize = text.len();
+            insert_token(tokens, content, *pos..*pos + len);
+            *pos += len;
+        }
+        Content::Sequence(seq) => {
+            tokens.insert(*pos..*pos + 1, PreToken::Open(GroupType::Sequence));
+            *pos += 1;
+            insert_sequence(pos, seq, tokens);
+            tokens.insert(*pos..*pos + 1, PreToken::Close(GroupType::Sequence));
+            *pos += 1;
+        }
+        Content::MathEquation(Equation { body, .. }) => {
+            tokens.insert(*pos..*pos + 1, PreToken::Open(GroupType::Math));
+            *pos += 1;
+            insert_content(pos, body, tokens);
+            tokens.insert(*pos..*pos + 1, PreToken::Close(GroupType::Math));
+            *pos += 1;
+        }
+        Content::MathLR(LR { body, .. }) => {
+            insert_content(pos, body, tokens);
+        }
+        content => {
+            insert_token(tokens, content, *pos..*pos + 1);
+            *pos += 1;
+        }
+    }
+}
+fn insert_sequence<'this, 'data>(
+    pos: &mut usize,
+    seq: &'this Sequence<'data>,
+    tokens: &mut PreTokenMap<'this, 'data>,
+) {
+    for content in seq.as_slice().iter() {
+        insert_content(pos, content, tokens);
+    }
+}
 
-        fn insert_content<'a>(
-            pos: &mut usize,
-            content: &'a Content<'a>,
-            tokens: &mut PreTokenMap<'a>,
-        ) {
-            match content {
-                Content::Text(text) => {
-                    let len: usize = text.as_string().len();
-                    insert_token(tokens, content, *pos..*pos + len);
-                    *pos += len;
-                }
-                Content::Raw(Raw {
-                    text: TypedItem(text),
-                    ..
-                }) => {
-                    let len: usize = text.len();
-                    insert_token(tokens, content, *pos..*pos + len);
-                    *pos += len;
-                }
-                Content::Sequence(seq) => {
-                    tokens.insert(*pos..*pos + 1, PreToken::Open(GroupType::Sequence));
-                    *pos += 1;
-                    insert_sequence(pos, seq, tokens);
-                    tokens.insert(*pos..*pos + 1, PreToken::Close(GroupType::Sequence));
-                    *pos += 1;
-                }
-                Content::MathEquation(Equation { body, .. }) => {
-                    tokens.insert(*pos..*pos + 1, PreToken::Open(GroupType::Math));
-                    *pos += 1;
-                    insert_content(pos, body, tokens);
-                    tokens.insert(*pos..*pos + 1, PreToken::Close(GroupType::Math));
-                    *pos += 1;
-                }
-                Content::MathLR(LR { body, .. }) => {
-                    insert_content(pos, body, tokens);
-                }
-                content => {
-                    insert_token(tokens, content, *pos..*pos + 1);
-                    *pos += 1;
-                }
-            }
-        }
-        fn insert_sequence<'a>(
-            pos: &mut usize,
-            seq: &'a Sequence<'a>,
-            tokens: &mut PreTokenMap<'a>,
-        ) {
-            for content in seq.as_slice().iter() {
-                insert_content(pos, content, tokens);
-            }
-        }
+impl<'this, 'data> From<&'this Sequence<'data>> for LocatingSequence<'this, 'data> {
+    fn from(seq: &'this Sequence<'data>) -> Self {
+        let mut tokens = PreTokenMap::new();
         let mut pos = 0;
         insert_sequence(&mut pos, seq, &mut tokens);
         LocatingSequence {
             tokens,
-            pos: Rc::new(0.into()),
+            pos: 0,
+            len: pos,
+            offset: 0,
+        }
+    }
+}
+
+impl<'this, 'data> From<&'this Content<'data>> for LocatingSequence<'this, 'data> {
+    fn from(content: &'this Content<'data>) -> Self {
+        let mut tokens = PreTokenMap::new();
+        let mut pos = 0;
+        insert_content(&mut pos, content, &mut tokens);
+        LocatingSequence {
+            tokens,
+            pos: 0,
             len: pos,
             offset: 0,
         }
