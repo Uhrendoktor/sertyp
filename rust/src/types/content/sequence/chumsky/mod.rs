@@ -1,9 +1,18 @@
+use std::fmt::Debug;
+
 use chumsky::{
+    DefaultExpected,
+    error::Error,
     input::{ExactSizeInput, Input, SliceInput, ValueInput},
+    label::LabelError,
     span::SimpleSpan,
+    util::MaybeRef,
 };
 
-use crate::{Content, GroupType, LocatingSequence, PreToken};
+use crate::{
+    Content, GroupType, LocatingSequence, PreToken,
+    error::{Context, TypstError},
+};
 
 pub mod parser;
 
@@ -72,12 +81,26 @@ impl<'this, 'data> Input<'this> for &'this LocatingSequence<'this, 'data> {
                 *cursor += c.len_utf8();
                 Token::Char(c)
             }
+            PreToken::Token {
+                token: Content::Symbol(s),
+                ..
+            } => {
+                let c: char = **s;
+                *cursor += c.len_utf8();
+                Token::Char(c)
+            }
             PreToken::Token { token, .. } => {
                 *cursor += 1;
                 Token::Raw(token)
             }
-            PreToken::Open(group_type) => Token::Open(group_type.clone()),
-            PreToken::Close(group_type) => Token::Close(group_type.clone()),
+            PreToken::Open(group_type) => {
+                *cursor += 1;
+                Token::Open(group_type.clone())
+            }
+            PreToken::Close(group_type) => {
+                *cursor += 1;
+                Token::Close(group_type.clone())
+            }
         };
         Some(token)
     }
@@ -237,3 +260,61 @@ pub trait LocatingSequenceLike<'this, 'data: 'this>:
 }
 impl<'this, 'data> LocatingSequenceLike<'this, 'data> for &'this LocatingSequence<'this, 'data> {}
 impl<'this, 'data> LocatingSequenceLike<'this, 'data> for LocatingSequence<'this, 'data> {}
+
+impl<'this, 'data: 'this, I: Input<'this>> Error<'this, I> for TypstError<'data, I::Span> where
+    I::Token: Debug
+{
+}
+
+impl<'this, 'data: 'this, I: Input<'this>> LabelError<'this, I, crate::String<'data>>
+    for TypstError<'data, I::Span>
+where
+    I::Token: Debug,
+{
+    fn label_with(&mut self, label: crate::String<'data>) {
+        self.context_mut(Context::Label(label));
+    }
+
+    fn expected_found<E: IntoIterator<Item = crate::String<'data>>>(
+        expected: E,
+        found: Option<MaybeRef<'this, <I as Input<'this>>::Token>>,
+        span: <I as Input<'this>>::Span,
+    ) -> Self {
+        let mut error = TypstError::spanned(span);
+        for e in expected {
+            error.context_mut(Context::Expected(e));
+        }
+        if let Some(found) = found {
+            error.context_mut(Context::Found(format!("{:#?}", found).into()));
+        }
+        error
+    }
+}
+
+impl<'this, 'data: 'this, I: Input<'this>> LabelError<'this, I, DefaultExpected<'this, I::Token>>
+    for TypstError<'data, I::Span>
+where
+    I::Token: Debug,
+{
+    fn label_with(&mut self, label: DefaultExpected<'this, I::Token>) {
+        self.context_mut(Context::Label(format!("{:?}", label).into()));
+    }
+
+    fn expected_found<E: IntoIterator<Item = DefaultExpected<'this, I::Token>>>(
+        expected: E,
+        found: Option<MaybeRef<'this, I::Token>>,
+        span: I::Span,
+    ) -> Self {
+        let mut error = TypstError::spanned(span);
+        for e in expected {
+            error.context_mut(Context::Expected(match e {
+                DefaultExpected::Token(t) => format!("{:?}", t).into(),
+                t => format!("{:?}", t).into(),
+            }));
+        }
+        if let Some(found) = found {
+            error.context_mut(Context::Found(format!("{:#?}", found).into()));
+        }
+        error
+    }
+}

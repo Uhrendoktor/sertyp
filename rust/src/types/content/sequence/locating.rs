@@ -89,7 +89,7 @@ impl<'this, 'data> Eq for PreToken<'this, 'data> {}
 /// reconstruction.
 pub type PreTokenMap<'this, 'data> = rangemap::RangeMap<usize, PreToken<'this, 'data>>;
 
-/// Insert one token into a locating map.
+/// Insert 2one token into a locating map.
 ///
 /// `range` is expressed in flattened offsets, not AST depth. For text this is
 /// a character range. For most non-text nodes it is a single-unit range.
@@ -145,6 +145,11 @@ impl<'this, 'data> LocatingSequence<'this, 'data> {
             .last_range_value()
             .map(|(k, _)| k.end)
             .unwrap_or(0)
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }
 

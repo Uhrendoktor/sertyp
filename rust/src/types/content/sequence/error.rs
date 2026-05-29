@@ -1,6 +1,6 @@
 use std::mem::transmute;
 
-use chumsky::span::SimpleSpan;
+use chumsky::span::{SimpleSpan, Span};
 
 use crate::{
     Box, Color, Content, FillColor, GroupType, Length, LocatingSequence, Or, Panic, Place,
@@ -14,23 +14,44 @@ use crate::{
 /// The span is expressed in flattened offsets, so it can be replayed against the
 /// original content tree to reconstruct the affected region precisely.
 #[derive(Debug, Clone)]
-pub struct TypstError<'data> {
-    pub span: SimpleSpan,
+pub struct TypstError<'data, S: Span = SimpleSpan> {
+    pub span: S,
     /// Underlying winnow context error.
     pub inner: Vec<Context<'data>>,
 }
-impl<'a> TypstError<'a> {
+impl<'a, S: Span> TypstError<'a, S> {
     /// Appends a context entry to the underlying error and returns `self`.
     pub fn context(mut self, context: Context<'a>) -> Self {
         self.inner.push(context);
         self
     }
 
+    pub fn context_mut(&mut self, context: Context<'a>) -> &mut Self {
+        self.inner.push(context);
+        self
+    }
+
     /// Creates an error positioned at `token`.
-    pub fn spanned(span: SimpleSpan) -> Self {
+    pub fn spanned(span: S) -> Self {
         TypstError {
             span,
             inner: vec![],
+        }
+    }
+
+    pub fn full(
+        span: S,
+        label: impl Into<crate::String<'a>>,
+        expected: impl Into<crate::String<'a>>,
+        found: impl Into<crate::String<'a>>,
+    ) -> Self {
+        TypstError {
+            span,
+            inner: vec![
+                Context::Label(label.into()),
+                Context::Expected(expected.into()),
+                Context::Found(found.into()),
+            ],
         }
     }
 }
@@ -49,7 +70,7 @@ pub enum Context<'data> {
 }
 
 /// Builds an absolute positioned floating Typst error. Similar to a normal [Panic].
-pub fn error_box<'data>(error: &TypstError<'data>) -> Content<'data> {
+pub fn error_box<'data, S: Span>(error: &TypstError<'data, S>) -> Content<'data> {
     let expression: Option<_> = error.inner.iter().find_map(|c| match c {
         Context::Label(c) => Some(c),
         _ => None,
@@ -89,8 +110,7 @@ pub fn error_box<'data>(error: &TypstError<'data>) -> Content<'data> {
                 TypedItem::new(Content::Place(Place {
                     body: Some(
                         TypedItem::new(Content::Panic(Panic {
-                            ty: format!("invalid {}", expression.unwrap_or(&"<unknown>".into()))
-                                .into(),
+                            ty: expression.cloned().unwrap_or("<unknown>".into()),
                             msg: Content::from(Sequence::from(msg)).into(),
                         }))
                         .into(),
@@ -136,7 +156,7 @@ pub fn inline_error<'data>(body: Content<'data>) -> Content<'data> {
     .into()
 }
 
-impl<'data> TypstError<'data> {
+impl<'data, S: Span<Offset = usize>> TypstError<'data, S> {
     /// Reconstructs a `Sequence` and injects visual error annotations.
     ///
     /// # Behavior
@@ -193,9 +213,9 @@ impl<'data> TypstError<'data> {
 
         // opens an error box group if not already open.
         let mut error_present = false;
-        fn try_open_error<'this, 'data>(
+        fn try_open_error<'this, 'data, S: Span>(
             stack: &'this mut Stack,
-            error: &'this TypstError<'data>,
+            error: &'this TypstError<'data, S>,
             error_present: &'this mut bool,
         ) {
             if !*error_present {
@@ -258,7 +278,7 @@ impl<'data> TypstError<'data> {
 
         let mut i = 0;
         while let Some((range, token)) = sequence.tokens.get_key_value(&i) {
-            match (range, (self.span.start..self.span.end)) {
+            match (range, (self.span.start()..self.span.end())) {
                 // token is not covered by error span
                 (t, e) if t.end <= e.start || t.start >= e.end => {
                     process_token(&mut stack, token);
