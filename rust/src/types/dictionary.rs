@@ -73,7 +73,7 @@ macro_rules! auto_impl_dict {
             fn try_from(mut value: sertyp::Dictionary<'a>) -> std::result::Result<Self, Self::Error> {
                 Ok(Self {
                     $(
-                        $field: value.remove(stringify!($field))
+                        $field: value.remove(&stringify!($field).into())
                             .ok_or_else(|| format!("Key '{}' not found in dictionary", stringify!($field)).to_string())?
                             .try_into()?,
                     )*
@@ -85,7 +85,7 @@ macro_rules! auto_impl_dict {
             fn from(value: $name$(<$($g),*>)?) -> Self {
                 let mut dict = sertyp::Dictionary::default();
                 $(
-                    dict.insert(stringify!($field), sertyp::Item::from(value.$field));
+                    dict.insert(stringify!($field).into(), sertyp::Item::from(value.$field));
                 )*
                 dict
             }
