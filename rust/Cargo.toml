@@ -6,17 +6,23 @@ edition = "2024"
 authors = ["Uhrendoktor"]
 version = "0.1.4"
 license = "MIT"
-
-[package]
-name = "sertyp"
-edition.workspace = true
-authors.workspace = true
-version.workspace = true
-license.workspace = true
 repository = "https://github.com/Uhrendoktor/sertyp"
 readme = "README.md"
 keywords = ["wasm", "serialization", "deserialization", "typst"]
 categories = ["encoding", "wasm", "api-bindings"]
+
+
+[package]
+name = "sertyp"
+description = "Rust data structures for Typst values with serialization and deserialization from and into the sertyp CBOR format. Allows for straighforward communication between typst and WASM plugins"
+edition.workspace = true
+authors.workspace = true
+version.workspace = true
+license.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [lib]
 crate-type = ["lib"]

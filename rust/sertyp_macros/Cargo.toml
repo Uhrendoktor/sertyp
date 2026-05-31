@@ -5,6 +5,10 @@ authors.workspace = true
 edition.workspace = true
 description = "Procedural macros for the sertyp crate."
 license.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [lib]
 proc-macro = true
