@@ -1,10 +1,10 @@
 use crate::{
-    AutoOr, Boolean, Content, Dictionary, Fraction, NoneOr, Or, RBox, Relative, TypedItem,
+    AutoOr, Boolean, Content, Dictionary, Fraction, NoneOr, Or, Relative, TypedItem,
     types::generic::{FillColor, StrokeColor},
 };
 
 /// For more information visit the typst documentation: [box](https://typst.app/docs/reference/layout/box/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Box<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub width: Option<AutoOr<Or<Relative, Fraction>>>,
@@ -25,7 +25,7 @@ pub struct Box<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub clip: Option<TypedItem<Boolean>>,
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
-    pub body: Option<RBox<TypedItem<Content<'a>>>>,
+    pub body: Option<std::boxed::Box<TypedItem<Content<'a>>>>,
 }
 
 crate::impl_all!(Content<'a>::Box, std::boxed::Box<Box<'a>>{'a}, "box");

@@ -1,20 +1,16 @@
-use std::{borrow::Cow, ops::Deref};
+use std::borrow::Cow;
+
+use derive_more::{Deref, DerefMut};
 
 use crate::{Item, types::string::String};
 
 /// For more information visit the typst documentation: [type](https://typst.app/docs/reference/foundations/type/)
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Default, Hash)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, serde::Serialize, Deref, DerefMut, serde::Deserialize, Hash,
+)]
 pub struct Type<'a>(#[serde(borrow)] pub String<'a>);
 
 crate::impl_all!(Item<'a>::Type, Type<'a>{'a}, "type");
-
-impl<'a> Deref for Type<'a> {
-    type Target = String<'a>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
 
 /// Marker trait for all "real" typst types. For more information see [TypstTypeLike].
 pub trait TypstType: TypstTypeLike {}

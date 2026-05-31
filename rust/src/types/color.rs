@@ -1,7 +1,7 @@
 use crate::{Item, Ratio, TypedArray, types::array::Array};
 
 /// For more information visit the typst documentation: [color](https://typst.app/docs/reference/visualize/color/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Color<'a> {
     #[serde(borrow)]
     pub components: Array<'a>,

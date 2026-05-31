@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use derive_more::Display;
 
 use crate::{
     Item,
@@ -6,7 +6,8 @@ use crate::{
 };
 
 /// For more information visit the typst documentation: [module](https://typst.app/docs/reference/foundations/module/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Display)]
+#[display("<module {}>", name)]
 pub struct Module<'a> {
     #[serde(borrow)]
     pub name: String<'a>,
@@ -14,9 +15,3 @@ pub struct Module<'a> {
 }
 
 crate::impl_all!(Item<'a>::Module, Module<'a>{'a}, "module");
-
-impl<'a> Display for Module<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "<module {}>", self.name)
-    }
-}

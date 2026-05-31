@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use derive_more::{Deref, DerefMut, Display};
+
 use crate::{Item, Length, Ratio, types::generic::TypedArray};
 
 /// Relative lengths are additive combinations of lengths and ratios.
@@ -10,7 +12,9 @@ use crate::{Item, Length, Ratio, types::generic::TypedArray};
 /// Therefore this type can auto case [Item] variants [Length] and [Ratio] into [Relative] when used in any context where [TryFrom]<[Item]> is required.
 ///
 /// For more information visit the typst documentation: [relative](https://typst.app/docs/reference/layout/relative/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Deref, DerefMut)]
+#[deref(forward)]
+#[deref_mut(forward)]
 pub struct Relative(pub TypedArray<RelativeItem>);
 
 crate::impl_typst_type!(Relative {}, "relative");
@@ -31,23 +35,11 @@ impl<'a> TryFrom<Item<'a>> for Relative {
 
 crate::auto_impl! {
     /// An item of [Relative].
-    #[derive(Clone, Debug, Hash)]
+    #[derive(Clone, Debug, PartialEq, Display)]
     pub enum RelativeItem {
         try_from{ },
         Length(Length=>Length),
         Ratio(Ratio=>Ratio),
-    }
-}
-
-impl From<Length> for RelativeItem {
-    fn from(value: Length) -> Self {
-        RelativeItem::Length(value)
-    }
-}
-
-impl From<Ratio> for RelativeItem {
-    fn from(value: Ratio) -> Self {
-        RelativeItem::Ratio(value)
     }
 }
 

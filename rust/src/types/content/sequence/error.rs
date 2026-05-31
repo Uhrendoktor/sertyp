@@ -4,7 +4,7 @@ use chumsky::span::{SimpleSpan, Span};
 
 use crate::{
     Box, Color, Content, FillColor, GroupType, Length, LocatingSequence, Or, Panic, Place,
-    PreToken, RBox, Sequence, Stroke, Text, TypedItem, Underline, math::Equation,
+    PreToken, Sequence, Stroke, Text, TypedItem, Underline, math::Equation,
     types::content::text::TextWeight,
 };
 
@@ -106,11 +106,11 @@ pub fn error_box<'data, S: Span>(error: &TypstError<'data, S>) -> Content<'data>
 
     Content::Box(
         Box {
-            body: Some(RBox(
-                TypedItem::new(Content::Place(Place {
+            body: Some(std::boxed::Box::new(TypedItem::new(Content::Place(
+                Place {
                     body: Some(
                         TypedItem::new(Content::Panic(Panic {
-                            ty: expression.cloned().unwrap_or("<unknown>".into()),
+                            ty: expression.cloned().unwrap_or("<unknown>".into()).into(),
                             msg: Content::from(Sequence::from(msg)).into(),
                         }))
                         .into(),
@@ -118,9 +118,8 @@ pub fn error_box<'data, S: Span>(error: &TypstError<'data, S>) -> Content<'data>
                     dy: Some(TypedItem::new(Length::pt(3.0).into())),
                     dx: Some(TypedItem::new(Length::pt(-20.0).into())),
                     ..Default::default()
-                }))
-                .into(),
-            )),
+                },
+            )))),
             ..Default::default()
         }
         .into(),
@@ -138,7 +137,7 @@ pub fn inline_error<'data>(body: Content<'data>) -> Content<'data> {
         })),
         evade: Some(TypedItem(false.into())),
         extent: Some(TypedItem(Length::pt(1.5))),
-        body: Some(RBox::new(TypedItem(
+        body: Some(std::boxed::Box::new(TypedItem(
             Box {
                 fill: Some(Or::Right(FillColor::Color(
                     Color::rgba_hex("#fdecea").unwrap(),

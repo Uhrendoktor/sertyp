@@ -1,14 +1,15 @@
-use crate::types::{Item, Item_};
-use std::{collections::HashMap, hash::Hash};
+use crate::types::{Item, Item_, String};
+use derive_more::{Deref, DerefMut, Into};
+use std::collections::HashMap;
 
 /// Pre-deserialization / post-serialization helper struct for [Dictionary]. You probably want to use [Dictionary] instead.
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
-struct Dictionary_<'a>(#[serde(borrow)] pub HashMap<&'a str, Item_<'a>>);
+struct Dictionary_<'a>(#[serde(borrow)] pub HashMap<String<'a>, Item_<'a>>);
 
 /// For more information visit the typst documentation: [dictionary](https://typst.app/docs/reference/foundations/dictionary/)
 ///
 /// # Note
-/// The rust representation is built upon a `HashMap<&'a str, Item<'a>>`.
+/// The rust representation is built upon a `HashMap<String<'a>, Item<'a>>`.
 ///
 /// # Example
 /// Create a dictionary and insert a few entries using static keys:
@@ -18,20 +19,11 @@ struct Dictionary_<'a>(#[serde(borrow)] pub HashMap<&'a str, Item_<'a>>);
 /// let mut dict: Dictionary = Dictionary::default();
 /// dict.insert("count", Integer::i32(3).into());
 /// ```
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Deref, DerefMut, Into)]
 #[serde(from = "Dictionary_", into = "Dictionary_")]
-pub struct Dictionary<'a>(#[serde(borrow)] HashMap<&'a str, Item<'a>>);
+pub struct Dictionary<'a>(#[serde(borrow)] HashMap<String<'a>, Item<'a>>);
 
 crate::impl_all!(Item<'a>::Dictionary, Dictionary<'a>{'a}, "dictionary");
-
-impl<'a> Hash for Dictionary<'a> {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        for (k, v) in &**self {
-            k.hash(state);
-            v.hash(state);
-        }
-    }
-}
 
 impl<'a> From<Dictionary<'a>> for Dictionary_<'a> {
     fn from(value: Dictionary<'a>) -> Self {
@@ -45,23 +37,9 @@ impl<'a> From<Dictionary_<'a>> for Dictionary<'a> {
     }
 }
 
-impl<'a> std::ops::Deref for Dictionary<'a> {
-    type Target = HashMap<&'a str, Item<'a>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<'a> std::ops::DerefMut for Dictionary<'a> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-impl<'a> From<HashMap<&'a str, Item<'a>>> for Dictionary<'a> {
-    fn from(value: HashMap<&'a str, Item<'a>>) -> Self {
-        Dictionary(value)
+impl<'a, T: Into<Item<'a>>> From<HashMap<String<'a>, T>> for Dictionary<'a> {
+    fn from(value: HashMap<String<'a>, T>) -> Self {
+        Dictionary(value.into_iter().map(|(k, v)| (k, v.into())).collect())
     }
 }
 

@@ -1,12 +1,14 @@
-use std::{
-    fmt::{Debug, Display},
-    ops::Deref,
-};
+use std::fmt::Debug;
+
+use derive_more::{Deref, DerefMut, IntoIterator};
 
 use crate::{Item, TypstTypeLike};
 
 /// For more information visit the typst documentation: [bytes](https://typst.app/docs/reference/foundations/bytes/)
-#[derive(Clone, Debug, PartialEq, Eq, Default, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Default, Hash, Deref, DerefMut, IntoIterator)]
+#[deref(forward)]
+#[deref_mut(forward)]
+#[into_iterator(owned, ref, ref_mut)]
 pub struct Bytes<'a>(pub std::borrow::Cow<'a, [u8]>);
 crate::impl_all!(Item<'a>::Bytes, Bytes<'a>{'a}, "bytes");
 
@@ -44,15 +46,6 @@ impl<'a> serde::Serialize for Bytes<'a> {
         serializer.serialize_bytes(&self.0)
     }
 }
-
-impl Deref for Bytes<'_> {
-    type Target = [u8];
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
 impl<'a> From<&'a [u8]> for Bytes<'a> {
     fn from(value: &'a [u8]) -> Self {
         Bytes(std::borrow::Cow::Borrowed(value))
@@ -68,11 +61,5 @@ impl<'a> From<std::vec::Vec<u8>> for Bytes<'a> {
 impl<'a> From<std::borrow::Cow<'a, [u8]>> for Bytes<'a> {
     fn from(value: std::borrow::Cow<'a, [u8]>) -> Self {
         Bytes(value)
-    }
-}
-
-impl<'a> Display for Bytes<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.deref().fmt(f)
     }
 }

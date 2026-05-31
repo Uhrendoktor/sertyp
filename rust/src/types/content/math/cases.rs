@@ -4,7 +4,7 @@ use crate::{
 };
 
 /// For more information visit the typst documentation: [math.cases](https://typst.app/docs/reference/math/cases/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Cases<'a> {
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
     pub delim: Option<Delim<'a>>,

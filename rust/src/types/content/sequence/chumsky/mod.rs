@@ -10,7 +10,8 @@ use chumsky::{
 };
 
 use crate::{
-    Content, GroupType, LocatingSequence, PreToken,
+    Content::{self},
+    GroupType, LocatingSequence, PreToken,
     error::{Context, TypstError},
 };
 
@@ -33,7 +34,7 @@ impl PartialEq for Token<'_, '_> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Token::Raw(c1), Token::Raw(c2)) => std::ptr::eq(*c1, *c2),
-            (Token::Char(c1), Token::Char(c2)) => c1 == c2,
+            (Token::Char(c1), Token::Char(c2)) => *c1 == *c2,
             (Token::Open(g1), Token::Open(g2)) => {
                 std::mem::discriminant(g1) == std::mem::discriminant(g2)
             }
@@ -43,6 +44,50 @@ impl PartialEq for Token<'_, '_> {
             _ => false,
         }
     }
+}
+
+macro_rules! next_maybe {
+    ($this:expr, $cursor:expr) => {{
+        let token = $this.tokens.get($cursor)?;
+        let token = match token {
+            PreToken::Token {
+                token: Content::Text(text),
+                start,
+                ..
+            } => {
+                let c = text
+                    .as_string()
+                    .get(*$cursor - start..)
+                    .unwrap()
+                    .chars()
+                    .next()
+                    .unwrap();
+                *$cursor += c.len_utf8();
+                Token::Char(c)
+            }
+            PreToken::Token {
+                token: Content::Symbol(s),
+                ..
+            } => {
+                let c: char = **s;
+                *$cursor += 1;
+                Token::Char(c)
+            }
+            PreToken::Token { token, .. } => {
+                *$cursor += 1;
+                Token::Raw(token)
+            }
+            PreToken::Open(group_type) => {
+                *$cursor += 1;
+                Token::Open(group_type.clone())
+            }
+            PreToken::Close(group_type) => {
+                *$cursor += 1;
+                Token::Close(group_type.clone())
+            }
+        };
+        Some(token)
+    }};
 }
 
 impl<'this, 'data> Input<'this> for &'this LocatingSequence<'this, 'data> {
@@ -64,45 +109,7 @@ impl<'this, 'data> Input<'this> for &'this LocatingSequence<'this, 'data> {
         this: &mut Self::Cache,
         cursor: &mut Self::Cursor,
     ) -> Option<Self::MaybeToken> {
-        let token = this.tokens.get(cursor)?;
-        let token = match token {
-            PreToken::Token {
-                token: Content::Text(text),
-                start,
-                ..
-            } => {
-                let c = text
-                    .as_string()
-                    .get(*cursor - start..)
-                    .unwrap()
-                    .chars()
-                    .next()
-                    .unwrap();
-                *cursor += c.len_utf8();
-                Token::Char(c)
-            }
-            PreToken::Token {
-                token: Content::Symbol(s),
-                ..
-            } => {
-                let c: char = **s;
-                *cursor += c.len_utf8();
-                Token::Char(c)
-            }
-            PreToken::Token { token, .. } => {
-                *cursor += 1;
-                Token::Raw(token)
-            }
-            PreToken::Open(group_type) => {
-                *cursor += 1;
-                Token::Open(group_type.clone())
-            }
-            PreToken::Close(group_type) => {
-                *cursor += 1;
-                Token::Close(group_type.clone())
-            }
-        };
-        Some(token)
+        next_maybe!(this, cursor)
     }
 
     unsafe fn span(_this: &mut Self::Cache, range: std::ops::Range<&Self::Cursor>) -> Self::Span {
@@ -129,31 +136,7 @@ impl<'this, 'data> Input<'this> for LocatingSequence<'this, 'data> {
         this: &mut Self::Cache,
         cursor: &mut Self::Cursor,
     ) -> Option<Self::MaybeToken> {
-        let token = this.tokens.get(cursor)?;
-        let token = match token {
-            PreToken::Token {
-                token: Content::Text(text),
-                start,
-                ..
-            } => {
-                let c = text
-                    .as_string()
-                    .get(*cursor - start..)
-                    .unwrap()
-                    .chars()
-                    .next()
-                    .unwrap();
-                *cursor += c.len_utf8();
-                Token::Char(c)
-            }
-            PreToken::Token { token, .. } => {
-                *cursor += 1;
-                Token::Raw(token)
-            }
-            PreToken::Open(group_type) => Token::Open(group_type.clone()),
-            PreToken::Close(group_type) => Token::Close(group_type.clone()),
-        };
-        Some(token)
+        next_maybe!(this, cursor)
     }
 
     unsafe fn span(_this: &mut Self::Cache, range: std::ops::Range<&Self::Cursor>) -> Self::Span {

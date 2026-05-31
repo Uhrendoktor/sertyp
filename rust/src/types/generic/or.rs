@@ -1,3 +1,4 @@
+use derive_more::{IsVariant, TryUnwrap, Unwrap};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "content")]
@@ -17,64 +18,42 @@ use crate::{Auto, Content, Item, None, TypstTypeLike};
 ///     }.into()
 /// }
 /// ```
-#[derive(Clone, Debug, Hash)]
+#[derive(Clone, Debug, Hash, IsVariant, Unwrap, TryUnwrap)]
+#[unwrap(owned, ref, ref_mut)]
+#[try_unwrap(owned, ref, ref_mut)]
 pub enum Or<T1, T2> {
     Left(T1),
     Right(T2),
 }
+impl<T1: Default, T2> Or<T1, T2> {
+    pub fn left_default() -> Self {
+        Or::Left(T1::default())
+    }
+}
+impl<T1, T2: Default> Or<T1, T2> {
+    pub fn right_default() -> Self {
+        Or::Right(T2::default())
+    }
+}
 
 /// Utility for types that are either [Auto] or a specific type. For more information see [Or].
 pub type AutoOr<T> = Or<Auto, T>;
+impl<T> Default for AutoOr<T> {
+    fn default() -> Self {
+        Self::left_default()
+    }
+}
+
 /// Utility for types that are either [None] or a specific type. For more information see [Or].
 #[allow(dead_code)]
 pub type NoneOr<T> = Or<None, T>;
-
-impl<T1, T2> Default for Or<T1, T2>
-where
-    T1: Default,
-{
+impl<T> Default for NoneOr<T> {
     fn default() -> Self {
-        Or::Left(T1::default())
+        Self::left_default()
     }
 }
 
 impl<T1, T2> Or<T1, T2> {
-    pub fn is_left(&self) -> bool {
-        matches!(self, Or::Left(_))
-    }
-
-    pub fn is_right(&self) -> bool {
-        matches!(self, Or::Right(_))
-    }
-
-    pub fn into_left(self) -> Option<T1> {
-        match self {
-            Or::Left(v) => Some(v),
-            _ => std::option::Option::None,
-        }
-    }
-
-    pub fn into_right(self) -> Option<T2> {
-        match self {
-            Or::Right(v) => Some(v),
-            _ => std::option::Option::None,
-        }
-    }
-
-    pub fn left(&self) -> Option<&T1> {
-        match self {
-            Or::Left(v) => Some(v),
-            _ => std::option::Option::None,
-        }
-    }
-
-    pub fn right(&self) -> Option<&T2> {
-        match self {
-            Or::Right(v) => Some(v),
-            _ => std::option::Option::None,
-        }
-    }
-
     pub fn left_or(self, default: T1) -> T1 {
         match self {
             Or::Left(v) => v,

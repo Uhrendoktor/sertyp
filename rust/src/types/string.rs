@@ -1,9 +1,11 @@
-use std::{fmt::Display, ops::Deref};
+use std::hash::Hash;
+
+use derive_more::{Deref, DerefMut, Display};
 
 use crate::{Item, TypstTypeLike};
 
 /// When deserialized strings are represented as zero copy string slices.
-/// When constructing values owned strings can be used as well.
+/// When constructing values, owned strings can be used as well.
 ///
 /// For more information visit the typst documentation: [string](https://typst.app/docs/reference/foundations/str/)
 ///
@@ -16,13 +18,29 @@ use crate::{Item, TypstTypeLike};
 /// let s: String = "hello".into();
 /// let item: Item = s.into();
 /// ```
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Eq, Deref, DerefMut, Display)]
+#[deref(forward)]
+#[deref_mut(forward)]
+#[display("{}", **self)]
 pub struct String<'a>(pub std::borrow::Cow<'a, str>);
 crate::impl_all!(Item<'a>::String, String<'a>{'a}, "string");
 
 impl<'a> Default for String<'a> {
     fn default() -> Self {
         String(std::borrow::Cow::Borrowed(""))
+    }
+}
+impl<'a> Hash for String<'a> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        let s: &str = self;
+        s.hash(state);
+    }
+}
+impl<'a> PartialEq for String<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        let s1: &str = self;
+        let s2: &str = other;
+        s1 == s2
     }
 }
 
@@ -61,16 +79,8 @@ impl<'a> serde::Serialize for String<'a> {
     }
 }
 
-impl Deref for String<'_> {
-    type Target = str;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<'a> From<&'a str> for String<'a> {
-    fn from(value: &'a str) -> Self {
+impl<'a, 'b: 'a> From<&'b str> for String<'a> {
+    fn from(value: &'b str) -> Self {
         String(std::borrow::Cow::Borrowed(value))
     }
 }
@@ -90,11 +100,5 @@ impl<'a> From<String<'a>> for std::string::String {
 impl<'a> From<std::borrow::Cow<'a, str>> for String<'a> {
     fn from(value: std::borrow::Cow<'a, str>) -> Self {
         String(value)
-    }
-}
-
-impl<'a> Display for String<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.deref().fmt(f)
     }
 }

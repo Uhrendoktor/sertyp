@@ -17,7 +17,7 @@ use chumsky::{
 };
 
 pub static MINUS: [char; 2] = ['-', '−'];
-pub static MULTIPLY: [char; 3] = ['*', '×', '⋅'];
+pub static MULTIPLY: [char; 4] = ['*', '×', '⋅', '∗'];
 
 pub fn as_token<const N: usize>(c: &[char; N]) -> [Token<'static, 'static>; N] {
     std::array::from_fn(|i| super::Token::Char(c[i]))
@@ -27,22 +27,16 @@ pub fn as_token<const N: usize>(c: &[char; N]) -> [Token<'static, 'static>; N] {
 /// e.g. for radix 10, it parses '0'..='9', for radix 16, it parses '0'..='9', 'a'..='f', 'A'..='F'
 /// # Args
 ///   - `radix`: The radix (base) to check the digit against (e.g. 10 for decimal, 16 for hexadecimal)
-pub fn digit<
-    'this,
-    'data: 'this,
-    I: LocatingSequenceLike<'this, 'data>,
-    E: ParserExtra<'this, I>,
-    L: From<crate::String<'data>> + Clone,
->(
+pub fn digit<'this, 'data: 'this, I: LocatingSequenceLike<'this, 'data>, E: ParserExtra<'this, I>>(
     radix: u32,
 ) -> impl Parser<'this, I, char, E>
 where
-    E::Error: LabelError<'this, I, L>,
+    E::Error: LabelError<'this, I, crate::String<'data>>,
 {
     select! {
         Token::Char(c) if c.is_digit(radix) => c,
     }
-    .labelled(crate::String::from("digit").into())
+    .labelled(crate::String::from("digit"))
 }
 
 /// Parses 1.. [`digit`]s in a row and collects them into a string
@@ -53,37 +47,31 @@ pub fn digits<
     'data: 'this,
     I: LocatingSequenceLike<'this, 'data>,
     E: ParserExtra<'this, I>,
-    L: From<crate::String<'data>> + Clone,
 >(
     radix: u32,
 ) -> impl Parser<'this, I, String, E>
 where
-    E::Error: LabelError<'this, I, L>,
+    E::Error: LabelError<'this, I, crate::String<'data>>,
 {
     digit(radix)
         .repeated()
         .at_least(1)
         .collect()
-        .labelled(crate::String::from("digits").into())
+        .labelled(crate::String::from("digits"))
 }
 
 /// Parses a sign character: +, -
 /// # Note
 /// there are multiple unicode variants each
-pub fn sign<
-    'this,
-    'data: 'this,
-    I: LocatingSequenceLike<'this, 'data>,
-    E: ParserExtra<'this, I>,
-    L: From<crate::String<'data>> + Clone,
->() -> impl Parser<'this, I, char, E>
+pub fn sign<'this, 'data: 'this, I: LocatingSequenceLike<'this, 'data>, E: ParserExtra<'this, I>>()
+-> impl Parser<'this, I, char, E>
 where
-    E::Error: LabelError<'this, I, L>,
+    E::Error: LabelError<'this, I, crate::String<'data>>,
 {
     select! {
         Token::Char(c) if MINUS.contains(&c) || c == '+' => c,
     }
-    .labelled(crate::String::from("sign").into())
+    .labelled(crate::String::from("sign"))
 }
 
 pub fn character<
@@ -91,32 +79,25 @@ pub fn character<
     'data: 'this,
     I: LocatingSequenceLike<'this, 'data>,
     E: ParserExtra<'this, I>,
-    L: From<crate::String<'data>> + Clone,
 >(
     c: char,
 ) -> impl Parser<'this, I, char, E>
 where
-    E::Error: LabelError<'this, I, L>,
+    E::Error: LabelError<'this, I, crate::String<'data>>,
 {
     just(Token::Char(c))
         .to(c)
-        .labelled(crate::String::from(format!("character('{}')", c)).into())
+        .labelled(crate::String::from(format!("character('{}')", c)))
 }
 
 /// Parses a specific word
 /// # Args
 ///   - `word`: The word to parse (e.g. "inf", "nan", "e", "pi")
-pub fn word<
-    'this,
-    'data: 'this,
-    I: LocatingSequenceLike<'this, 'data>,
-    E: ParserExtra<'this, I>,
-    L: From<crate::String<'data>> + Clone,
->(
+pub fn word<'this, 'data: 'this, I: LocatingSequenceLike<'this, 'data>, E: ParserExtra<'this, I>>(
     word: &str,
 ) -> impl Parser<'this, I, String, E>
 where
-    E::Error: LabelError<'this, I, L>,
+    E::Error: LabelError<'this, I, crate::String<'data>>,
 {
     just(
         word.chars()
@@ -124,7 +105,7 @@ where
             .collect::<Vec<Token<'this, 'data>>>(),
     )
     .to(word.to_owned())
-    .labelled(crate::String::from(format!("word(\"{}\")", word)).into())
+    .labelled(crate::String::from(format!("word(\"{}\")", word)))
 }
 
 /// Parses 1.. [`digit`]s in a row and tries to convert them into an integer of type `I`
@@ -136,13 +117,12 @@ pub fn unsigned_integer_no_radix<
     N: num_traits::Num,
     I: LocatingSequenceLike<'this, 'data>,
     E: ParserExtra<'this, I>,
-    L: From<crate::String<'data>> + Clone,
 >(
     radix: u32,
 ) -> impl Parser<'this, I, N, E>
 where
     E::Error: From<TypstError<'data>>,
-    E::Error: LabelError<'this, I, L>,
+    E::Error: LabelError<'this, I, crate::String<'data>>,
 {
     digits(radix)
         .try_map(move |s, span| {
@@ -156,7 +136,9 @@ where
                 .into()
             })
         })
-        .labelled(crate::String::from(format!("unsigned integer of radix {radix}")).into())
+        .labelled(crate::String::from(format!(
+            "unsigned integer of radix {radix}"
+        )))
 }
 
 /// Parses an unsigned float of type `F`
@@ -173,13 +155,12 @@ pub fn unsigned_float_no_radix_no_naninf<
     F: num_traits::Num + Clone,
     I: LocatingSequenceLike<'this, 'data>,
     E: ParserExtra<'this, I>,
-    L: From<crate::String<'data>> + Clone,
 >(
     radix: u32,
 ) -> impl Parser<'this, I, F, E>
 where
     E::Error: From<TypstError<'data>>,
-    E::Error: LabelError<'this, I, L>,
+    E::Error: LabelError<'this, I, crate::String<'data>>,
 {
     // Mantissa:
     let mantissa = choice((
@@ -195,7 +176,9 @@ where
             .then(digits(radix))
             .map(|(_, decimals)| (None, Some(decimals))),
     ))
-    .labelled(crate::String::from(format!("float mantissa of radix {radix}")).into());
+    .labelled(crate::String::from(format!(
+        "float mantissa of radix {radix}"
+    )));
 
     // Exponent:
     // (e|E)|(p|P) [+|-]? digits (the exponent indicator is e/E for radix <14, p/P for radix >= 14)
@@ -211,7 +194,9 @@ where
     .then(sign().or_not())
     .then(digits(radix))
     .or_not()
-    .labelled(crate::String::from(format!("float exponent of radix {radix}")).into());
+    .labelled(crate::String::from(format!(
+        "float exponent of radix {radix}"
+    )));
 
     // <mantissa><exponent>?
     mantissa
@@ -237,12 +222,9 @@ where
                 .into()
             })
         })
-        .labelled(
-            crate::String::from(format!(
-                "unsigned float of radix {radix} without inf or nan"
-            ))
-            .into(),
-        )
+        .labelled(crate::String::from(format!(
+            "unsigned float of radix {radix} without inf or nan"
+        )))
 }
 
 /// Parses an unsigned float of type `F` with the same formats as [`unsigned_float_no_radix_no_naninf`] but also allows for "inf" and "nan" (case-insensitive) and for radix prefixes (0b, 0o, 0x)
@@ -259,13 +241,12 @@ pub fn unsigned_float_no_radix<
     F: num_traits::Num + From<f32> + Clone,
     I: LocatingSequenceLike<'this, 'data>,
     E: ParserExtra<'this, I>,
-    L: From<crate::String<'data>> + Clone,
 >(
     radix: u32,
 ) -> impl Parser<'this, I, F, E>
 where
     E::Error: From<TypstError<'data>>,
-    E::Error: LabelError<'this, I, L>,
+    E::Error: LabelError<'this, I, crate::String<'data>>,
 {
     choice((
         unsigned_float_no_radix_no_naninf(radix),
@@ -277,12 +258,9 @@ where
             .or(word("NaN"))
             .to(f32::NAN.into()),
     ))
-    .labelled(
-        crate::String::from(format!(
-            "unsigned float of radix {radix} with optional inf and nan"
-        ))
-        .into(),
-    )
+    .labelled(crate::String::from(format!(
+        "unsigned float of radix {radix} with optional inf and nan"
+    )))
 }
 
 pub fn auto_radix<
@@ -293,13 +271,12 @@ pub fn auto_radix<
     E: ParserExtra<'this, I>,
     P: Parser<'this, I, T, E>,
     F: Fn(u32) -> P,
-    L: From<crate::String<'data>> + Clone,
 >(
     parser: F,
     default_radix: u32,
 ) -> impl Parser<'this, I, T, E>
 where
-    E::Error: LabelError<'this, I, L>,
+    E::Error: LabelError<'this, I, crate::String<'data>>,
 {
     choice((
         parser(default_radix),
@@ -307,12 +284,9 @@ where
         word("0o").then(parser(8)).map(|(_, t)| t),
         word("0x").then(parser(16)).map(|(_, t)| t),
     ))
-    .labelled(
-        crate::String::from(format!(
-            "radix detection (0b, 0o, 0x or nothing={default_radix})"
-        ))
-        .into(),
-    )
+    .labelled(crate::String::from(format!(
+        "radix detection (0b, 0o, 0x or nothing={default_radix})"
+    )))
 }
 
 /// Wraps a parser with signing logic.
@@ -328,12 +302,11 @@ pub fn signed<
     I: LocatingSequenceLike<'this, 'data>,
     E: ParserExtra<'this, I>,
     P: Parser<'this, I, N, E>,
-    L: From<crate::String<'data>> + Clone,
 >(
     parser: P,
 ) -> impl Parser<'this, I, N, E>
 where
-    E::Error: LabelError<'this, I, L>,
+    E::Error: LabelError<'this, I, crate::String<'data>>,
 {
     sign()
         .or_not()
@@ -347,7 +320,7 @@ where
                 num
             }
         })
-        .labelled(crate::String::from("signed").into())
+        .labelled(crate::String::from("signed"))
 }
 
 /// Prases a variable name.
@@ -359,84 +332,113 @@ pub fn variable<
     'this,
     'data: 'this,
     I: LocatingSequenceLike<'this, 'data>,
-    E: ParserExtra<'this, LocatingSequence<'this, 'data>> + ParserExtra<'this, I>,
-    L: From<crate::String<'data>> + Clone,
->() -> impl Parser<'this, I, Content<'data>, E>
+    E: 'this + ParserExtra<'this, LocatingSequence<'this, 'data>> + ParserExtra<'this, I>,
+>(
+    canonical: bool,
+) -> impl Parser<'this, I, Content<'data>, E>
 where
     <E as ParserExtra<'this, I>>::Error: From<TypstError<'data>>,
     <E as ParserExtra<'this, LocatingSequence<'this, 'data>>>::Error: From<TypstError<'data>>,
     <E as ParserExtra<'this, LocatingSequence<'this, 'data>>>::Error: std::fmt::Debug,
     <E as ParserExtra<'this, LocatingSequence<'this, 'data>>>::Context: Default,
     <E as ParserExtra<'this, LocatingSequence<'this, 'data>>>::State: Default,
-    <E as ParserExtra<'this, I>>::Error: LabelError<'this, I, L>,
+    <E as ParserExtra<'this, I>>::Error: LabelError<'this, I, crate::String<'data>>,
     <E as ParserExtra<'this, LocatingSequence<'this, 'data>>>::Error:
-        LabelError<'this, LocatingSequence<'this, 'data>, L>,
+        LabelError<'this, LocatingSequence<'this, 'data>, crate::String<'data>>,
 {
+    let canonical_char = select! {Token::Char(c) if c.is_alphabetic() || c == '_' => c};
+    let non_canonical_char =
+        select! {Token::Char(c) if c.is_alphabetic() || c.is_ascii_digit() || c == '_' => c};
     choice((
         // normal string based variable name
-        select! {Token::Char(c) if c.is_alphabetic() || c == '_' => c}
-        .then(
-            select! {Token::Char(c) if c.is_alphabetic() || c.is_ascii_digit() || c == '_' => c}
+        if canonical {
+            canonical_char
+                .then(non_canonical_char.repeated().collect::<String>())
+                .map(|(prefix, mut remaining)| {
+                    remaining.insert(0, prefix);
+                    remaining
+                })
+                .map(|s| Text::from_string(s).into())
+                .labelled(crate::String::from("canonical string variable name"))
+                .boxed()
+        } else {
+            non_canonical_char
                 .repeated()
-                .collect::<String>(),
-        )
-        .map(|(prefix, mut remaining)| {
-            remaining.insert(0, prefix);
-            remaining
-        }).map(|s| Text::from_string(s).into()).labelled(crate::String::from("string variable name").into()),
-
+                .at_least(1)
+                .collect::<String>()
+                .map(|s| Text::from_string(s).into())
+                .labelled(crate::String::from("string variable name"))
+                .boxed()
+        },
         // subscript or superscript variable name
-        select!{ Token::Raw(Content::MathAttach(attach)) => attach }.try_map(|attach, span| {
-            macro_rules! field {
-                ($field:expr) => {{
-                    variable::<LocatingSequence<'this, 'data>, E, L>()
-                        .parse(<LocatingSequence as From<&'this Content<'data>>>::from($field))
-                        .into_result()
-                        .map(|_| ())
-                        .map_err(|errors| {
-                            return TypstError::full(
-                                span,
-                                "Invalid Variable Subscript/Superscript",
-                                "Variable like declaration in attachment",
-                                format!("non variable like attachment in {}: {:?}", stringify!($field), errors.first().expect("Expected at least one error")),
-                             ).into()
-                        })
-                }};
-            }
-            macro_rules! maybe_field  {
-                ($field:expr) => {
-                    if let Some(inner) = $field {
-                        field!(&***inner)
-                    } else {
-                        Ok(())
-                    }
-                };
-            }
-            field!(&**attach.base)?;
-            maybe_field!(&attach.b)?;
-            maybe_field!(&attach.bl)?;
-            maybe_field!(&attach.br)?;
-            // t is NOT checked since it is used for exponents
-            maybe_field!(&attach.tl)?;
-            maybe_field!(&attach.tr)?;
-            Ok(Content::MathAttach(attach.clone()))
-        }).labelled(crate::String::from("subscript or superscript variable").into()),
-        select!{ Token::Raw(Content::MathAccent(accent)) => accent }.try_map(|accent, span| {
-            variable::<LocatingSequence<'this, 'data>, E, L>()
-                .parse(<LocatingSequence as From<&'this Content<'data>>>::from(&**accent.base))
-                .into_result()
-                .map(|_| ())
-                .map_err(|errors| {
-                    TypstError::full(
-                        span,
-                        "Invalid Variable Accent",
-                        "Variable like declaration in accent",
-                        format!("non variable like attachment in accent: {:?}", errors.first().expect("Expected at least one error")),
-                     )
-                })?;
-            Ok(Content::MathAccent(accent.clone()))
-        }).labelled(crate::String::from("accent variable").into())
-    )).labelled(crate::String::from("variable").into())
+        select! { Token::Raw(Content::MathAttach(attach)) => attach }
+            .try_map(|attach, span| {
+                macro_rules! field {
+                    ($field:expr, $canonical:expr) => {{
+                        variable::<LocatingSequence<'this, 'data>, E>($canonical)
+                            .parse(<LocatingSequence as From<&'this Content<'data>>>::from(
+                                $field,
+                            ))
+                            .into_result()
+                            .map(|_| ())
+                            .map_err(|errors| {
+                                return TypstError::full(
+                                    span,
+                                    "Invalid Variable Subscript/Superscript",
+                                    "Variable like declaration in attachment",
+                                    format!(
+                                        "non variable like attachment in {}: {:?}",
+                                        stringify!($field),
+                                        errors.first().expect("Expected at least one error")
+                                    ),
+                                )
+                                .into();
+                            })
+                    }};
+                }
+                macro_rules! maybe_field {
+                    ($field:expr, $canonical:expr) => {
+                        if let Some(inner) = $field {
+                            field!(&***inner, $canonical)
+                        } else {
+                            Ok(())
+                        }
+                    };
+                }
+                field!(&**attach.base, true)?;
+                maybe_field!(&attach.b, false)?;
+                maybe_field!(&attach.bl, false)?;
+                maybe_field!(&attach.br, false)?;
+                // t is NOT checked since it is used for exponents
+                maybe_field!(&attach.tl, false)?;
+                maybe_field!(&attach.tr, false)?;
+                Ok(Content::MathAttach(attach.clone()))
+            })
+            .labelled(crate::String::from("subscript or superscript variable")),
+        select! { Token::Raw(Content::MathAccent(accent)) => accent }
+            .try_map(move |accent, span| {
+                variable::<LocatingSequence<'this, 'data>, E>(canonical)
+                    .parse(<LocatingSequence as From<&'this Content<'data>>>::from(
+                        &**accent.base,
+                    ))
+                    .into_result()
+                    .map(|_| ())
+                    .map_err(|errors| {
+                        TypstError::full(
+                            span,
+                            "Invalid Variable Accent",
+                            "Variable like declaration in accent",
+                            format!(
+                                "non variable like attachment in accent: {:?}",
+                                errors.first().expect("Expected at least one error")
+                            ),
+                        )
+                    })?;
+                Ok(Content::MathAccent(accent.clone()))
+            })
+            .labelled(crate::String::from("accent variable")),
+    ))
+    .labelled(crate::String::from("variable"))
 }
 
 #[derive(Debug, Clone)]
@@ -479,12 +481,11 @@ pub fn delimited_by_groups<
     I: LocatingSequenceLike<'this, 'data>,
     O: 'this,
     E: 'this + ParserExtra<'this, I>,
-    L: 'this + From<crate::String<'data>> + Clone,
 >(
     atom: impl 'this + Parser<'this, I, O, E> + Clone,
 ) -> impl Parser<'this, I, O, E>
 where
-    E::Error: LabelError<'this, I, L>,
+    E::Error: LabelError<'this, I, crate::String<'data>>,
 {
     recursive(|parser| {
         choice((
@@ -499,7 +500,7 @@ where
             ),
         ))
     })
-    .labelled(crate::String::from("delimited by groups").into())
+    .labelled(crate::String::from("delimited by groups"))
 }
 
 pub trait Number {
@@ -508,12 +509,11 @@ pub trait Number {
         'data: 'this,
         I: LocatingSequenceLike<'this, 'data>,
         E: chumsky::extra::ParserExtra<'this, I>,
-        L: From<crate::String<'data>> + Clone,
     >() -> impl Parser<'this, I, Self, E>
     where
         Self: Sized,
         E::Error: std::convert::From<TypstError<'data>>,
-        E::Error: LabelError<'this, I, L>;
+        E::Error: LabelError<'this, I, crate::String<'data>>;
 }
 
 macro_rules! number {
@@ -530,11 +530,10 @@ macro_rules! number {
                 'data: 'this,
                 I: LocatingSequenceLike<'this, 'data>,
                 E: chumsky::extra::ParserExtra<'this, I>,
-                L: From<crate::String<'data>> + Clone,
             >() -> impl Parser<'this, I, Self, E>
             where
                 E::Error: std::convert::From<TypstError<'data>>,
-                E::Error: LabelError<'this, I, L>,
+                E::Error: LabelError<'this, I, crate::String<'data>>,
             {
                 number!($n)
             }
@@ -547,11 +546,10 @@ macro_rules! number {
                 'data: 'this,
                 I: LocatingSequenceLike<'this, 'data>,
                 E: chumsky::extra::ParserExtra<'this, I>,
-                L: From<crate::String<'data>> + Clone,
             >() -> impl Parser<'this, I, Self, E>
             where
                 E::Error: std::convert::From<TypstError<'data>>,
-                E::Error: LabelError<'this, I, L>,
+                E::Error: LabelError<'this, I, crate::String<'data>>,
             {
                 signed(number!($n))
             }

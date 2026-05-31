@@ -1,8 +1,7 @@
+use derive_more::{Deref, DerefMut, From, Into, IntoIterator};
+
 use crate::types::{Item, Item_};
-use std::{
-    fmt::Debug,
-    ops::{Deref, DerefMut},
-};
+use std::fmt::Debug;
 
 /// Pre-deserialization / post-serialization helper struct for [Array]. You probably want to use [Array] instead.
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
@@ -20,8 +19,20 @@ struct Array_<'a>(#[serde(borrow)] pub Vec<Item_<'a>>);
 /// let arr: Array = vec![Integer::i32(1).into(), Integer::i32(2).into()].into();
 /// let item: Item = arr.into();
 /// ```
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
+#[derive(
+    serde::Serialize,
+    serde::Deserialize,
+    Clone,
+    Debug,
+    Default,
+    Deref,
+    DerefMut,
+    IntoIterator,
+    From,
+    Into,
+)]
 #[serde(from = "Array_", into = "Array_")]
+#[into_iterator(owned, ref, ref_mut)]
 pub struct Array<'a>(#[serde(borrow)] Vec<Item<'a>>);
 
 crate::impl_all!(Item<'a>::Array, Array<'a>{'a}, "array");
@@ -35,35 +46,6 @@ impl<'a> From<Array<'a>> for Array_<'a> {
 impl<'a> From<Array_<'a>> for Array<'a> {
     fn from(value: Array_<'a>) -> Self {
         Array(value.0.into_iter().map(|x| x.into()).collect())
-    }
-}
-
-impl<'a> Deref for Array<'a> {
-    type Target = Vec<Item<'a>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<'a> DerefMut for Array<'a> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-impl<'a> IntoIterator for Array<'a> {
-    type Item = Item<'a>;
-    type IntoIter = std::vec::IntoIter<Item<'a>>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
-
-impl<'a> From<Vec<Item<'a>>> for Array<'a> {
-    fn from(value: Vec<Item<'a>>) -> Self {
-        Array(value)
     }
 }
 

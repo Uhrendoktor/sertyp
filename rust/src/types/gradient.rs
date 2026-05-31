@@ -11,7 +11,7 @@ use crate::{
 };
 
 /// For more information visit the typst documentation: [gradient](https://typst.app/docs/reference/visualize/gradient/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 #[serde(tag = "kind", rename_all = "lowercase")]
 pub enum Gradient<'a> {
     /// For more information visit the typst documentation: [gradient.linear](https://typst.app/docs/reference/visualize/gradient/#definitions-linear)
@@ -59,7 +59,7 @@ crate::impl_all!(Item<'a>::Gradient, std::boxed::Box<Gradient<'a>> {'a}, "gradie
 crate::auto_impl_str! {
     /// For more information visit the typst documentation: [gradient.relative](https://typst.app/docs/reference/visualize/gradient/#definitions-relative)
     pub enum GradientRelative {
-        Self_ = "self",
+        Zelf = "self",
         Parent = "parent",
     }
 }
@@ -67,7 +67,7 @@ crate::auto_impl_str! {
 impl<'a> Default for Gradient<'a> {
     fn default() -> Self {
         Gradient::Linear {
-            stops: Or::default(),
+            stops: Or::left_default(),
             space: Function::default(),
             relative: AutoOr::default(),
             angle: Angle::default(),

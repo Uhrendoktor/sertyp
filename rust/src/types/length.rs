@@ -1,9 +1,10 @@
-use std::fmt::Display;
+use derive_more::{Display, IsVariant};
 
 use crate::{Item, types::float::Float};
 
 /// For more information visit the typst documentation: [length](https://typst.app/docs/reference/layout/length/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Default, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Default, Display)]
+#[display("{}{} + {}em", abs, unit, em)]
 pub struct Length {
     #[serde(rename = "value")]
     pub abs: Float,
@@ -49,32 +50,31 @@ impl Length {
 
 /// Unit of length. Typst automatically casts into `pt` even if another unit was specified.
 /// The other variants can still be used when constructing values in rust.
-#[derive(Default, serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(
+    Default,
+    serde::Serialize,
+    serde::Deserialize,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Display,
+    IsVariant,
+)]
 pub enum AbsUnit {
     #[default]
     #[serde(rename = "pt")]
+    #[display("pt")]
     Points,
     #[serde(rename = "in")]
+    #[display("in")]
     Inches,
     #[serde(rename = "cm")]
+    #[display("cm")]
     Centimeters,
     #[serde(rename = "mm")]
+    #[display("mm")]
     Millimeters,
-}
-
-impl Display for AbsUnit {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            AbsUnit::Points => write!(f, "pt"),
-            AbsUnit::Inches => write!(f, "in"),
-            AbsUnit::Centimeters => write!(f, "cm"),
-            AbsUnit::Millimeters => write!(f, "mm"),
-        }
-    }
-}
-
-impl Display for Length {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}{} + {}em", self.abs, self.unit, self.em)
-    }
 }

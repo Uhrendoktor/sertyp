@@ -1,4 +1,4 @@
-use crate::{Array, Content, Dictionary, RBox, String};
+use crate::{Array, Content, Dictionary, String};
 
 use crate::{
     AutoOr, Boolean, Direction, Integer, Item, Length, Or, Ratio, Relative, TypedItem,
@@ -6,7 +6,7 @@ use crate::{
 };
 
 /// For more information visit the typst documentation: [text](https://typst.app/docs/reference/text/text/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Text<'a> {
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
     pub font: Option<TextFont<'a>>,
@@ -141,7 +141,7 @@ impl<'a> Text<'a> {
 }
 
 crate::auto_impl! {
-    #[derive(Debug, Clone, Hash)]
+    #[derive(Debug, Clone)]
     pub enum TextFont<'a> {
         try_from{},
         String(String=>String<'a>),
@@ -219,9 +219,9 @@ impl<'a> From<Text<'a>> for Content<'a> {
     }
 }
 
-impl<'a> From<Text<'a>> for RBox<Content<'a>> {
+impl<'a> From<Text<'a>> for Box<Content<'a>> {
     fn from(val: Text<'a>) -> Self {
-        RBox::new(val.into())
+        Box::new(val.into())
     }
 }
 

@@ -1,9 +1,7 @@
-mod r#box;
 mod or;
 mod result;
 mod typed_array;
 
-pub use r#box::Box;
 #[allow(unused_imports)]
 pub use or::{AutoOr, NoneOr, Or};
 pub use result::Result;
@@ -13,7 +11,7 @@ use std::fmt::Debug;
 
 use crate::types::{Color, Dictionary, Gradient, Length, Stroke, Tiling};
 crate::auto_impl! {
-    #[derive(Clone, Debug, Hash)]
+    #[derive(Clone, Debug)]
     pub enum FillColor<'a> {
         try_from{},
         Color(Color=>Color<'a>),
@@ -23,7 +21,7 @@ crate::auto_impl! {
 }
 
 crate::auto_impl! {
-    #[derive(Clone, Debug, Hash)]
+    #[derive(Clone, Debug)]
     pub enum StrokeColor<'a> {
         try_from{},
         Length(Length=>Length),
@@ -89,6 +87,9 @@ macro_rules! auto_impl {
         }
     ) => {
         $(#[$meta])*
+        #[derive(derive_more::IsVariant, derive_more::Unwrap, derive_more::TryUnwrap, derive_more::From, derive_more::TryInto)]
+        #[unwrap(owned, ref, ref_mut)]
+        #[try_unwrap(owned, ref, ref_mut)]
         $vis enum $name$(<$lt>)? {
             $($var_try($ty_try),)*
             $($var($ty)),*
@@ -182,9 +183,11 @@ macro_rules! auto_impl_str {
             ),* $(,)?
         }
     ) => {
-        $(#[$meta])*
-        #[derive(serde::Deserialize, serde::Serialize, Debug, Clone, PartialEq, Eq, Hash)]
+        #[derive(serde::Deserialize, serde::Serialize, Debug, Clone, Copy, PartialEq, Eq, Hash, derive_more::IsVariant, derive_more::Unwrap, derive_more::TryUnwrap)]
         #[serde(try_from = "crate::String", into = "crate::String")]
+        #[unwrap(owned, ref, ref_mut)]
+        #[try_unwrap(owned, ref, ref_mut)]
+        $(#[$meta])*
         $vis enum $name {
             $(
                 $(#[$var_meta])*

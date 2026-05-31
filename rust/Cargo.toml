@@ -12,7 +12,6 @@ name = "sertyp"
 edition.workspace = true
 authors.workspace = true
 version.workspace = true
-description = "Serialization and deserialization of most typst types into sertyp CBOR format: This includes markdown, math, etc."
 license.workspace = true
 repository = "https://github.com/Uhrendoktor/sertyp"
 readme = "README.md"
@@ -23,6 +22,7 @@ categories = ["encoding", "wasm", "api-bindings"]
 crate-type = ["lib"]
 
 [features]
+default = ["content"]
 content = ["dep:rangemap", "dep:chumsky", "dep:num-traits"]
 
 [dependencies]
@@ -34,6 +34,7 @@ serde_cbor = "0.11.2"
 rangemap = { version = "1.7.1", optional = true }
 chumsky = { version = "0.13.0", optional = true }
 num-traits = { version = "0.2.19", optional = true }
+derive_more = { version = "2.1.1", features = ["full"] }
 
 [dev-dependencies]
 serde_json = "1.0.150"

@@ -1,7 +1,7 @@
 use crate::{Content, Relative, TypedItem};
 
 /// For more information visit the typst documentation: [math.stretch](https://typst.app/docs/reference/math/stretch/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Stretch<'a> {
     #[serde(borrow)]
     pub body: TypedItem<Box<Content<'a>>>,

@@ -3,7 +3,9 @@ use crate::Content;
 use crate::Sequence;
 
 /// For more information visit the typst documentation: [parbreak](https://typst.app/docs/reference/model/parbreak/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
+#[derive(
+    serde::Serialize, serde::Deserialize, Clone, Copy, Debug, Default, Hash, PartialEq, Eq,
+)]
 pub struct Parbreak;
 
 crate::impl_all!(Content<'a>::Parbreak, Parbreak {}, "parbreak");

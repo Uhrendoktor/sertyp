@@ -38,9 +38,7 @@ mod version;
 
 mod panic;
 
-pub use crate::types::generic::{
-    AutoOr, Box as RBox, FillColor, NoneOr, Or, Result, StrokeColor, TypedArray,
-};
+pub use crate::types::generic::{AutoOr, FillColor, NoneOr, Or, Result, StrokeColor, TypedArray};
 use crate::types::selector::Selector;
 pub use crate::types::r#type::{TypstType, TypstTypeLike};
 pub use crate::types::{
@@ -195,7 +193,7 @@ macro_rules! define_enum {
         }
     ) => {
         paste::paste!{
-            #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Hash)]
+            #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
             $(#[$meta])*
             enum [<$name __>]<$lt> {
                 $(
@@ -210,7 +208,7 @@ macro_rules! define_enum {
         }
 
         paste::paste!{
-            #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Hash)]
+            #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
             #[serde(untagged)]
             enum [<$name _>]<$lt> {
                 #[serde(borrow)]
@@ -223,7 +221,7 @@ macro_rules! define_enum {
         }
 
         paste::paste!{
-            #[derive(Clone, Debug, Hash)]
+            #[derive(Clone, Debug)]
             pub enum $name<$lt> {
                 $(
                     $var$(($ty))?,
@@ -305,14 +303,8 @@ macro_rules! define_enum {
         }
 
         paste::paste!{
-            #[derive(Clone, Debug, Default, Hash)]
+            #[derive(Clone, Debug, Default, Hash, PartialEq, Eq, derive_more::Display, derive_more::Deref, derive_more::DerefMut, derive_more::AsRef, derive_more::AsMut)]
             pub struct [<Typed $name>]<T>(pub T);
-
-            impl<T: std::fmt::Display> std::fmt::Display for [<Typed $name>]<T> {
-                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                    self.0.fmt(f)
-                }
-            }
 
             impl<$lt, T: TryFrom<$name<$lt>>> TryFrom<$name<$lt>> for [<Typed $name>]<T> {
                 type Error = T::Error;
@@ -356,20 +348,6 @@ macro_rules! define_enum {
             impl<$lt, T: $crate::TypstTypeLike> $crate::TypstTypeLike for [<Typed $name>]<T> {
                 fn static_type_name() -> std::borrow::Cow<'static, str> {
                     T::static_type_name()
-                }
-            }
-
-            impl<T> std::ops::Deref for [<Typed $name>]<T> {
-                type Target = T;
-
-                fn deref(&self) -> &Self::Target {
-                    &self.0
-                }
-            }
-
-            impl<T> std::ops::DerefMut for [<Typed $name>]<T> {
-                fn deref_mut(&mut self) -> &mut Self::Target {
-                    &mut self.0
                 }
             }
 
@@ -447,19 +425,12 @@ macro_rules! impl_into {
                 $ity::$(<$ilt>)?::$variant(value)
             }
         }
-
-        impl<'a> From<$ty> for $crate::types::RBox<$ity$(<$ilt>)?> {
-            fn from(value: $ty) -> $crate::types::RBox<$ity$(<$ilt>)?> {
-                $crate::types::RBox::new(value.into())
-            }
-        }
     };
 }
 
 #[macro_export]
 /// Implement utility conversion for Typed`enum_name`<T> types.
 /// T -> Typed`enum_name`<T>
-/// T -> Typed`enum_name`<Box<T>>
 /// T -> Typed`enum_name`<std::boxed::Box<T>>
 /// T -> Typed`enum_name`<std::option::Option<T>>
 macro_rules! impl_into_typed {
@@ -467,12 +438,6 @@ macro_rules! impl_into_typed {
         paste::paste! {impl<'a> From<$ty> for $crate::[<Typed $ity>]<$ty> {
             fn from(value: $ty) -> $crate::[<Typed $ity>]<$ty> {
                 $crate::[<Typed $ity>]::new(value)
-            }
-        }}
-
-        paste::paste! {impl<'a> From<$ty> for $crate::[<Typed $ity>]<$crate::RBox<$ty>> {
-            fn from(value: $ty) -> $crate::[<Typed $ity>]<$crate::RBox<$ty>> {
-                $crate::[<Typed $ity>]::new(value.into())
             }
         }}
 

@@ -1,26 +1,23 @@
-use std::ops::{Deref, DerefMut};
+use derive_more::{Deref, DerefMut, From, Into};
 
 use crate::{Item, types::float::Float};
 
 /// For more information visit the typst documentation: [duration](https://typst.app/docs/reference/foundations/duration/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Default, Hash)]
+#[derive(
+    serde::Serialize,
+    serde::Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Default,
+    Deref,
+    DerefMut,
+    Into,
+    From,
+)]
 pub struct Duration(pub Float);
 
-impl Deref for Duration {
-    type Target = Float;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
 crate::impl_all!(Item<'a>::Duration, Duration {}, "duration");
-
-impl DerefMut for Duration {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
 
 impl From<Duration> for std::time::Duration {
     fn from(val: Duration) -> Self {

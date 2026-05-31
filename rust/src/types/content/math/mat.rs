@@ -6,7 +6,7 @@ use crate::{
 };
 
 /// For more information visit the typst documentation: [math.mat](https://typst.app/docs/reference/math/mat/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Matrix<'a> {
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
     pub delim: Option<Delim<'a>>,

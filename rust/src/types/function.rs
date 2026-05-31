@@ -1,3 +1,5 @@
+use derive_more::{Display, IsVariant, TryUnwrap, Unwrap};
+
 use crate::{Item, types::string::String};
 
 /// A function.
@@ -10,12 +12,29 @@ use crate::{Item, types::string::String};
 /// Note: A deserialized function in typst **is callable**.
 ///
 /// For more information visit the typst documentation: [function](https://typst.app/docs/reference/foundations/function/)
-#[derive(Default, Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Hash)]
+#[derive(
+    Default,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    serde::Serialize,
+    serde::Deserialize,
+    Hash,
+    Display,
+    IsVariant,
+    Unwrap,
+    TryUnwrap,
+)]
 #[serde(from = "String", into = "String")]
+#[unwrap(owned, ref, ref_mut)]
+#[try_unwrap(owned, ref, ref_mut)]
 pub enum Function<'a> {
     #[default]
+    #[display("(..) => ..")]
     Inline,
     #[serde(borrow)]
+    #[display("{}", **_0)]
     Named(String<'a>),
 }
 

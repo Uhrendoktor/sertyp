@@ -148,11 +148,25 @@ pub fn serialize_cbor(ty: &Item<'_>) -> serde_cbor::Result<Vec<u8>> {
 macro_rules! error {
     ($ty:tt, $($arg:tt)*) => {{
         let err = format!($($arg)*);
-        let msg: sertyp::Text = sertyp::Text::from_string(err);
-        let p = sertyp::Panic{
-            ty: $ty.into(),
-            msg: sertyp::TypedItem(sertyp::Content::from(msg).into()),
-        };
+        let msg: sertyp::Content = sertyp::Text::from_string(err).into();
+        let mut p: sertyp::Panic = msg.into();
+        p.ty = sertyp::TypedItem($ty.into());
         return sertyp::serialize_cbor(&p.into()).unwrap();
     }};
+}
+
+#[cfg(not(feature = "content"))]
+#[macro_export]
+macro_rules! feature_switch {
+    ($raw:tt, $content:tt) => {
+        $raw
+    };
+}
+
+#[cfg(feature = "content")]
+#[macro_export]
+macro_rules! feature_switch {
+    ($raw:tt, $content:tt) => {
+        $content
+    };
 }

@@ -41,7 +41,7 @@ pub use crate::types::content::{
     strong::Strong, text::*, underline::Underline, v::V,
 };
 #[cfg(feature = "content")]
-use crate::{Panic, RBox, Symbol, types::content::symbol::Symbol_};
+use crate::{Panic, Symbol, types::content::symbol::Symbol_};
 
 pub use crate::types::{dictionary::Dictionary, function::Function};
 
@@ -49,7 +49,7 @@ pub use crate::types::{dictionary::Dictionary, function::Function};
 /// Typst represents content as a `function` with `arguments`, which renders arbitrary content.
 ///
 /// For more information visit the typst documentation: [content](https://typst.app/docs/reference/foundations/content/)
-#[derive(Default, serde::Serialize, serde::Deserialize, Clone, Debug, Hash)]
+#[derive(Default, serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct RawContent<'a> {
     #[serde(borrow)]
     pub func: Function<'a>,
@@ -93,13 +93,6 @@ impl<'a> From<Content<'a>> for Item<'a> {
     fn from(val: Content<'a>) -> Self {
         let content: std::boxed::Box<Content<'a>> = std::boxed::Box::new(val);
         content.into()
-    }
-}
-
-#[cfg(feature = "content")]
-impl<'a> From<Content<'a>> for RBox<Item<'a>> {
-    fn from(val: Content<'a>) -> Self {
-        RBox::new(val.into())
     }
 }
 
@@ -177,6 +170,7 @@ crate::define_enum! {
     }
 }
 
+#[cfg(feature = "content")]
 impl<'a> Content<'a> {
     pub fn from_text(text: impl Into<crate::String<'a>>) -> Self {
         Text::from_string(text).into()

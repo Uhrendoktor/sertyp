@@ -6,7 +6,7 @@ use crate::{
 };
 
 /// For more information visit the typst documentation: [math.vec](https://typst.app/docs/reference/math/vec/)
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Vector<'a> {
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
     pub delim: Option<Delim<'a>>,

@@ -2,6 +2,7 @@ use crate::{Item, types::integer::Integer};
 
 /// For more information visit the typst documentation: [datetime](https://typst.app/docs/reference/foundations/datetime/)
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq, Default, Hash)]
+
 pub struct Datetime {
     pub year: Integer,
     pub month: Integer,

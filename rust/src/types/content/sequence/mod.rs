@@ -2,6 +2,7 @@ use crate::{Content, Item, types::generic::TypedArray};
 use std::ops::{Deref, DerefMut};
 
 pub mod locating;
+use derive_more::{AsMut, AsRef, Deref, DerefMut, IntoIterator};
 pub use locating::LocatingSequence;
 pub(crate) use locating::{GroupType, PreToken};
 
@@ -14,7 +15,23 @@ pub mod error;
 /// #let content = [a sentence with some math: $a+b=c$]
 /// // is parsed as `sequence(([a sentence with some math] [:] space math.equation(...))`
 /// ```
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Hash)]
+#[derive(
+    serde::Serialize,
+    serde::Deserialize,
+    Clone,
+    Debug,
+    Default,
+    Deref,
+    DerefMut,
+    AsRef,
+    AsMut,
+    IntoIterator,
+)]
+#[deref(forward)]
+#[deref_mut(forward)]
+#[as_ref(forward)]
+#[as_mut(forward)]
+#[into_iterator(owned, ref, ref_mut)]
 pub struct Sequence<'a> {
     #[serde(borrow)]
     pub children: TypedArray<Content<'a>>,
@@ -25,6 +42,18 @@ impl<'a> Sequence<'a> {
         Sequence {
             children: TypedArray::default(),
         }
+    }
+
+    pub fn flatten(self) -> Self {
+        let mut children = vec![];
+        for i in 0..self.children.len() {
+            if let Content::Sequence(seq) = self.children[i].clone() {
+                children.extend(seq.flatten().children);
+            } else {
+                children.push(self.children[i].clone());
+            }
+        }
+        children.into()
     }
 }
 
@@ -47,19 +76,6 @@ impl<'a> From<Vec<Content<'a>>> for Sequence<'a> {
         Sequence {
             children: TypedArray::from(vec),
         }
-    }
-}
-
-impl<'a> Deref for Sequence<'a> {
-    type Target = TypedArray<Content<'a>>;
-    fn deref(&self) -> &Self::Target {
-        &self.children
-    }
-}
-
-impl<'a> DerefMut for Sequence<'a> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.children
     }
 }
 

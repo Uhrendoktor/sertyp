@@ -1,5 +1,6 @@
 use std::fmt::Debug;
-use std::ops::{Deref, DerefMut};
+
+use derive_more::{Deref, DerefMut, From, Into, IntoIterator};
 
 use crate::{Array, Item, TypstTypeLike};
 
@@ -19,17 +20,11 @@ use crate::{Array, Item, TypstTypeLike};
 ///         .into())
 /// }
 /// ```
-#[derive(Clone, Debug, Default, Hash)]
+#[derive(Clone, Debug, Default, Hash, IntoIterator, Deref, DerefMut, From, Into)]
+#[into_iterator(owned, ref, ref_mut)]
+#[from(Vec<T>)]
+#[into(Vec<T>)]
 pub struct TypedArray<T>(pub Vec<T>);
-
-impl<T> IntoIterator for TypedArray<T> {
-    type Item = T;
-    type IntoIter = std::vec::IntoIter<T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
 
 impl<T> TypedArray<T> {
     pub fn into_inner(self) -> Vec<T> {
@@ -58,25 +53,6 @@ impl<'a, T: Clone + Into<Item<'a>>> serde::Serialize for TypedArray<T> {
     {
         let arr: Array = self.clone().into();
         arr.serialize(serializer)
-    }
-}
-
-impl<T> Deref for TypedArray<T> {
-    type Target = Vec<T>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-impl<T> DerefMut for TypedArray<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-impl<T> From<Vec<T>> for TypedArray<T> {
-    fn from(value: Vec<T>) -> Self {
-        TypedArray(value)
     }
 }
 
