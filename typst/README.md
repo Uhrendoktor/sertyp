@@ -16,14 +16,14 @@ information, `sertyp`:
   serialized to cbor and passed over the WASM boundary.
 
 The
-[Rust backend](https://github.com/Uhrendoktor/sertyp/blob/0.1.3/rust/README.md)
+[Rust backend](https://github.com/Uhrendoktor/sertyp/blob/0.1.4/rust/README.md)
 provides deserialization logic and typed data structures so plugins can work
 with actual Typst types instead of manual parsing efforts.
 
 ## Usage
 
 ```typst
-#import "@preview/sertyp:0.1.3"
+#import "@preview/sertyp:0.1.4"
 ```
 
 ## Examples
@@ -31,7 +31,7 @@ with actual Typst types instead of manual parsing efforts.
 ### Basic serialization
 
 ```typst
-#import "@preview/sertyp:0.1.3"
+#import "@preview/sertyp:0.1.4"
 
 // Serialize and deserialize complex content
 #let value = [
@@ -71,7 +71,7 @@ pub fn fibonacci<'a>(n: Integer) -> Result<Integer, String<'a>> {
 ### Type preservation examples
 
 ```typst
-#import "@preview/sertyp:0.1.3"
+#import "@preview/sertyp:0.1.4"
 
 #let color = rgb(255, 128, 0)
 #let restored = sertyp.deserialize(sertyp.serialize(color))
@@ -164,5 +164,5 @@ sertyp.deserialize-cbor(function(sertyp.serialize-cbor(arg)))
 ## Plugin Development
 
 See the
-[Rust README](https://github.com/Uhrendoktor/sertyp/blob/0.1.3/rust/README.md)
+[Rust README](https://github.com/Uhrendoktor/sertyp/blob/0.1.4/rust/README.md)
 for details on building WASM plugins that work with sertyp.
