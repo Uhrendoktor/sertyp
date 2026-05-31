@@ -1,10 +1,9 @@
 mod or;
-mod result;
 mod typed_array;
 
 #[allow(unused_imports)]
 pub use or::{AutoOr, NoneOr, Or};
-pub use result::Result;
+// pub use result::Result;
 pub use typed_array::TypedArray;
 
 use std::fmt::Debug;

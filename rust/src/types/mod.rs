@@ -38,7 +38,7 @@ mod version;
 
 mod panic;
 
-pub use crate::types::generic::{AutoOr, FillColor, NoneOr, Or, Result, StrokeColor, TypedArray};
+pub use crate::types::generic::{AutoOr, FillColor, NoneOr, Or, StrokeColor, TypedArray};
 use crate::types::selector::Selector;
 pub use crate::types::r#type::{TypstType, TypstTypeLike};
 pub use crate::types::{
@@ -125,6 +125,19 @@ crate::impl_typst_type!(typst_like Item<'a>{'a}, "item");
 impl<'a> Default for Item<'a> {
     fn default() -> Self {
         String::default().into()
+    }
+}
+
+impl<'a, T, E> From<Result<T, E>> for Item<'a>
+where
+    Item<'a>: From<T>,
+    Panic<'a>: From<E>,
+{
+    fn from(value: std::result::Result<T, E>) -> Self {
+        match value {
+            Ok(v) => v.into(),
+            Err(e) => Panic::<'a>::from(e).into(),
+        }
     }
 }
 
