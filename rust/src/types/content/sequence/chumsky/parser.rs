@@ -1,11 +1,12 @@
+use std::hash::Hash;
 use std::ops::Neg;
 
-use crate::GroupType;
 use crate::error::TypstError;
 use crate::{
     Content, H, LocatingSequence, Pagebreak, Parbreak, Space, Text, V,
     chumsky::{LocatingSequenceLike, Token},
 };
+use crate::{GroupType, Or, Symbol};
 use chumsky::IterParser;
 use chumsky::extra::ParserExtra;
 use chumsky::label::LabelError;
@@ -358,7 +359,13 @@ where
                     remaining.insert(0, prefix);
                     remaining
                 })
-                .map(|s| Text::from_string(s).into())
+                .map(|s| {
+                    if s.len() == 1 {
+                        Symbol::from(s).into()
+                    } else {
+                        Text::from_string(s).into()
+                    }
+                })
                 .labelled(crate::String::from("canonical string variable name"))
                 .boxed()
         } else {
@@ -372,7 +379,7 @@ where
         },
         // subscript or superscript variable name
         select! { Token::Raw(Content::MathAttach(attach)) => attach }
-            .try_map(|attach, span| {
+            .try_map(move |attach, span| {
                 macro_rules! field {
                     ($field:expr, $canonical:expr) => {{
                         variable::<LocatingSequence<'this, 'data>, E>($canonical)
@@ -409,7 +416,10 @@ where
                 maybe_field!(&attach.b, false)?;
                 maybe_field!(&attach.bl, false)?;
                 maybe_field!(&attach.br, false)?;
-                // t is NOT checked since it is used for exponents
+                // if canonical is true `t` is NOT checked since it is used for exponents
+                if !canonical {
+                    maybe_field!(&attach.t, false)?;
+                }
                 maybe_field!(&attach.tl, false)?;
                 maybe_field!(&attach.tr, false)?;
                 Ok(Content::MathAttach(attach.clone()))
@@ -439,6 +449,50 @@ where
             .labelled(crate::String::from("accent variable")),
     ))
     .labelled(crate::String::from("variable"))
+}
+
+pub fn hash_variable<H: std::hash::Hasher>(
+    variable: &Content<'_>,
+    hasher: &mut H,
+    canonical: bool,
+) {
+    macro_rules! field {
+        ($field:expr, $canonical:expr) => {
+            hash_variable($field, hasher, $canonical);
+        };
+    }
+    macro_rules! maybe_field {
+        ($field:expr, $canonical:expr) => {
+            if let Some(inner) = $field {
+                field!(&**inner, $canonical);
+            }
+        };
+    }
+    match variable {
+        Content::Text(t) => {
+            t.as_string().hash(hasher);
+        }
+        Content::Symbol(s) => {
+            s.hash(hasher);
+        }
+        Content::MathAttach(attach) => {
+            field!(&**attach.base, false);
+            maybe_field!(&attach.b, false);
+            maybe_field!(&attach.bl, false);
+            maybe_field!(&attach.br, false);
+            // if canonical is true `t` is NOT included since it is used for exponents
+            if !canonical {
+                maybe_field!(&attach.t, false);
+            }
+            maybe_field!(&attach.tl, false);
+            maybe_field!(&attach.tr, false);
+        }
+        Content::MathAccent(accent) => match &accent.accent {
+            Or::Left(l) => l.hash(hasher),
+            Or::Right(r) => hash_variable(&*r, hasher, false),
+        },
+        _ => unreachable!(),
+    }
 }
 
 #[derive(Debug, Clone)]

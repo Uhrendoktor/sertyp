@@ -18,7 +18,7 @@ use crate::{Item, TypstTypeLike};
 /// let s: String = "hello".into();
 /// let item: Item = s.into();
 /// ```
-#[derive(Clone, Debug, Eq, Deref, DerefMut, Display)]
+#[derive(Clone, Debug, Eq, Deref, DerefMut, Display, Hash)]
 #[deref(forward)]
 #[deref_mut(forward)]
 #[display("{}", **self)]
@@ -28,12 +28,6 @@ crate::impl_all!(Item<'a>::String, String<'a>{'a}, "string");
 impl<'a> Default for String<'a> {
     fn default() -> Self {
         String(std::borrow::Cow::Borrowed(""))
-    }
-}
-impl<'a> Hash for String<'a> {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        let s: &str = self;
-        s.hash(state);
     }
 }
 impl<'a> PartialEq for String<'a> {

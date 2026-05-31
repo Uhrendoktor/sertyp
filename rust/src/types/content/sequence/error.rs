@@ -56,6 +56,12 @@ impl<'a, S: Span> TypstError<'a, S> {
     }
 }
 
+impl<'a> From<Vec<TypstError<'a>>> for TypstError<'a> {
+    fn from(mut value: Vec<TypstError<'a>>) -> Self {
+        value.remove(0)
+    }
+}
+
 /// Human-readable context entries attached to a `TypstError`.
 ///
 /// These values are collected while parsing and are later turned into the
