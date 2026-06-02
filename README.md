@@ -31,10 +31,10 @@ initiate_protocol!();
 #[typst_func]
 pub fn fibonacci<'a>(
     n: Integer,
-) -> sertyp::Result<'a, Integer> {
+) -> Result<Integer, String<'a>> {
     let n: i32 = match n.try_into() {
         Ok(n) => n,
-        Err(_) => return Err("Invalid integer range".into()).into()
+        Err(_) => return Err("Invalid integer range".into())
     };
     
     let (mut v0, mut v1) = (0, 1);
@@ -42,7 +42,7 @@ pub fn fibonacci<'a>(
         (v0, v1) = (v1, v0 + v1);
     }
 
-    Ok(v1.into()).into()
+    Ok(v1.into())
 }
 ```
 

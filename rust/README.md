@@ -99,12 +99,11 @@ It must specify a return type that must implement `Into<Item<'_>>`.
 This behavior is by default supported for:
 
 - All types mentioned in the input types section
-- `Result` (both `sertyp::Result<'a, T>` and
-  `std::result::Result<T, sertyp::String<'a>>`). Returning an error will
-  automatically be cast into a typst runtime panic.
+- `Result` (`std::result::Result<T, sertyp::String<'a>>`). Returning an error
+  will automatically be cast into a typst runtime panic.
   ```typst
   #[typst_func]
-  pub fn example<'a>(...) -> Result<'a, Integer> { ... }
+  pub fn example<'a>(...) -> Result<Integer, String<'a>> { ... }
   ```
 
 ### Typst
