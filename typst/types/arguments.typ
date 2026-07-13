@@ -12,14 +12,23 @@
   ))
 };
 
-#let deserializer(a, ctx) = {
+#let deserializer(a, ctx, request) = {
   utils.assert_type(a, dictionary)
 
   import "dictionary.typ" as dict_
   import "array.typ" as array_
-  return arguments(
-    ..array_.deserializer(a.at("pos"), ctx),
-    ..dict_.deserializer(a.at("named"), ctx),
+  return request(
+    (
+      (a.at("pos"), array_),
+      (a.at("named"), dict_),
+    ),
+    none,
+    ((pos, named), _n) => {
+      return arguments(
+        ..pos,
+        ..named,
+      )
+    },
   )
 }
 

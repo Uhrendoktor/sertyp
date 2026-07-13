@@ -78,7 +78,7 @@
   sertyp.call(
     test_plugin.not_expecting_error,
     sertyp.call(test_plugin.not_expecting_error, sertyp.error-box(
-      "Test Error",
+      [Test Error],
       [This *is* an _intended_ test error message with #underline([formatting]).],
     )),
   )

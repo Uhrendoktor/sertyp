@@ -33,6 +33,8 @@ mod underline;
 #[cfg(feature = "content")]
 mod v;
 
+use derive_more::Display;
+
 use crate::Item;
 #[cfg(feature = "content")]
 pub use crate::types::content::{
@@ -49,7 +51,8 @@ pub use crate::types::{dictionary::Dictionary, function::Function};
 /// Typst represents content as a `function` with `arguments`, which renders arbitrary content.
 ///
 /// For more information visit the typst documentation: [content](https://typst.app/docs/reference/foundations/content/)
-#[derive(Default, serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(Default, serde::Serialize, serde::Deserialize, Clone, Debug, Display)]
+#[display("RawContent {{ func: {}, fields: {:?} }}", func, fields)]
 pub struct RawContent<'a> {
     #[serde(borrow)]
     pub func: Function<'a>,
@@ -59,11 +62,41 @@ pub struct RawContent<'a> {
 
 #[cfg(not(feature = "content"))]
 pub type Content<'a> = RawContent<'a>;
+
 #[cfg(not(feature = "content"))]
 pub type ItemContent<'a> = RawContent<'a>;
-
 #[cfg(feature = "content")]
 pub type ItemContent<'a> = std::boxed::Box<Content<'a>>;
+
+pub trait FromString<'a> {
+    fn from_string(s: impl Into<crate::String<'a>>) -> Self;
+}
+
+#[cfg(not(feature = "content"))]
+impl<'a> FromString<'a> for ItemContent<'a> {
+    fn from_string(s: impl Into<crate::String<'a>>) -> Self {
+        let func = Function::from(crate::String::from("text"));
+        let fields = Some(Dictionary::from(vec![(
+            crate::String::from("text"),
+            s.into(),
+        )]));
+        Self { func, fields }
+    }
+}
+
+#[cfg(feature = "content")]
+impl<'a> FromString<'a> for ItemContent<'a> {
+    fn from_string(s: impl Into<crate::String<'a>>) -> Self {
+        std::boxed::Box::new(crate::Text::from_string(s).into())
+    }
+}
+#[cfg(feature = "content")]
+impl<'a> FromString<'a> for Content<'a> {
+    fn from_string(s: impl Into<crate::String<'a>>) -> Self {
+        Text::from_string(s).into()
+    }
+}
+
 #[cfg(feature = "content")]
 crate::impl_into_typed!(Item, Content<'a>);
 
@@ -171,13 +204,6 @@ crate::define_enum! {
 }
 
 #[cfg(feature = "content")]
-impl<'a> Content<'a> {
-    pub fn from_text(text: impl Into<crate::String<'a>>) -> Self {
-        Text::from_string(text).into()
-    }
-}
-
-#[cfg(feature = "content")]
 impl<'a> Default for Content<'a> {
     fn default() -> Self {
         std::boxed::Box::new(Text::default()).into()
@@ -206,4 +232,12 @@ impl<'a, T: Into<Content<'a>>> From<TypedContent<T>> for Item<'a> {
         let content: Content<'a> = val.into();
         content.into()
     }
+}
+
+#[cfg(feature = "content")]
+#[macro_export]
+macro_rules! content {
+    ($e:expr) => {
+        sertyp::Content::from($e)
+    };
 }

@@ -8,7 +8,7 @@
   return string_.serializer(([#r].fields().at("text")).match(regex("regex\(\"(.*?)\"\)")).captures.at(0))
 };
 
-#let deserializer(s, ctx) = {
+#let deserializer(s, ctx, request) = {
   utils.assert_type(s, str)
   return regex(s)
 };

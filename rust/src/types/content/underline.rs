@@ -14,7 +14,16 @@ pub struct Underline<'a> {
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
     pub stroke: Option<AutoOr<Stroke<'a>>>,
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
-    pub body: Option<Box<TypedItem<Content<'a>>>>,
+    pub body: Option<TypedItem<Box<Content<'a>>>>,
+}
+
+impl<'a> Underline<'a> {
+    pub fn underline(c: impl Into<Content<'a>>) -> Self {
+        Self {
+            body: Some(TypedItem::new(Box::new(c.into()))),
+            ..Self::default()
+        }
+    }
 }
 
 crate::impl_all!(Content<'a>::Underline, Underline<'a> {'a}, "underline");

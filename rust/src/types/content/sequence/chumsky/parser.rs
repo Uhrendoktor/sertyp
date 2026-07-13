@@ -2,11 +2,15 @@ use std::hash::Hash;
 use std::ops::Neg;
 
 use crate::error::TypstError;
+use crate::types::symbol::{
+    SYMBOL_ast_basic, SYMBOL_ast_op, SYMBOL_dot_op, SYMBOL_infinity, SYMBOL_minus, SYMBOL_pi,
+    SYMBOL_plus, SYMBOL_times,
+};
 use crate::{
     Content, H, LocatingSequence, Pagebreak, Parbreak, Space, Text, V,
     chumsky::{LocatingSequenceLike, Token},
 };
-use crate::{GroupType, Or, Symbol};
+use crate::{FromString, GroupType, Or, Symbol};
 use chumsky::IterParser;
 use chumsky::extra::ParserExtra;
 use chumsky::label::LabelError;
@@ -16,9 +20,9 @@ use chumsky::{
     primitive::{choice, just, one_of},
     select,
 };
+use num_traits::FloatConst;
 
-pub static MINUS: [char; 2] = ['-', '−'];
-pub static MULTIPLY: [char; 4] = ['*', '×', '⋅', '∗'];
+pub static MULTIPLY: [char; 4] = [SYMBOL_dot_op, SYMBOL_times, SYMBOL_ast_basic, SYMBOL_ast_op];
 
 pub fn as_token<const N: usize>(c: &[char; N]) -> [Token<'static, 'static>; N] {
     std::array::from_fn(|i| super::Token::Char(c[i]))
@@ -32,12 +36,12 @@ pub fn digit<'this, 'data: 'this, I: LocatingSequenceLike<'this, 'data>, E: Pars
     radix: u32,
 ) -> impl Parser<'this, I, char, E>
 where
-    E::Error: LabelError<'this, I, crate::String<'data>>,
+    E::Error: LabelError<'this, I, crate::Content<'data>>,
 {
     select! {
         Token::Char(c) if c.is_digit(radix) => c,
     }
-    .labelled(crate::String::from("digit"))
+    .labelled(crate::Content::from_string("digit"))
 }
 
 /// Parses 1.. [`digit`]s in a row and collects them into a string
@@ -52,13 +56,13 @@ pub fn digits<
     radix: u32,
 ) -> impl Parser<'this, I, String, E>
 where
-    E::Error: LabelError<'this, I, crate::String<'data>>,
+    E::Error: LabelError<'this, I, crate::Content<'data>>,
 {
     digit(radix)
         .repeated()
         .at_least(1)
         .collect()
-        .labelled(crate::String::from("digits"))
+        .labelled(crate::Content::from_string("digits"))
 }
 
 /// Parses a sign character: +, -
@@ -67,12 +71,12 @@ where
 pub fn sign<'this, 'data: 'this, I: LocatingSequenceLike<'this, 'data>, E: ParserExtra<'this, I>>()
 -> impl Parser<'this, I, char, E>
 where
-    E::Error: LabelError<'this, I, crate::String<'data>>,
+    E::Error: LabelError<'this, I, crate::Content<'data>>,
 {
     select! {
-        Token::Char(c) if MINUS.contains(&c) || c == '+' => c,
+        Token::Char(c) if [SYMBOL_minus, '-', SYMBOL_plus].contains(&c) => c,
     }
-    .labelled(crate::String::from("sign"))
+    .labelled(crate::Content::from_string("sign"))
 }
 
 pub fn character<
@@ -84,11 +88,11 @@ pub fn character<
     c: char,
 ) -> impl Parser<'this, I, char, E>
 where
-    E::Error: LabelError<'this, I, crate::String<'data>>,
+    E::Error: LabelError<'this, I, crate::Content<'data>>,
 {
     just(Token::Char(c))
         .to(c)
-        .labelled(crate::String::from(format!("character('{}')", c)))
+        .labelled(crate::Content::from_string(format!("character('{}')", c)))
 }
 
 /// Parses a specific word
@@ -98,7 +102,7 @@ pub fn word<'this, 'data: 'this, I: LocatingSequenceLike<'this, 'data>, E: Parse
     word: &str,
 ) -> impl Parser<'this, I, String, E>
 where
-    E::Error: LabelError<'this, I, crate::String<'data>>,
+    E::Error: LabelError<'this, I, crate::Content<'data>>,
 {
     just(
         word.chars()
@@ -106,7 +110,7 @@ where
             .collect::<Vec<Token<'this, 'data>>>(),
     )
     .to(word.to_owned())
-    .labelled(crate::String::from(format!("word(\"{}\")", word)))
+    .labelled(crate::Content::from_string(format!("word(\"{}\")", word)))
 }
 
 /// Parses 1.. [`digit`]s in a row and tries to convert them into an integer of type `I`
@@ -123,7 +127,7 @@ pub fn unsigned_integer_no_radix<
 ) -> impl Parser<'this, I, N, E>
 where
     E::Error: From<TypstError<'data>>,
-    E::Error: LabelError<'this, I, crate::String<'data>>,
+    E::Error: LabelError<'this, I, crate::Content<'data>>,
 {
     digits(radix)
         .try_map(move |s, span| {
@@ -137,7 +141,7 @@ where
                 .into()
             })
         })
-        .labelled(crate::String::from(format!(
+        .labelled(crate::Content::from_string(format!(
             "unsigned integer of radix {radix}"
         )))
 }
@@ -161,12 +165,10 @@ pub fn unsigned_float_no_radix_no_naninf<
 ) -> impl Parser<'this, I, F, E>
 where
     E::Error: From<TypstError<'data>>,
-    E::Error: LabelError<'this, I, crate::String<'data>>,
+    E::Error: LabelError<'this, I, crate::Content<'data>>,
 {
     // Mantissa:
     let mantissa = choice((
-        // <digits>
-        digits(radix).map(|whole| (Some(whole), None)),
         // <digits>.<digits>?
         digits(radix)
             .then(just(Token::Char('.')))
@@ -176,8 +178,10 @@ where
         just(Token::Char('.'))
             .then(digits(radix))
             .map(|(_, decimals)| (None, Some(decimals))),
+        // <digits>
+        digits(radix).map(|whole| (Some(whole), None)),
     ))
-    .labelled(crate::String::from(format!(
+    .labelled(crate::Content::from_string(format!(
         "float mantissa of radix {radix}"
     )));
 
@@ -195,7 +199,7 @@ where
     .then(sign().or_not())
     .then(digits(radix))
     .or_not()
-    .labelled(crate::String::from(format!(
+    .labelled(crate::Content::from_string(format!(
         "float exponent of radix {radix}"
     )));
 
@@ -223,7 +227,7 @@ where
                 .into()
             })
         })
-        .labelled(crate::String::from(format!(
+        .labelled(crate::Content::from_string(format!(
             "unsigned float of radix {radix} without inf or nan"
         )))
 }
@@ -231,7 +235,7 @@ where
 /// Parses an unsigned float of type `F` with the same formats as [`unsigned_float_no_radix_no_naninf`] but also allows for "inf" and "nan" (case-insensitive) and for radix prefixes (0b, 0o, 0x)
 /// # Format
 /// - see [`unsigned_float_no_radix_no_naninf`]
-/// - inf | INF
+/// - oo | inf | INF
 /// - nan | NAN | NaN
 /// - 0b<digits> (binary float)
 /// - 0o<digits> (octal float)
@@ -247,7 +251,7 @@ pub fn unsigned_float_no_radix<
 ) -> impl Parser<'this, I, F, E>
 where
     E::Error: From<TypstError<'data>>,
-    E::Error: LabelError<'this, I, crate::String<'data>>,
+    E::Error: LabelError<'this, I, crate::Content<'data>>,
 {
     choice((
         unsigned_float_no_radix_no_naninf(radix),
@@ -258,8 +262,11 @@ where
             .or(word("NAN"))
             .or(word("NaN"))
             .to(f32::NAN.into()),
+        character(SYMBOL_infinity).to(f32::INFINITY.into()),
+        character('e').to(f32::E().into()),
+        character(SYMBOL_pi).to(f32::PI().into()),
     ))
-    .labelled(crate::String::from(format!(
+    .labelled(crate::Content::from_string(format!(
         "unsigned float of radix {radix} with optional inf and nan"
     )))
 }
@@ -277,15 +284,15 @@ pub fn auto_radix<
     default_radix: u32,
 ) -> impl Parser<'this, I, T, E>
 where
-    E::Error: LabelError<'this, I, crate::String<'data>>,
+    E::Error: LabelError<'this, I, crate::Content<'data>>,
 {
     choice((
-        parser(default_radix),
         word("0b").then(parser(2)).map(|(_, t)| t),
         word("0o").then(parser(8)).map(|(_, t)| t),
         word("0x").then(parser(16)).map(|(_, t)| t),
+        parser(default_radix),
     ))
-    .labelled(crate::String::from(format!(
+    .labelled(crate::Content::from_string(format!(
         "radix detection (0b, 0o, 0x or nothing={default_radix})"
     )))
 }
@@ -307,21 +314,21 @@ pub fn signed<
     parser: P,
 ) -> impl Parser<'this, I, N, E>
 where
-    E::Error: LabelError<'this, I, crate::String<'data>>,
+    E::Error: LabelError<'this, I, crate::Content<'data>>,
 {
     sign()
         .or_not()
         .then(parser)
         .map(|(sign, num)| {
             if let Some(sign) = sign
-                && MINUS.contains(&sign)
+                && [SYMBOL_minus, '-'].contains(&sign)
             {
                 num.neg()
             } else {
                 num
             }
         })
-        .labelled(crate::String::from("signed"))
+        .labelled(crate::Content::from_string("signed"))
 }
 
 /// Prases a variable name.
@@ -343,9 +350,9 @@ where
     <E as ParserExtra<'this, LocatingSequence<'this, 'data>>>::Error: std::fmt::Debug,
     <E as ParserExtra<'this, LocatingSequence<'this, 'data>>>::Context: Default,
     <E as ParserExtra<'this, LocatingSequence<'this, 'data>>>::State: Default,
-    <E as ParserExtra<'this, I>>::Error: LabelError<'this, I, crate::String<'data>>,
+    <E as ParserExtra<'this, I>>::Error: LabelError<'this, I, crate::Content<'data>>,
     <E as ParserExtra<'this, LocatingSequence<'this, 'data>>>::Error:
-        LabelError<'this, LocatingSequence<'this, 'data>, crate::String<'data>>,
+        LabelError<'this, LocatingSequence<'this, 'data>, crate::Content<'data>>,
 {
     let canonical_char = select! {Token::Char(c) if c.is_alphabetic() || c == '_' => c};
     let non_canonical_char =
@@ -366,7 +373,9 @@ where
                         Text::from_string(s).into()
                     }
                 })
-                .labelled(crate::String::from("canonical string variable name"))
+                .labelled(crate::Content::from_string(
+                    "canonical string variable name",
+                ))
                 .boxed()
         } else {
             non_canonical_char
@@ -374,7 +383,7 @@ where
                 .at_least(1)
                 .collect::<String>()
                 .map(|s| Text::from_string(s).into())
-                .labelled(crate::String::from("string variable name"))
+                .labelled(crate::Content::from_string("string variable name"))
                 .boxed()
         },
         // subscript or superscript variable name
@@ -424,7 +433,9 @@ where
                 maybe_field!(&attach.tr, false)?;
                 Ok(Content::MathAttach(attach.clone()))
             })
-            .labelled(crate::String::from("subscript or superscript variable")),
+            .labelled(crate::Content::from_string(
+                "subscript or superscript variable",
+            )),
         select! { Token::Raw(Content::MathAccent(accent)) => accent }
             .try_map(move |accent, span| {
                 variable::<LocatingSequence<'this, 'data>, E>(canonical)
@@ -446,9 +457,9 @@ where
                     })?;
                 Ok(Content::MathAccent(accent.clone()))
             })
-            .labelled(crate::String::from("accent variable")),
+            .labelled(crate::Content::from_string("accent variable")),
     ))
-    .labelled(crate::String::from("variable"))
+    .labelled(crate::Content::from_string("variable"))
 }
 
 pub fn hash_variable<H: std::hash::Hasher>(
@@ -489,7 +500,7 @@ pub fn hash_variable<H: std::hash::Hasher>(
         }
         Content::MathAccent(accent) => match &accent.accent {
             Or::Left(l) => l.hash(hasher),
-            Or::Right(r) => hash_variable(&*r, hasher, false),
+            Or::Right(r) => hash_variable(r, hasher, false),
         },
         _ => unreachable!(),
     }
@@ -536,14 +547,14 @@ pub fn delimited_by_groups<
     O: 'this,
     E: 'this + ParserExtra<'this, I>,
 >(
-    atom: impl 'this + Parser<'this, I, O, E> + Clone,
+    atom: impl 'this + Parser<'this, I, O, E>,
 ) -> impl Parser<'this, I, O, E>
 where
-    E::Error: LabelError<'this, I, crate::String<'data>>,
+    E::Error: LabelError<'this, I, crate::Content<'data>>,
 {
     recursive(|parser| {
         choice((
-            atom,
+            atom.boxed(),
             parser.clone().delimited_by(
                 just(Token::Open(GroupType::Math)),
                 just(Token::Close(GroupType::Math)),
@@ -552,9 +563,13 @@ where
                 just(Token::Open(GroupType::Sequence)),
                 just(Token::Close(GroupType::Sequence)),
             ),
+            parser.clone().delimited_by(
+                just(Token::Open(GroupType::LR)),
+                just(Token::Close(GroupType::LR)),
+            ),
         ))
     })
-    .labelled(crate::String::from("delimited by groups"))
+    .labelled(crate::Content::from_string("delimited by groups"))
 }
 
 pub trait Number {
@@ -567,7 +582,9 @@ pub trait Number {
     where
         Self: Sized,
         E::Error: std::convert::From<TypstError<'data>>,
-        E::Error: LabelError<'this, I, crate::String<'data>>;
+        E::Error: LabelError<'this, I, crate::Content<'data>>;
+
+    fn as_isize(&self) -> isize;
 }
 
 macro_rules! number {
@@ -575,7 +592,7 @@ macro_rules! number {
         auto_radix(unsigned_float_no_radix, 10)
     };
     (int) => {
-        auto_radix(|radix| unsigned_integer_no_radix(radix), 10)
+        auto_radix(unsigned_integer_no_radix, 10)
     };
     ($n:ident $ty:ty) => {
         impl Number for $ty {
@@ -587,9 +604,13 @@ macro_rules! number {
             >() -> impl Parser<'this, I, Self, E>
             where
                 E::Error: std::convert::From<TypstError<'data>>,
-                E::Error: LabelError<'this, I, crate::String<'data>>,
+                E::Error: LabelError<'this, I, crate::Content<'data>>,
             {
                 number!($n)
+            }
+
+            fn as_isize(&self) -> isize {
+                *self as isize
             }
         }
     };
@@ -603,9 +624,13 @@ macro_rules! number {
             >() -> impl Parser<'this, I, Self, E>
             where
                 E::Error: std::convert::From<TypstError<'data>>,
-                E::Error: LabelError<'this, I, crate::String<'data>>,
+                E::Error: LabelError<'this, I, crate::Content<'data>>,
             {
                 signed(number!($n))
+            }
+
+            fn as_isize(&self) -> isize {
+                *self as isize
             }
         }
     };
@@ -623,3 +648,32 @@ number!(signed int i64);
 number!(signed int isize);
 number!(float f32);
 number!(float f64);
+
+#[macro_export]
+macro_rules! parse {
+    ($parser:expr, $seq:expr) => {{
+        use chumsky::Parser;
+        match $parser.parse($seq).into_result() {
+            Ok(arr) => arr,
+            Err(e) => {
+                let err = e
+                    .into_iter()
+                    .map(|e: sertyp::TypstError| e.render($seq).into())
+                    .collect::<Vec<_>>();
+                return sertyp::Sequence::from(err).into();
+            }
+        }
+    }};
+}
+
+#[macro_export]
+macro_rules! collapse {
+    ($expr:expr, $seq:expr) => {{
+        match $expr {
+            Ok(v) => v,
+            Err(e) => {
+                return e.render($seq).into();
+            }
+        }
+    }};
+}

@@ -6,7 +6,7 @@
   return generic.no_value
 }
 
-#let deserializer(ctx) = {
+#let deserializer(_n, ctx, request) = {
   return none
 };
 

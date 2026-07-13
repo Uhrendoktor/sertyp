@@ -11,17 +11,14 @@
   return generic.raw_serializer(dictionary)(dict)
 }
 
-#let deserializer(d, ctx) = {
+#let deserializer(d, ctx, request) = {
   if d == () {
     d = (:)
   }
   utils.assert_type(d, dictionary)
-  return d
-    .pairs()
-    .map(((k, v)) => {
-      return (k, generic.deserializer(v, ctx))
-    })
-    .to-dict()
+  return request(d.values().map(v => (v, generic)), d, (deps, d) => {
+    d.keys().enumerate().map(((i, k)) => (k, deps.at(i))).to-dict()
+  })
 }
 
 #let test(cycle) = {

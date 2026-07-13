@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use derive_more::{IsVariant, TryUnwrap, Unwrap};
 use serde::{Deserialize, Serialize};
 
@@ -25,6 +27,15 @@ pub enum Or<T1, T2> {
     Left(T1),
     Right(T2),
 }
+impl<T1: Display, T2: Display> Display for Or<T1, T2> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Or::Left(v) => write!(f, "{}", v),
+            Or::Right(v) => write!(f, "{}", v),
+        }
+    }
+}
+
 impl<T1: Default, T2> Or<T1, T2> {
     pub fn left_default() -> Self {
         Or::Left(T1::default())

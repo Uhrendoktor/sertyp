@@ -4,7 +4,8 @@ use chumsky::span::{SimpleSpan, Span};
 
 use crate::{
     Box, Color, Content, FillColor, GroupType, Length, LocatingSequence, Or, Panic, Place,
-    PreToken, Sequence, Stroke, Text, TypedItem, Underline, math::Equation,
+    PreToken, Sequence, Stroke, Text, TypedItem, Underline,
+    math::{Equation, LR},
     types::content::text::TextWeight,
 };
 
@@ -18,6 +19,8 @@ pub struct TypstError<'data, S: Span = SimpleSpan> {
     pub span: S,
     /// Underlying winnow context error.
     pub inner: Vec<Context<'data>>,
+    /// location within subsequences
+    pub loc: Vec<usize>,
 }
 impl<'a, S: Span> TypstError<'a, S> {
     /// Appends a context entry to the underlying error and returns `self`.
@@ -36,14 +39,23 @@ impl<'a, S: Span> TypstError<'a, S> {
         TypstError {
             span,
             inner: vec![],
+            loc: vec![],
         }
+    }
+
+    pub fn span_later(
+        label: impl Into<crate::Content<'a>>,
+        expected: impl Into<crate::Content<'a>>,
+        found: impl Into<crate::Content<'a>>,
+    ) -> impl FnOnce(S) -> Self {
+        move |span: S| TypstError::full(span.into(), label.into(), expected.into(), found.into())
     }
 
     pub fn full(
         span: S,
-        label: impl Into<crate::String<'a>>,
-        expected: impl Into<crate::String<'a>>,
-        found: impl Into<crate::String<'a>>,
+        label: impl Into<crate::Content<'a>>,
+        expected: impl Into<crate::Content<'a>>,
+        found: impl Into<crate::Content<'a>>,
     ) -> Self {
         TypstError {
             span,
@@ -52,6 +64,7 @@ impl<'a, S: Span> TypstError<'a, S> {
                 Context::Expected(expected.into()),
                 Context::Found(found.into()),
             ],
+            loc: vec![],
         }
     }
 }
@@ -70,9 +83,9 @@ impl<'a> From<Vec<TypstError<'a>>> for TypstError<'a> {
 /// to summarize mismatch details.
 #[derive(Debug, Clone)]
 pub enum Context<'data> {
-    Label(crate::String<'data>),
-    Expected(crate::String<'data>),
-    Found(crate::String<'data>),
+    Label(crate::Content<'data>),
+    Expected(crate::Content<'data>),
+    Found(crate::Content<'data>),
 }
 
 /// Builds an absolute positioned floating Typst error. Similar to a normal [Panic].
@@ -82,50 +95,60 @@ pub fn error_box<'data, S: Span>(error: &TypstError<'data, S>) -> Content<'data>
         _ => None,
     });
     macro_rules! filter_variant {
-        ($variant:ident) => {
-            error
+        ($variant:ident) => {{
+            let els = error
                 .inner
                 .iter()
                 .filter_map(|c| match c {
-                    Context::$variant(c) => Some(c.to_string()),
+                    Context::$variant(c) => Some(c.clone()),
                     _ => None,
                 })
-                .collect::<Vec<String>>()
-                .join(", ")
-        };
+                .collect::<Vec<crate::Content>>();
+            let mut seq = vec![];
+            for i in 0..els.len() {
+                seq.push(els[i].clone());
+                if i < els.len() - 1 {
+                    seq.push(Text::from_string(", ").into());
+                }
+            }
+            crate::Sequence::from(seq)
+        }};
     }
     let expected = filter_variant!(Expected);
     let found = filter_variant!(Found);
     let mut msg = vec![];
     if !expected.is_empty() {
         msg.push(
-            Text::from_string("expected")
+            Text::from_string("expected ")
                 .weight(TextWeight::Bold)
                 .into(),
         );
-        msg.push(Text::from_string(format!(": {}\n", expected)).into());
+        msg.push(expected.into());
+        msg.push(Text::from_string("\n").into());
     }
     if !found.is_empty() {
-        msg.push(Text::from_string("found").weight(TextWeight::Bold).into());
-        msg.push(Text::from_string(format!(": {}\n", found)).into());
+        msg.push(Text::from_string("found ").weight(TextWeight::Bold).into());
+        msg.push(found.into());
+        msg.push(Text::from_string("\n").into());
     }
 
     Content::Box(
         Box {
-            body: Some(std::boxed::Box::new(TypedItem::new(Content::Place(
-                Place {
+            body: Some(
+                Content::from(Place {
                     body: Some(
                         TypedItem::new(Content::Panic(Panic {
                             ty: expression.cloned().unwrap_or("<unknown>".into()).into(),
-                            msg: Content::from(Sequence::from(msg)).into(),
+                            msg: Content::from(Sequence::from(msg).flatten()).into(),
                         }))
                         .into(),
                     ),
                     dy: Some(TypedItem::new(Length::pt(3.0).into())),
                     dx: Some(TypedItem::new(Length::pt(-20.0).into())),
                     ..Default::default()
-                },
-            )))),
+                })
+                .into(),
+            ),
             ..Default::default()
         }
         .into(),
@@ -143,18 +166,18 @@ pub fn inline_error<'data>(body: Content<'data>) -> Content<'data> {
         })),
         evade: Some(TypedItem(false.into())),
         extent: Some(TypedItem(Length::pt(1.5))),
-        body: Some(std::boxed::Box::new(TypedItem(
-            Box {
+        body: Some(
+            Content::from(Box {
                 fill: Some(Or::Right(FillColor::Color(
                     Color::rgba_hex("#fdecea").unwrap(),
                 ))),
                 inset: Some(Or::Left(Length::pt(1.0).into())),
                 radius: Some(Or::Left(Length::pt(2.0).into())),
-                body: Some(TypedItem::new(body).into()),
+                body: Some(body.into()),
                 ..Box::default()
-            }
+            })
             .into(),
-        ))),
+        ),
         background: Some(TypedItem(true.into())),
         ..Default::default()
     }
@@ -275,6 +298,22 @@ impl<'data, S: Span<Offset = usize>> TypstError<'data, S> {
                         _ => unreachable!(),
                     });
                 }
+                PreToken::Open(GroupType::LR) => {
+                    open_group_and_push(
+                        stack,
+                        Content::MathLR(LR::new(Sequence::new().into())),
+                        |content| match content {
+                            Content::MathLR(LR {
+                                body: TypedItem(body),
+                                ..
+                            }) => match &mut **body {
+                                Content::Sequence(seq) => seq,
+                                _ => unreachable!(),
+                            },
+                            _ => unreachable!(),
+                        },
+                    );
+                }
                 PreToken::Close(_) => {
                     close_group(stack);
                 }
@@ -341,5 +380,18 @@ impl<'data, S: Span<Offset = usize>> TypstError<'data, S> {
         }
 
         rendered
+    }
+
+    pub fn contentize<'this, T: Into<Content<'data>>>(
+        result: Result<T, Self>,
+        seq: &LocatingSequence<'this, 'data>,
+    ) -> Content<'data>
+    where
+        'data: 'this,
+    {
+        match result {
+            Ok(value) => value.into(),
+            Err(error) => error.render(seq).into(),
+        }
     }
 }

@@ -28,18 +28,12 @@ use crate::{
 pub enum GroupType {
     Sequence,
     Math,
-    // TODO: impl
-    // Raw(&'a Raw<'a>),
-    // LR(&'a LR<'a>),
+    LR,
 }
 
 impl PartialEq for GroupType {
     fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            // (GroupType::Raw(r1), GroupType::Raw(r2)) => std::ptr::eq(*r1, *r2),
-            // (GroupType::LR(l1), GroupType::LR(l2)) => std::ptr::eq(*l1, *l2),
-            (l, r) => std::mem::discriminant(l) == std::mem::discriminant(r),
-        }
+        std::mem::discriminant(self) == std::mem::discriminant(other)
     }
 }
 
@@ -194,7 +188,11 @@ fn insert_content<'this, 'data>(
             *pos += 1;
         }
         Content::MathLR(LR { body, .. }) => {
+            tokens.insert(*pos..*pos + 1, PreToken::Open(GroupType::LR));
+            *pos += 1;
             insert_content(pos, body, tokens);
+            tokens.insert(*pos..*pos + 1, PreToken::Close(GroupType::LR));
+            *pos += 1;
         }
         content => {
             insert_token(tokens, content, *pos..*pos + 1);

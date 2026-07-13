@@ -7,7 +7,7 @@ between typst and WASM plugins.
 ## Overview
 
 This library provides serialization and deserialization logic for the **sertyp**
-CBOR format into a handy rust data-structure and utility functions.
+CBOR format into handy Rust data structures and utility functions.
 
 ## Supported Types
 
@@ -23,6 +23,9 @@ CBOR format into a handy rust data-structure and utility functions.
 **Content** By enabling the `content` feature, many content types are usable as
 well `math.mat`, `math.vec`, `math.accent`, `math.attach`, `metadata`, `text`,
 `equation`, and many more.
+
+Most important: `sequence`, which supports complex content parsing using chumsky
+and the rust backend.
 
 ## Example
 
@@ -51,33 +54,33 @@ pub fn fibonacci<'a>(n: Integer) -> Result<Integer, String<'a>> {
 
 _Typst usage below_
 
-Each function decorated with `#[typst_func]` can use the following types
+Each function decorated with `#[typst_func]` can use the following types.
 
 ### Input types
 
-It must specify a single argument that must implement `TryFrom<Item<'_>>`.
+It may specify zero or more arguments, and each argument must implement `TryFrom<Item<'_>>`.
 
 This behavior is by default supported for:
 
 - All variants defined in `Item<'_>`.
 - `TypedContent`: If the `content` feature is enabled, the input parameter may
   be a typed content.
-  ```typst
+  ```rust
   #[typst_func]
   pub fn example<'a>(
       arg: TypedContent<Matrix<'_>>
   ) -> ... { ... }
   ```
 - `TypedArray`: For arrays of specific types
-  ```typst
+  ```rust
   #[typst_func]
   pub fn example<'a>(
       dirs: TypedArray<Direction>
   ) -> ... { ... }
   ```
-- `Pair`: For a tuple of two elements with same type (usefull when transmitting
+- `Pair`: For a tuple of two elements with same type (useful when transmitting
   Coordinates etc.).
-  ```typst
+  ```rust
   #[typst_func]
   pub fn example<'a>(
       dirs: Pair<Float>
@@ -85,7 +88,7 @@ This behavior is by default supported for:
   ```
 - `Or`: When the type may be one of two options. For `auto` and `none` values,
   the shorthands `AutoOr<T>` and `NoneOr<T>` exist as well.
-  ```typst
+  ```rust
   #[typst_func]
   pub fn example<'a>(
       dirs: Or<Float, TypedArray<Integer>>
@@ -101,7 +104,7 @@ This behavior is by default supported for:
 - All types mentioned in the input types section
 - `Result` (`std::result::Result<T, sertyp::String<'a>>`). Returning an error
   will automatically be cast into a typst runtime panic.
-  ```typst
+  ```rust
   #[typst_func]
   pub fn example<'a>(...) -> Result<Integer, String<'a>> { ... }
   ```
@@ -121,7 +124,7 @@ Writing those wrapper functions is highly recommended, as it makes the
 interaction with your plugin much more intuitive.
 
 ```typst
-#import "@preview/sertyp:0.1.4";
+#import "@preview/sertyp:0.1.5";
 
 #let fibonacci(n) = {
     let plugin = plugin("<...>.wasm");
@@ -130,3 +133,8 @@ interaction with your plugin much more intuitive.
 
 #assert(fibonacci(10) == 89)
 ```
+
+# Usage
+
+A good example of when to use `sertyp` is
+[`kalt`](https://typst.app/universe/package/kalt), a nested equation evaluator.

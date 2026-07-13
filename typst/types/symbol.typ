@@ -8,7 +8,7 @@
   return string_.serializer([#s].fields().at("text"))
 };
 
-#let deserializer(s, ctx) = {
+#let deserializer(s, ctx, request) = {
   utils.assert_type(s, str)
 
   return symbol(s)

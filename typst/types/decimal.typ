@@ -3,7 +3,7 @@
 
 #let serializer = generic.str_serializer(decimal);
 
-#let deserializer(s, ctx) = {
+#let deserializer(s, ctx, request) = {
   utils.assert_type(s, str)
   return decimal(s)
 };

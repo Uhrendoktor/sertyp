@@ -3,9 +3,11 @@ use std::collections::HashMap;
 #[cfg(feature = "content")]
 use std::fmt::Debug;
 
+#[cfg(not(feature = "content"))]
+use crate::FromString;
 #[cfg(feature = "content")]
 use crate::Text;
-use crate::{Content, Item, TypedItem, types::string::String};
+use crate::{Content, Item, ItemContent, TypedItem, types::string::String};
 
 /// When deserialized in typst results in a panic with the given message.
 /// [crate::Result] automatically converts into this type in case of an error.
@@ -14,7 +16,7 @@ use crate::{Content, Item, TypedItem, types::string::String};
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct Panic<'a> {
     #[serde(borrow, rename = "type")]
-    pub ty: TypedItem<String<'a>>,
+    pub ty: TypedItem<ItemContent<'a>>,
     #[serde(borrow)]
     #[cfg(feature = "content")]
     pub msg: TypedItem<Box<Content<'a>>>,
@@ -48,7 +50,7 @@ impl<'a> From<Content<'a>> for Panic<'a> {
         return Box::new(value).into();
         #[cfg(not(feature = "content"))]
         return Panic {
-            ty: String::from("Panic").into(),
+            ty: ItemContent::from_string(String::from("Panic")).into(),
             msg: value.into(),
         };
     }
@@ -58,7 +60,7 @@ impl<'a> From<Box<Content<'a>>> for Panic<'a> {
     fn from(value: Box<Content<'a>>) -> Self {
         #[cfg(feature = "content")]
         return Panic {
-            ty: String::from("Panic").into(),
+            ty: Box::<Content>::new("Panic".into()).into(),
             msg: value.into(),
         };
         #[cfg(not(feature = "content"))]

@@ -3,7 +3,7 @@
 
 #let serializer = generic.raw_serializer(float);
 
-#let deserializer(f, ctx) = {
+#let deserializer(f, ctx, request) = {
   if type(f) == int {
     f = float(f)
   }

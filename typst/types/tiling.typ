@@ -13,16 +13,22 @@
   ))
 };
 
-#let deserializer(d, ctx) = {
+#let deserializer(d, ctx, request) = {
   utils.assert_type(d, dictionary)
 
   import "dictionary.typ" as dict_
-  let args = dict_.deserializer(d, ctx)
-
-  return tiling(
-    text("Unsupported", color.red),
-    size: args.remove("size"),
-    ..args,
+  return request(
+    (
+      (d, dict_),
+    ),
+    none,
+    ((args,), _n) => {
+      return tiling(
+        text("Unsupported", color.red),
+        size: args.remove("size"),
+        ..args,
+      )
+    },
   )
 };
 

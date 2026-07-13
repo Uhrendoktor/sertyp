@@ -8,7 +8,7 @@
   return float_.serializer(float(d.seconds()))
 };
 
-#let deserializer(f, ctx) = {
+#let deserializer(f, ctx, request) = {
   if type(f) == int {
     f = float(f)
   }

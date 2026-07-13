@@ -249,16 +249,16 @@ impl<'this, 'data: 'this, I: Input<'this>> Error<'this, I> for TypstError<'data,
 {
 }
 
-impl<'this, 'data: 'this, I: Input<'this>> LabelError<'this, I, crate::String<'data>>
+impl<'this, 'data: 'this, I: Input<'this>> LabelError<'this, I, crate::Content<'data>>
     for TypstError<'data, I::Span>
 where
     I::Token: Debug,
 {
-    fn label_with(&mut self, label: crate::String<'data>) {
+    fn label_with(&mut self, label: crate::Content<'data>) {
         self.context_mut(Context::Label(label));
     }
 
-    fn expected_found<E: IntoIterator<Item = crate::String<'data>>>(
+    fn expected_found<E: IntoIterator<Item = crate::Content<'data>>>(
         expected: E,
         found: Option<MaybeRef<'this, <I as Input<'this>>::Token>>,
         span: <I as Input<'this>>::Span,

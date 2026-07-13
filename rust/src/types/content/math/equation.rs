@@ -26,3 +26,10 @@ impl<'a> Equation<'a> {
         }
     }
 }
+
+#[macro_export]
+macro_rules! equation {
+    ($($x:expr),*) => {
+        sertyp::math::Equation::new(sertyp::Sequence::from(vec![$($x.into()),*]).flatten().into())
+    };
+}

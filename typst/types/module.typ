@@ -17,7 +17,7 @@
   ))
 }
 
-#let deserializer(a, ctx) = {
+#let deserializer(a, ctx, request) = {
   utils.assert_type(a, dictionary)
 
   return eval("{import \"" + a.at("name") + ".typ\" as __mod_; __mod_}")

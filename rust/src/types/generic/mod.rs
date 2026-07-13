@@ -158,7 +158,7 @@ macro_rules! auto_impl {
     };
 }
 
-/// Shortcut for specifying types that are string constants. Usualy typst uses predefined typed enums (e.g. direction, alignment, etc.). Nevertheless, many content functions accept string constants as parameters instead. It is recommended to hardcode those variants as enums on the rust side. This macro helps with the creation of those string-constant enums.
+/// Shortcut for specifying types that are string constants. Usually Typst uses predefined typed enums (e.g. direction, alignment, etc.). Nevertheless, many content functions accept string constants as parameters instead. It is recommended to hardcode those variants as enums on the Rust side. This macro helps with the creation of those string-constant enums.
 /// # Example
 /// ```
 /// crate::auto_impl_str! {

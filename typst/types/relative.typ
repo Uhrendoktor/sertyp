@@ -11,17 +11,23 @@
   return array_.serializer(parts)
 };
 
-#let deserializer(r, ctx) = {
+#let deserializer(r, ctx, request) = {
   utils.assert_type(r, array)
 
   import "array.typ" as array_
-
-  let parts = array_.deserializer(r, ctx)
-  let relative = 0%
-  for part in parts {
-    relative = relative + part
-  }
-  return relative
+  return request(
+    (
+      (r, array_),
+    ),
+    none,
+    ((parts,), _n) => {
+      let relative = 0%
+      for part in parts {
+        relative = relative + part
+      }
+      return relative
+    },
+  )
 }
 
 #let test(cycle) = {

@@ -3,7 +3,7 @@
 
 #let serializer = generic.str_serializer(label);
 
-#let deserializer(l, ctx) = {
+#let deserializer(l, ctx, request) = {
   utils.assert_type(l, str)
   return label(l)
 };

@@ -7,7 +7,7 @@
   return generic.serialize(s.child)
 }
 
-#let deserializer(s, ctx) = {
+#let deserializer(s, ctx, request) = {
   utils.assert_type(s, str)
   return eval(s)
 }

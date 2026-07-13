@@ -35,7 +35,7 @@
   let meta = children.find(el => el.func() == metadata).at("value")
 
   return generic.raw_serializer(dictionary)((
-    type: meta.at("type"),
+    type: generic.serializer(meta.at("type")),
     msg: generic.serializer(meta.at("msg")),
   ))
 };
@@ -86,22 +86,35 @@
 #let deserializer(
   m,
   ctx,
+  request,
 ) = {
-  let (ty, msg) = (m.at("type"), generic.deserializer(m.at("msg"), ctx))
-  utils.assert_type(ty, str)
-  utils.assert_type(msg, content)
-  if ctx.at("panic", default: false) == true {
-    panic(ty + ": " + msg)
-  }
-  error-box(ty, msg, small: ctx.at("small", default: false))
+  return request(
+    (
+      (m.at("type"), generic),
+      (m.at("msg"), generic),
+    ),
+    none,
+    ((ty, msg), _n) => {
+      utils.assert_type(ty, content)
+      utils.assert_type(msg, content)
+      if ctx.at("panic", default: false) == true {
+        panic(ty + ": " + msg)
+      }
+      error-box(ty, msg, small: ctx.at("small", default: false))
+    },
+  )
 };
 
 #let test(cycle) = {
-  let ty = "Test Error"
+  let ty = [Test Error]
   let msg = [This is a test error message.]
   let box = error-box(ty, msg)
   utils.assert(is_panic(box), true)
 
-  utils.assert(generic.serializer(box), (type: "panic", value: (type: ty, msg: generic.serializer(msg))))
+  utils.assert(generic.serializer(box), (
+    type: "panic",
+    value: (type: generic.serializer(ty), msg: generic.serializer(msg)),
+  ))
+  let a = generic.serializer(box)
   cycle(box)
 };

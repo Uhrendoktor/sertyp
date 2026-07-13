@@ -9,7 +9,9 @@ pub(crate) use locating::{GroupType, PreToken};
 pub mod chumsky;
 pub mod error;
 
-/// Used within typst's internals to represent a space seperated sequence of different content items within a single content block. This is basically an array of `Content`.
+pub use error::TypstError;
+
+/// Used within Typst's internals to represent a space separated sequence of different content items within a single content block. This is basically an array of `Content`.
 /// # Example of Typst Behavior
 /// ```typst
 /// #let content = [a sentence with some math: $a+b=c$]
@@ -60,6 +62,12 @@ impl<'a> Sequence<'a> {
 crate::impl_into!(Content<'a>::Sequence, Sequence<'a>);
 crate::impl_typst_type!(Sequence<'a>{'a}, "sequence");
 
+impl<'a> From<Sequence<'a>> for Item<'a> {
+    fn from(seq: Sequence<'a>) -> Self {
+        Content::Sequence(seq).into()
+    }
+}
+
 impl<'a> From<Content<'a>> for Sequence<'a> {
     fn from(content: Content<'a>) -> Self {
         match content {
@@ -76,6 +84,19 @@ impl<'a> From<Vec<Content<'a>>> for Sequence<'a> {
         Sequence {
             children: TypedArray::from(vec),
         }
+    }
+}
+
+#[macro_export]
+macro_rules! sequence {
+    ($($x:expr),*$(,)?) => {
+        sertyp::Sequence::from(vec![$($x.into()),*])
+    };
+}
+
+impl<'a> From<Vec<Content<'a>>> for Content<'a> {
+    fn from(vec: Vec<Content<'a>>) -> Self {
+        Sequence::from(vec).into()
     }
 }
 

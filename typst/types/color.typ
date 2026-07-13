@@ -12,14 +12,21 @@
   ))
 };
 
-#let deserializer(a, ctx) = {
+#let deserializer(a, ctx, request) = {
   utils.assert_type(a, dictionary)
 
   import "array.typ" as array_
   import "function.typ" as func_
-  let components = array_.deserializer(a.components, ctx)
-  let space = func_.deserializer(a.space, ctx)
-  return space(..components)
+  return request(
+    (
+      (a.components, array_),
+      (a.space, func_),
+    ),
+    none,
+    ((components, space), _n) => {
+      return space(..components)
+    },
+  )
 }
 
 #let test(cycle) = {

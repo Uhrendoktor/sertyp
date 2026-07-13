@@ -1,15 +1,14 @@
 use quote::{format_ident, quote};
 use syn::parse_macro_input;
 
-/// Exposes a function as typst-wasm function with automatic serialization and deserialization.
-/// The function must at least one argument and return a value.
+/// Exposes a function as a Typst WASM function with automatic serialization and deserialization.
+/// The function may take zero or more arguments and must return a value.
 /// Each argument must implement [TryFrom]<[sertyp::Item]> and the return type must implement [Into]<[sertyp::Item]>.
 ///
 /// Types you may find useful:
 /// - [sertyp::Or]
 /// - [sertyp::TypedArray]
 /// - [sertyp::Pair]
-/// - [sertyp::Result]
 /// - [sertyp::auto_impl]
 /// - [sertyp::auto_impl_str]
 /// - [sertyp::auto_impl_func]
@@ -32,7 +31,7 @@ use syn::parse_macro_input;
 /// ```
 ///
 /// # References
-/// Sometimes it may be usefull to keep the ownership of the input data within the macro instead of shipping it to the user function. This is helpfull in cases where the return value references the input lifetimes. In this case, the `&` or `&mut` modifiers may be used to change the ownership semantics.
+/// Sometimes it may be useful to keep the ownership of the input data within the macro instead of shipping it to the user function. This is helpful in cases where the return value references the input lifetimes. In this case, the `&` or `&mut` modifiers may be used to change the ownership semantics.
 /// ```rust
 /// use sertyp::typst_func;
 ///
@@ -98,45 +97,54 @@ pub fn typst_func(
     quote! {
         #[wasm_minimal_protocol::wasm_func]
         #wrapper_sig {
+            use sertyp::FromString;
             #(let #inputs = match sertyp::deserialize_cbor(#inputs) {
                 Ok(v) => {
-                    let p: std::result::Result<sertyp::Panic, _> = v.clone().try_into();
+                    let mut p: std::result::Result<sertyp::Panic, _> = v.clone().try_into();
                     match v.try_into() {
                         Ok(v) => v,
                         Err(e) => match p {
-                            Ok(p) => {
+                            Ok(mut p) => {
                                 sertyp::feature_switch! {
                                     {
-                                        sertyp::error!("Cascading Error", "{} failed because of previous error:\n{}\n{:#?}", 
+                                        sertyp::error!(sertyp::RawContent::from_string("Cascading Error"), "{} failed because of previous error:\n{}\n{:#?}", 
                                             format!("[{} {}:{}:{}]",  stringify!(#orig_ident), file!(), line!(), column!()), 
                                             &p.ty, 
                                             p.msg
                                         );
                                     },
                                     {
+                                        use std::ops::DerefMut;
+                                        match (*p.ty).deref_mut() {
+                                            sertyp::Content::Text(t) => {
+                                                *t = t.clone().weight(sertyp::TextWeight::Bold).into();
+                                                t.text = sertyp::String::from(format!("{}\n", *t.text)).into(); 
+                                            },
+                                            _ => {}
+                                        }
                                         return sertyp::serialize_cbor(&sertyp::Panic{
-                                            ty: sertyp::String::from("Cascading Error").into(),
-                                            msg: sertyp::Content::from(sertyp::Sequence::from(vec![
+                                            ty: Box::<sertyp::Content>::new(sertyp::Text::from_string("Cascading Error").into()).into(),
+                                            msg: Box::<sertyp::Content>::new(sertyp::Sequence::from(vec![
                                                 sertyp::Link{
                                                     dest: Some(sertyp::LinkDestination::String(format!("file://{}:{}:{}", concat!(env!("CARGO_MANIFEST_DIR"), "/", file!()), line!(), column!()).into()).into()),
                                                     body: Some(sertyp::TypedItem::new(sertyp::Text::from_string(format!("[{} {}:{}:{}]",  stringify!(#orig_ident), file!(), line!(), column!())).into()))
                                                 }.into(),
                                                 sertyp::Content::from(sertyp::Text::from_string(" failed because of previous error:\n")),
-                                                sertyp::Text::from_string(format!("{}\n", p.ty)).weight(sertyp::TextWeight::Bold).into(),
+                                                *p.ty.into_inner(),
                                                 *p.msg.into_inner()
-                                            ])).into(),
+                                            ]).into()).into(),
                                         }.into()).unwrap();
                                     }
                                 };
                             }
                             Err(_) => {
-                                sertyp::error!("Type Conversion Error", "{}", &e);
+                                sertyp::error!(sertyp::ItemContent::from_string("Type Conversion Error"), "{}", &e);
                             }
                         }
                     }
                 },
                 Err(e) => {
-                    sertyp::error!("Deserialization Error", "{}", &e);
+                    sertyp::error!(sertyp::ItemContent::from_string("Deserialization Error"), "{}", &e);
                 }
             };)*
 
@@ -145,11 +153,10 @@ pub fn typst_func(
             match sertyp::serialize_cbor(&result.into()) {
                 Ok(data) => data,
                 Err(e) => {
-                    sertyp::error!("Serialization Error", "{}", &e);
+                    sertyp::error!(sertyp::ItemContent::from_string("Serialization Error"), "{}", &e);
                 }
             }
         }
     }
     .into()
 }
-

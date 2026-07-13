@@ -12,14 +12,20 @@
   ))
 };
 
-#let deserializer(d, ctx) = {
+#let deserializer(d, ctx, request) = {
   utils.assert_type(d, dictionary)
 
   import "integer.typ" as int_
-  return version(
-    int_.deserializer(d.at("major"), ctx),
-    int_.deserializer(d.at("minor"), ctx),
-    int_.deserializer(d.at("patch"), ctx),
+  return request(
+    (
+      (d.at("major"), int_),
+      (d.at("minor"), int_),
+      (d.at("patch"), int_),
+    ),
+    none,
+    ((major, minor, patch), _n) => {
+      return version(major, minor, patch)
+    },
   )
 };
 

@@ -7,7 +7,7 @@
 /// Reduces most values into a intermediate representation which may for example be used for communication over the WASM boundary using additional CBOR serialization.
 /// See `serialize-cbor` and `deserialize-cbor`.
 ///
-/// Contrary to the string produced by `repr` or `cbor(cbor.encode(..))` this representation stores more type information an is less ambiguous.
+/// Unlike the string produced by `repr` or `cbor(cbor.encode(..))`, this representation stores more type information and is less ambiguous.
 /// Moreover the deserialization produces the actual **displayable** value instead of a representation of it.
 /// Args:
 /// v (any): The value to serialize.
@@ -17,7 +17,7 @@
 ///
 /// Example:
 /// ```typst
-/// #import "@preview/sertyp:0.1.4";
+/// #import "@preview/sertyp:0.1.5";
 /// #let content = [
 ///     Total displaced soil by glacial flow:
 ///     $ 7.32 beta + sum_(i=0)^nabla (Q_i (a_i - epsilon)) / 2 $
@@ -50,7 +50,7 @@
 /// Serializes a value into CBOR format using the intermediate representation.
 /// See `serialize`.
 ///
-/// The double serilization (first into an intermediate representation and then into CBOR) allows to transmit non ambigous serialized types over the WASM boundary.
+/// The double serialization (first into an intermediate representation and then into CBOR) allows transmitting unambiguous serialized types over the WASM boundary.
 ///
 /// Args:
 /// v (any): The value to serialize.
@@ -60,7 +60,7 @@
 ///
 /// Example:
 /// ```typst
-/// #import "@preview/sertyp:0.1.4";
+/// #import "@preview/sertyp:0.1.5";
 /// #let plugin = plugin("...");
 ///
 /// #let I = $mat(1,0;0,1)$
@@ -84,7 +84,7 @@
 /// The deserialization framework makes heavy use of typst built-in `eval` function and may thus lead to security issues if used with untrusted input.
 /// Use with caution.
 #let deserialize(v, ctx: (panic: false)) = {
-  return generic.deserializer(v, ctx)
+  return generic.deserialize(v, ctx)
 };
 
 /// Deserializes a value from its CBOR serialized representation.
@@ -101,7 +101,7 @@
   return deserialize(cbor(v), ctx: ctx)
 };
 
-/// Calls a WASM plugin function with a single argument, serializing the argument into CBOR format and deserializing the result from CBOR format.
+/// Calls a WASM plugin function with positional arguments, serializing each argument into CBOR format and deserializing the result from CBOR format.
 ///
 /// Args:
 /// func (function): The plugin function to call.
@@ -115,7 +115,7 @@
   return deserialize-cbor(func(..args.pos().map(arg => serialize-cbor(arg))), ctx: ctx)
 };
 
-/// Calls a WASM plugin function with a single argument, serializing the argument into CBOR format and deserializing the result from CBOR format into the intermediate sertyp format.
+/// Calls a WASM plugin function with positional arguments, serializing each argument into CBOR format and returning the result in the intermediate sertyp format.
 /// This can be useful for debugging purposes, as it allows to inspect the intermediate representation of the result before it is deserialized into a displayable value.
 ///
 /// Args:

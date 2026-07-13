@@ -43,6 +43,12 @@ impl<'a, T: Into<Item<'a>>> From<HashMap<String<'a>, T>> for Dictionary<'a> {
     }
 }
 
+impl<'a, T: Into<Item<'a>>> From<Vec<(String<'a>, T)>> for Dictionary<'a> {
+    fn from(value: Vec<(String<'a>, T)>) -> Self {
+        Dictionary(value.into_iter().map(|(k, v)| (k, v.into())).collect())
+    }
+}
+
 #[macro_export]
 macro_rules! auto_impl_dict {
     (

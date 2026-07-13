@@ -244,26 +244,40 @@
 );
 
 
-#let deserializer(d, ctx) = {
+#let deserializer(d, ctx, request) = {
   utils.assert_type(d, dictionary)
 
-  import "dictionary.typ" as dict_
-  let args = if "fields" in d {
-    dict_.deserializer(d.at("fields"), ctx)
-  } else {
-    utils.str_dict()
-  }
-  if d.func == "panic" {
+  // Handle panic deserialization
+  if d.at("func") == "panic" {
     import "panic.typ" as panic_
-    return panic_.deserializer(d.fields, (..ctx, small: true))
+    return panic_.deserializer(d.fields, (..ctx, small: true), request)
   }
 
-  let args = split_positional(("body", "text"), arguments(..args))
-
+  import "dictionary.typ" as dict_
   import "function.typ" as func_
-  let func = if d.func in FN { FN.at(d.func) } else { func_.deserializer(d.func, ctx) }
+  let callback = ((func, args), _n) => {
+    let args = split_positional(("body", "text"), arguments(..args))
+    return func(..args)
+  }
 
-  return func(..args)
+  return if d.at("func") in FN {
+    request(
+      (
+        (d.at("fields", default: (:)), dict_),
+      ),
+      none,
+      ((args,), _n) => callback((FN.at(d.at("func")), args), _n),
+    )
+  } else {
+    request(
+      (
+        (d.at("func"), func_),
+        (d.at("fields", default: (:)), dict_),
+      ),
+      none,
+      callback,
+    )
+  }
 }
 
 #let test(cycle) = {
@@ -289,7 +303,6 @@
   // math.binom
   cycle($binom(n, k, k_2)$)
 
-
   // math.cancel
   cycle($cancel(x+y)$)
   cycle($cancel(1/(1+x), angle: #90deg)$)
@@ -298,7 +311,6 @@
   // math.cases
   cycle($cases(x+1 = 2, x = 1)$)
   cycle($cases(x+1 = 3, x_2=4, delim: #symbol("["), gap: #2%, reverse: #false)$)
-
 
   // math.class
   cycle($class("relation", a+b=c)$)

@@ -8,11 +8,11 @@
   }))
 };
 
-#let deserializer(a, ctx) = {
+#let deserializer(a, ctx, request) = {
   utils.assert_type(a, array)
 
-  return a.map(item => {
-    return generic.deserializer(item, ctx)
+  return request(a.map(v => (v, generic)), none, (a, _n) => {
+    a
   })
 }
 

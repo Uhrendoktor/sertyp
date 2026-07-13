@@ -47,7 +47,7 @@
 ///
 /// From Typst:
 /// ```typst
-/// #import "@preview/sertyp:0.1.3"
+/// #import "@preview/sertyp:0.1.5"
 /// #let plugin = plugin("<...>.wasm")
 /// #let result = sertyp.call(plugin.fibonacci, 10)
 /// #assert(result == 89)
@@ -79,8 +79,8 @@ pub use types::*;
 ///     match deserialize_cbor(cbor_bytes) {
 ///         Ok(Item::Integer(i)) => println!("Received integer: {}", i),
 ///         Ok(Item::String(s)) => println!("Received string: {}", s),
-///         Ok(_) => println!("Received some other type"),        
-///         Err(e) => error!("{e}"),      
+///         Ok(_) => println!("Received some other type"),
+///         Err(e) => error!("Deserialization Error", "{e}"),
 ///     }
 ///     vec![]
 /// }
@@ -113,7 +113,7 @@ pub fn deserialize_cbor(data: &[u8]) -> serde_cbor::Result<Item<'_>> {
 ///     let item: Item = number.into();
 ///     match serialize_cbor(&item) {
 ///         Ok(cbor_bytes) => cbor_bytes,
-///         Err(e) => error!("{e}"),
+///         Err(e) => error!("Serialization Error", "{e}"),
 ///     }
 /// }
 /// ```
@@ -146,7 +146,7 @@ pub fn serialize_cbor(ty: &Item<'_>) -> serde_cbor::Result<Vec<u8>> {
 /// ```
 #[macro_export]
 macro_rules! error {
-    ($ty:tt, $($arg:tt)*) => {{
+    ($ty:expr, $($arg:tt)*) => {{
         let err = format!($($arg)*);
         let msg: sertyp::Content = sertyp::Text::from_string(err).into();
         let mut p: sertyp::Panic = msg.into();

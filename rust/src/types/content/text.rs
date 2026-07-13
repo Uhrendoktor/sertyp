@@ -213,6 +213,38 @@ crate::auto_impl_str! {
 
 crate::impl_all!(Content<'a>::Text, std::boxed::Box<Text<'a>>{'a}, "text");
 
+impl<'a> From<&'a str> for Text<'a> {
+    fn from(value: &'a str) -> Self {
+        Text::from_string(value)
+    }
+}
+impl<'a> From<std::string::String> for Text<'a> {
+    fn from(value: std::string::String) -> Self {
+        Text::from_string(value)
+    }
+}
+impl<'a> From<String<'a>> for Text<'a> {
+    fn from(value: String<'a>) -> Self {
+        Text::from_string(value)
+    }
+}
+
+impl<'a> From<&'a str> for Content<'a> {
+    fn from(value: &'a str) -> Self {
+        Text::from(value).into()
+    }
+}
+impl<'a> From<std::string::String> for Content<'a> {
+    fn from(value: std::string::String) -> Self {
+        Text::from(value).into()
+    }
+}
+impl<'a> From<String<'a>> for Content<'a> {
+    fn from(value: String<'a>) -> Self {
+        Text::from(value).into()
+    }
+}
+
 impl<'a> From<Text<'a>> for Content<'a> {
     fn from(val: Text<'a>) -> Self {
         Content::Text(val.into())

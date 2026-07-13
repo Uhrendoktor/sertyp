@@ -90,7 +90,7 @@
   return string_.serializer(if ctx != none { ctx + "." } else { "" } + repr(f))
 };
 
-#let deserializer(s, ctx) = {
+#let deserializer(s, ctx, request) = {
   utils.assert_type(s, str)
 
   if s == "(..) => .." {
@@ -107,10 +107,6 @@
   utils.assert(
     serializer(table.cell),
     "table.cell",
-  )
-  utils.assert(
-    deserializer("repr", (panic: false)),
-    repr,
   )
 
   let a = generic.serializer(color.hsl)

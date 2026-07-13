@@ -25,7 +25,7 @@ pub struct Box<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub clip: Option<TypedItem<Boolean>>,
     #[serde(borrow, skip_serializing_if = "Option::is_none")]
-    pub body: Option<std::boxed::Box<TypedItem<Content<'a>>>>,
+    pub body: Option<TypedItem<std::boxed::Box<Content<'a>>>>,
 }
 
 crate::impl_all!(Content<'a>::Box, std::boxed::Box<Box<'a>>{'a}, "box");

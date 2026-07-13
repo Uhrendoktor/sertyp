@@ -51,24 +51,31 @@
   return generic.raw_serializer(dictionary)(dict)
 };
 
-#let deserializer(d, ctx) = {
+#let deserializer(d, ctx, request) = {
   utils.assert_type(d, dictionary)
-
   import "function.typ" as func_
-  let kind = func_.deserializer(d.remove("kind"), ctx)
 
-  let args = utils.str_dict()
-  for (field, val) in d.pairs() {
-    let ty = FIELDS.at(repr(kind)).at(field)
-    args.insert(field, ty.deserializer(val, ctx))
-  }
-  let stops = args.remove("stops")
+  request(((d.remove("kind"), func_),), d, ((kind,), d) => {
+    let deps = ()
+    for (field, val) in d.pairs() {
+      let ty = FIELDS.at(repr(kind)).at(field)
+      deps.push((val, ty))
+    }
+    request(deps, d, (deps, d) => {
+      let args = utils.str_dict()
+      for (i, field) in d.keys().enumerate() {
+        args.insert(field, deps.at(i))
+      }
+      let stops = args.remove("stops")
 
-  return kind(
-    ..stops,
-    ..args,
-  )
+      return kind(
+        ..stops,
+        ..args,
+      )
+    })
+  })
 }
+
 
 #let test(cycle) = {
   let null = cycle(gradient.linear(

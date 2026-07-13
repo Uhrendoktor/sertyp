@@ -16,13 +16,19 @@
   ))
 };
 
-#let deserializer(d, ctx) = {
+#let deserializer(d, ctx, request) = {
   utils.assert_type(d, dictionary)
 
   import "dictionary.typ" as dict_
-
-  let args = dict_.deserializer(d, ctx)
-  return stroke(..args)
+  return request(
+    (
+      (d, dict_),
+    ),
+    none,
+    ((args,), _n) => {
+      return stroke(..args)
+    },
+  )
 };
 
 #let test(cycle) = {

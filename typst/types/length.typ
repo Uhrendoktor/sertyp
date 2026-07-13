@@ -12,14 +12,20 @@
   return generic.raw_serializer(dictionary)(dict)
 };
 
-#let deserializer(l, ctx) = {
+#let deserializer(l, ctx, request) = {
   utils.assert_type(l, dictionary)
 
   import "float.typ" as float_
-
-  let value_unit = generic.value_unit_deserializer(l, ctx)
-  let em = float_.deserializer(l.at("em"), ctx)
-  return value_unit + eval(str(em) + "em")
+  return request(
+    (
+      (l.at("em"), float_),
+      (l, generic.value_unit_deserializer),
+    ),
+    none,
+    ((em, value_unit), _n_) => {
+      return value_unit + eval(str(em) + "em")
+    },
+  )
 };
 
 #let test(cycle) = {

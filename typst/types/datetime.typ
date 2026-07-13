@@ -20,7 +20,7 @@
   )
 };
 
-#let deserializer(d, ctx) = {
+#let deserializer(d, ctx, request) = {
   utils.assert_type(d, dictionary)
 
   return datetime(..arguments(..d))

@@ -1,6 +1,6 @@
 #import "../utils.typ" as utils
 
-/// Serializes content using its string representation.
+/// Serializes content into the intermediate sertyp representation.
 #let str_serializer(ty) = v => {
   utils.assert_type(v, ty)
   import "string.typ" as string_
@@ -45,7 +45,7 @@
 ///
 /// Returns:
 /// (ty): The deserialized value.
-#let raw_deserializer(ty) = (v, ctx) => {
+#let raw_deserializer(ty) = (v, ctx, request) => {
   utils.assert_type(v, ty)
   return v
 }
@@ -56,13 +56,14 @@
 ///
 /// Returns:
 /// (any): The deserialized value with unit.
-#let value_unit_deserializer(l, ctx) = {
+#let value_unit_deserializer(l, ctx, request) = {
   utils.assert_type(l, dictionary)
 
   import "float.typ" as float_
-  let value = float_.deserializer(l.at("value"), ctx)
-  let unit = l.at("unit")
-  return eval(str(value) + unit)
+  return request(((l.at("value"), float_),), l, ((value,), l) => {
+    let unit = l.at("unit")
+    return eval(str(value) + unit)
+  })
 }
 
 /// Imports the module for a given type.
@@ -116,12 +117,12 @@
 
 #let no_value() = {};
 
-/// Serializes any content recursively into a dictionary with type and value.
+/// Serializes any content recursively into the intermediate sertyp representation.
 /// Args:
 /// content (any): The content to serialize.
 ///
 /// Returns:
-/// (str): The serialized representation of the content.
+/// (any): The serialized representation of the content.
 #let serializer(content) = {
   import "type.typ" as type_
   import "panic.typ" as panic_
@@ -152,26 +153,115 @@
   )
 }
 
-/// Deserializes content from its serialized representation.
+/// For more information see `deserializer`
+#let deserialize(content, ctx) = {
+  let request(deps, obj, callback) = {
+    return (
+      __REQUEST__: (
+        deps: deps,
+        obj: obj,
+        callback: callback,
+      ),
+    )
+  }
+  let node(data, parent: none) = {
+    return (
+      data: data,
+      // whether the node has been processed yet
+      processed: false,
+      // amount of solved dependencies
+      solved_deps: array(()),
+      // index of parent in the tree
+      parent: parent,
+    )
+  }
+  let reverse(arr) = {
+    let reversed = array(())
+    let i = arr.len() - 1
+    while i >= 0 {
+      reversed.push(arr.at(i))
+      i -= 1
+    }
+    return reversed
+  }
+  let tree = (:)
+  let len = 0
+
+  let (value, ty_mod) = if type(content) == dictionary {
+    (content.at("value"), type_mod(content.at("type")))
+  } else {
+    (content, type_mod(type(content)))
+  }
+
+  let d(obj) = {
+    return if type(obj) == module {
+      obj.deserializer
+    } else {
+      obj
+    }
+  }
+
+  tree.insert(str(0), node(d(ty_mod)(value, ctx, request)))
+  len += 1
+
+  while tree.len() > 0 {
+    let (i, n) = tree.pairs().last()
+    // Check if object has dynamic dependency
+    if type(n.at("data")) == dictionary and "__REQUEST__" in n.at("data") {
+      let req = n.at("data").at("__REQUEST__")
+      // Check if node has been processed yet, if not process dependencies
+      if not n.at("processed") {
+        for (dep, ty) in req.at("deps") {
+          tree.insert(str(len), node(d(ty)(dep, ctx, request), parent: i))
+          len += 1
+        }
+        tree.at(i).at("processed") = true
+      }
+      // check if all depdencies have been solved
+      let solved_deps = n.at("solved_deps")
+      let u = req.at("deps")
+      if solved_deps.len() == req.at("deps").len() {
+        // replace self
+        tree.insert(str(len), node(req.at("callback")(reverse(solved_deps), req.at("obj")), parent: n.at("parent")))
+        tree.remove(i)
+        len += 1
+      }
+    } else {
+      if n.at("parent") == none {
+        return n.at("data")
+      }
+      tree.at(str(n.at("parent"))).at("solved_deps").push(n.at("data"))
+      tree.remove(i)
+    }
+  }
+  return tree.at(str(0)).at("data")
+}
+
+/// Deserializes content from its intermediate sertyp representation.
 ///
 /// Args:
 /// content: The serialized content.
-/// panic: if true deserialization will throw a runtime panic if a panic object is deserialized. The default behavior is to display a formatted error message box within the typst document.
+/// ctx: (panic: bool):  if panic is true deserialization will throw a runtime panic whenever a panic object is deserialized. The default behavior is to display a formatted error message box within the typst document.
 ///
 /// Returns:
 /// (any): The deserialized content.
-#let deserializer(content, ctx) = {
+///
+/// Note:
+/// Each type must provide the following functions:
+/// - `deserializer(obj, ctx, request) -> any`: Deserializes the object from its serialized representation.
+#let deserializer(content, ctx, request) = {
   import "type.typ" as type_
 
   let ty = type(content)
   if ty != dictionary {
-    return type_mod(ty).deserializer(content, ctx)
+    return type_mod(ty).deserializer(content, ctx, request)
   }
 
-  let ty = type_.deserializer(content.at("type"), ctx)
+  let ty = type_.deserializer(content.at("type"), ctx, request)
   let deserializer = type_mod(ty).deserializer
+  // for singleton types like none or auto
   if "value" not in content {
-    return deserializer(ctx)
+    return deserializer(content, ctx, request)
   }
-  return deserializer(content.at("value"), ctx)
+  return deserializer(content.at("value"), ctx, request)
 }

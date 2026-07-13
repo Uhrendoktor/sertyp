@@ -47,7 +47,7 @@ pub use crate::types::{
     dictionary::Dictionary, direction::Direction, duration::Duration, float::Float,
     fraction::Fraction, function::Function, gradient::Gradient, integer::Integer, label::Label,
     length::Length, module::Module, none::None, panic::Panic, ratio::Ratio, regex::Regex,
-    relative::Relative, string::String, stroke::*, styles::Styles, symbol::Symbol, tiling::Tiling,
+    relative::Relative, string::String, stroke::*, styles::Styles, symbol::*, tiling::Tiling,
     r#type::Type, version::Version,
 };
 

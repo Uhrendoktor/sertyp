@@ -8,7 +8,7 @@
   return string_.serializer(utils.type_str(t))
 };
 
-#let deserializer(t, ctx) = {
+#let deserializer(t, ctx, request) = {
   utils.assert_type(t, str)
   let T = (
     "integer": "int",

@@ -4,7 +4,7 @@ members = [".", "./sertyp_macros"]
 [workspace.package]
 edition = "2024"
 authors = ["Uhrendoktor"]
-version = "0.1.4"
+version = "0.1.5"
 license = "MIT"
 repository = "https://github.com/Uhrendoktor/sertyp"
 readme = "README.md"
@@ -32,7 +32,7 @@ default = ["content"]
 content = ["dep:rangemap", "dep:chumsky", "dep:num-traits"]
 
 [dependencies]
-sertyp_macros = { path = "./sertyp_macros", version = "0.1.4" }
+sertyp_macros = { path = "./sertyp_macros", version = "0.1.5" }
 
 paste = "1.0.15"
 serde = { version = "1.0.228", features = ["derive"] }

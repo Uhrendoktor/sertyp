@@ -10,3 +10,12 @@ pub struct LR<'a> {
 }
 
 crate::impl_all!(Content<'a>::MathLR, LR<'a>{'a}, "math.lr");
+
+impl<'a> LR<'a> {
+    pub fn new(body: Content<'a>) -> Self {
+        Self {
+            size: None,
+            body: body.into(),
+        }
+    }
+}
