@@ -90,9 +90,11 @@ pub fn character<
 where
     E::Error: LabelError<'this, I, crate::Content<'data>>,
 {
-    just(Token::Char(c))
-        .to(c)
-        .labelled(crate::Content::from_string(format!("character('{}')", c)))
+    choice((
+        just(Token::Char(c)).to(c),
+        select!(Token::Raw(Content::Symbol(s)) if **s == c => c),
+    ))
+    .labelled(crate::Content::from_string(format!("character('{}')", c)))
 }
 
 /// Parses a specific word
@@ -243,7 +245,7 @@ where
 pub fn unsigned_float_no_radix<
     'this,
     'data: 'this,
-    F: num_traits::Num + From<f32> + Clone,
+    F: num_traits::Num + From<f64> + Clone,
     I: LocatingSequenceLike<'this, 'data>,
     E: ParserExtra<'this, I>,
 >(
@@ -256,15 +258,15 @@ where
     choice((
         unsigned_float_no_radix_no_naninf(radix),
         // inf | INF
-        word("inf").or(word("INF")).to(f32::INFINITY.into()),
+        word("inf").or(word("INF")).to(f64::INFINITY.into()),
         // nan | NAN
         word("nan")
             .or(word("NAN"))
             .or(word("NaN"))
-            .to(f32::NAN.into()),
-        character(SYMBOL_infinity).to(f32::INFINITY.into()),
-        character('e').to(f32::E().into()),
-        character(SYMBOL_pi).to(f32::PI().into()),
+            .to(f64::NAN.into()),
+        character(SYMBOL_infinity).to(f64::INFINITY.into()),
+        character('e').to(f64::E().into()),
+        character(SYMBOL_pi).to(f64::PI().into()),
     ))
     .labelled(crate::Content::from_string(format!(
         "unsigned float of radix {radix} with optional inf and nan"
@@ -589,7 +591,7 @@ pub trait Number {
 
 macro_rules! number {
     (float) => {
-        auto_radix(unsigned_float_no_radix, 10)
+        auto_radix(unsigned_float_no_radix, 10).map(|f: f64| f as _)
     };
     (int) => {
         auto_radix(unsigned_integer_no_radix, 10)

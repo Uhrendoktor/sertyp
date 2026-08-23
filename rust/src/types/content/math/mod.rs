@@ -8,11 +8,11 @@ mod equation;
 mod frac;
 mod lr;
 mod mat;
+mod op;
 mod primes;
 mod root;
 mod stretch;
 mod styled;
-mod op;
 mod vec;
 
 mod generic;
@@ -27,11 +27,9 @@ pub use equation::Equation;
 pub use frac::Frac;
 pub use lr::LR;
 pub use mat::Matrix;
+pub use op::Op;
 pub use primes::Primes;
 pub use root::Root;
 pub use stretch::Stretch;
 pub use styled::Styled;
-pub use op::Op;
 pub use vec::Vector;
-
-
