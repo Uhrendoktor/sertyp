@@ -78,3 +78,22 @@ macro_rules! impl_from {
 impl_from!(
     i8, i16, i32, i64, i128, u8, u16, u32, u64, u128, isize, usize, f32, f64
 );
+
+impl From<crate::Integer> for Float {
+    fn from(value: crate::Integer) -> Self {
+        match value {
+            crate::Integer::i8(v) => Float::f64(v as f64),
+            crate::Integer::i16(v) => Float::f64(v as f64),
+            crate::Integer::i32(v) => Float::f64(v as f64),
+            crate::Integer::i64(v) => Float::f64(v as f64),
+            crate::Integer::i128(v) => Float::f64(v as f64),
+            crate::Integer::u8(v) => Float::f64(v as f64),
+            crate::Integer::u16(v) => Float::f64(v as f64),
+            crate::Integer::u32(v) => Float::f64(v as f64),
+            crate::Integer::u64(v) => Float::f64(v as f64),
+            crate::Integer::u128(v) => Float::f64(v as f64),
+            crate::Integer::isize(v) => Float::f64(v as f64),
+            crate::Integer::usize(v) => Float::f64(v as f64),
+        }
+    }
+}
