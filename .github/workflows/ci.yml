@@ -1,6 +1,8 @@
 name: Rust and Typst tests
 
 on:
+  push:
+    branches: [iterative-serializer]
   pull_request:
     branches: [main]
   workflow_dispatch:
