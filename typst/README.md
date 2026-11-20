@@ -1,173 +1,135 @@
 # Sertyp
 
-Type-preserving serialization for Typst values. Converts Typst objects into an
-intermediate representation. This can be used for communication with WASM
-plugins.
+**Send Typst values to Rust/WASM plugins and get them back as Typst values.**
 
-## What is this?
+Sertyp serializes Typst values into a structured, type-preserving
+representation. It is useful when a plugin needs more than a string: a color
+should arrive as a color, a length as a length, and math or markup content as
+content that Typst can still display and use.
 
-Unlike `repr()` or `cbor.encode()`, which produce ambiguous strings or lose type
-information, `sertyp`:
-
-- **Enables roundtrips**: Deserialize back to the original displayable value,
-  not just a string representation. Primitive values stay raw, while structured
-  values keep enough type information to roundtrip correctly. This means a
-  content object will again be fully displayed as content.
-- **Works with WASM plugins**: The intermediate representation can be further
-  serialized to cbor and passed over the WASM boundary.
-
-The
-[Rust backend](https://github.com/Uhrendoktor/sertyp/blob/0.1.5/rust/README.md)
-provides deserialization logic and typed data structures so plugins can work
-with actual Typst types instead of manual parsing efforts.
-
-## Usage
+## Install
 
 ```typst
-#import "@preview/sertyp:0.1.5"
+#import "@preview/sertyp:0.1.5" as sertyp
 ```
 
-## Examples
+## A first round trip
 
-### Basic serialization
+Serialize a value, then reconstruct it:
 
 ```typst
-#import "@preview/sertyp:0.1.5"
+#import "@preview/sertyp:0.1.5" as sertyp
 
-// Serialize and deserialize complex content
 #let value = [
-    Total displaced soil by glacial flow:
-    $ 7.32 beta + sum_(i=0)^nabla (Q_i (a_i - epsilon)) / 2 $
-    #metadata(title: "Glacial Flow Calculation")
+  Total displaced soil by glacial flow:
+  $ 7.32 beta + sum_(i=0)^nabla (Q_i (a_i - epsilon)) / 2 $
+  #metadata(title: "Glacial Flow Calculation")
 ]
 
-#let serialized = sertyp.serialize(value)
-#let deserialized = sertyp.deserialize(serialized)
-#assert(repr(deserialized) == repr(value))
+#let encoded = sertyp.serialize(value)
+#let restored = sertyp.deserialize(encoded)
+
+#assert(repr(restored) == repr(value))
 ```
 
-### WASM Plugins using (rust sertyp crate)
+The serialized form keeps the information needed to rebuild the original
+Typst value. Primitive values remain simple; structured values use nested
+arrays, dictionaries, and type tags.
 
-```rust
-use wasm_minimal_protocol::*;
-use sertyp::{typst_func, Integer, String};
+## Passing values through a WASM plugin
 
-#[cfg(target_arch = "wasm32")]
-initiate_protocol!();
+For plugin calls, Sertyp can encode the intermediate representation as CBOR.
+On the Rust side, the
+[Rust crate](https://github.com/Uhrendoktor/sertyp/blob/0.1.5/rust/README.md)
+turns that data into typed values such as `Item`, `Color`, `Length`, and
+`Content`.
 
-// Result errors are automatically converted to typst panics.
-#[typst_func]
-pub fn fibonacci<'a>(n: Integer) -> Result<Integer, String<'a>> {
-    let n: i32 = n.try_into().map_err(|_| "Invalid integer range")?;
-
-    let (mut v0, mut v1) = (0, 1);
-    for _ in 0..n {
-        (v0, v1) = (v1, v0 + v1);
-    }
-
-    Ok(v1.into())
-}
-```
-
-### Type preservation examples
+The `call` helper takes care of the round trip:
 
 ```typst
-#import "@preview/sertyp:0.1.5"
+#import "@preview/sertyp:0.1.5" as sertyp
 
-#let color = rgb(255, 128, 0)
-#let restored = sertyp.deserialize(sertyp.serialize(color))
-// restored value is a real color object value, not a string
-
-#let len = 2.5em + 10pt
-#let restored = sertyp.deserialize(sertyp.serialize(len))
-// Same with lengths and most other types
+#let plugin = plugin("path/to/plugin.wasm")
+#let result = sertyp.call(plugin.evaluate, $ 1 + 2 $)
 ```
 
-## Overview
+It serializes each positional argument, calls the plugin, and deserializes the
+CBOR result. The plugin can work with Sertyp's Rust types instead of parsing
+Typst values from strings.
+
+## Used by Kalt
+
+[Kalt](https://typst.app/universe/package/kalt) is a practical example of this
+workflow. It evaluates nested Typst equations in a Rust/WASM backend and
+returns the result as a Typst value. Its Typst-side `comp` function uses
+`sertyp.call` to pass the equation to Rust and bring the result back.
+
+Kalt supports expressions involving complex numbers, matrices, vectors, and
+mathematical functions. See the
+[Kalt repository](https://github.com/Uhrendoktor/kalt).
+
+## API
 
 ### `serialize(value) -> any`
 
-Converts a Typst value into an intermediate representation. Primitive values
-stay raw, while structured values are represented using nested dicts/arrays and
-type tags where needed.
+Converts a Typst value into Sertyp's intermediate representation.
 
 ```typst
-let serialized = sertyp.serialize(rgb(255, 0, 0))
-// Returns: (type: "color", value: (components: ..., space: ...))
+#let data = sertyp.serialize(rgb(255, 0, 0))
 ```
 
-### `deserialize(serialized) -> any`
+### `deserialize(value) -> any`
 
 Reconstructs a Typst value from its intermediate representation.
 
 ```typst
-let value = sertyp.deserialize(serialized)
-// Returns the original displayable value
+#let color = sertyp.deserialize(data)
 ```
-
-**Security note**: Deserialization uses `eval()` internally. Deserializing
-untrusted values may therefore lead to arbitrary code execution. **Only
-deserialize trusted data**.
 
 ### `serialize-cbor(value) -> bytes`
 
-Serializes to CBOR binary format. Useful when passing values to WASM plugins.
-
-```typst
-let bytes = sertyp.serialize-cbor(my_value)
-// Returns CBOR-encoded bytes
-```
+Encodes the intermediate representation as CBOR, ready to cross a WASM
+boundary.
 
 ### `deserialize-cbor(bytes) -> any`
 
-Deserializes from CBOR bytes back to a Typst value.
-
-```typst
-let value = sertyp.deserialize-cbor(plugin_output)
-```
-
-**Security note**: Deserialization uses `eval()` internally. Deserializing
-untrusted values may therefore lead to arbitrary code execution. **Only
-deserialize trusted data**.
+Decodes CBOR and reconstructs the corresponding Typst value.
 
 ### `call(function, ..args) -> any`
 
-Shorthand for serializing each positional argument to CBOR, calling the
-function, and deserializing its CBOR result.
+Serializes positional arguments, calls the supplied plugin function with their
+CBOR representation, and deserializes the returned CBOR.
 
 ### `call-debug(function, ..args) -> any`
 
-Like `call`, but returns the intermediate sertyp representation of the plugin
-result instead of deserializing it. This is useful when debugging a WASM
-plugin's output.
+Like `call`, but returns the intermediate representation of the plugin result.
+This is handy when inspecting what crossed the boundary.
 
-## Supported Types
+## Supported types
 
-**Primitives**: `bool`, `int`, `float`, `decimal`, `string`, `bytes`, `none`,
-`auto`
+- **Basic:** `bool`, `int`, `float`, `decimal`, `string`, `bytes`,
+  `none`, `auto`
+- **Collections:** `array`, `dictionary`, `arguments`
+- **Numbers and units:** `length`, `angle`, `ratio`, `fraction`,
+  `duration`, `relative`
+- **Text and content:** `content`, `label`, `regex`, `symbol`,
+  `version`, `datetime`
+- **Visual:** `color`, `stroke`, `gradient`, `alignment`, `direction`,
+  `tiling`
+- **Advanced:** `function`, `module`, `selector`, `type`, `styles`
+- **Errors:** Sertyp panic values
 
-**Collections**: `array`, `dictionary`
+## Limitations and safety
 
-**Numeric with units**: `length`, `angle`, `ratio`, `fraction`, `duration`,
-`relative`
+- Deserialization uses Typst's `eval()` for some values. **Only deserialize
+  data you trust.**
+- Runtime-dependent values such as `context` cannot be fully serialized.
+- Selector serialization is partial.
+- Inline functions can be serialized, but their captured closure state is not
+  preserved.
 
-**Text & content**: `content`, `label`, `regex`, `symbol`, `version`, `datetime`
+## Rust plugin development
 
-**Visual**: `color`, `stroke`, `gradient`, `alignment`, `direction`, `tiling`
-
-**Advanced**: `function`, `module`, `selector`, `type`, `arguments`, `styles`
-
-## Known Limitations
-
-- **`selector`**: Requires custom parsing for proper serialization (partially
-  supported)
-- **Dynamic types**: `context` and other runtime-dependent elements cannot be
-  fully serialized
-- **Closures**: Inline functions `(..) => ..` serialize but lose their captured
-  state
-
-## Plugin Development
-
-See the
-[Rust README](https://github.com/Uhrendoktor/sertyp/blob/0.1.5/rust/README.md)
-for details on building WASM plugins that work with sertyp.
+The [Rust README](https://github.com/Uhrendoktor/sertyp/blob/0.1.5/rust/README.md)
+covers the Rust types, `#[typst_func]`, input and return values, and plugin
+development.

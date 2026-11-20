@@ -1,7 +1,7 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(t) = {
+#let serializer(t, request: none) = {
   utils.assert_type(t, type)
 
   import "string.typ" as string_

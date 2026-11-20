@@ -10,8 +10,7 @@
   }
   let name = repr(m).match(regex("\<module (.*?)\>")).captures.at(0)
 
-  import "array.typ" as array_
-  return request(((fn, array_),), name, ((member,), name) => (
+  return request((fn,), name, ((member,), name) => (
     name: name,
     member: member,
   ))

@@ -1,7 +1,7 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(l) = {
+#let serializer(l, request: none) = {
   utils.assert_type(l, length)
 
   import "float.typ" as float_

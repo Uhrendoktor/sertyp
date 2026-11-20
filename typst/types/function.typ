@@ -73,7 +73,7 @@
   ),
 )
 
-#let serializer(f, ctx: none) = {
+#let serializer(f, request: none, ctx: none) = {
   utils.assert_type(f, function)
 
   for (group, values) in SUPER_TYPES.pairs() {

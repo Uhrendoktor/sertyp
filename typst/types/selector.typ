@@ -1,7 +1,7 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(s) = {
+#let serializer(s, request: none) = {
   utils.assert_type(s, selector)
 
   panic("Selector serialization is not yet supported")

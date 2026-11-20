@@ -10,8 +10,7 @@
     ..vars.named(),
   )
 
-  import "dictionary.typ" as dict_
-  return request(((fields, dict_),), none, ((serialized,), _n) => serialized)
+  return request((fields,), none, ((serialized,), _n) => serialized)
 }
 
 #let deserializer(d, ctx, request) = {

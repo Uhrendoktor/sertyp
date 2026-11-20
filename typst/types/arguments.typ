@@ -4,12 +4,10 @@
 #let serializer(a, request) = {
   utils.assert_type(a, arguments)
 
-  import "dictionary.typ" as dict_
-  import "array.typ" as array_
   return request(
     (
-      (a.pos(), array_),
-      (a.named(), dict_),
+      a.pos(),
+      a.named(),
     ),
     none,
     ((pos, named), _n) => (

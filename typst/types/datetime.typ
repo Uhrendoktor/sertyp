@@ -1,7 +1,7 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(d) = {
+#let serializer(d, request: none) = {
   utils.assert_type(d, datetime)
 
   let fields = generic.at_optional(

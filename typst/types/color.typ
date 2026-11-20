@@ -4,12 +4,10 @@
 #let serializer(c, request) = {
   utils.assert_type(c, color)
 
-  import "array.typ" as array_
-  import "function.typ" as func_
   return request(
     (
-      (c.components(), array_),
-      (c.space(), func_),
+      c.components(),
+      c.space(),
     ),
     none,
     ((components, space), _n) => (

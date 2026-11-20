@@ -37,19 +37,11 @@
   let kind = g.kind()
   let fields = FIELDS.at(repr(kind))
   import "function.typ" as func_
-  let deps = ((kind, func_),)
+  let deps = (kind,)
   for (field, ty) in fields.pairs() {
-    let serializer = if ty == generic {
-      generic.serialize_step
-    } else {
-      ty
-    }
-    deps.push((
-      eval(
-        "g." + field + "()",
-        scope: (g: g),
-      ),
-      serializer,
+    deps.push(eval(
+      "g." + field + "()",
+      scope: (g: g),
     ))
   }
 

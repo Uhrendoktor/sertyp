@@ -36,8 +36,8 @@
 
   return request(
     (
-      (meta.at("type"), generic.serialize_step),
-      (meta.at("msg"), generic.serialize_step),
+      meta.at("type"),
+      meta.at("msg"),
     ),
     none,
     ((ty, msg), _n) => (
