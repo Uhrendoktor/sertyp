@@ -1,19 +1,20 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(s) = {
+#let serializer(s, request) = {
   utils.assert_type(s, stroke)
 
-  import "dictionary.typ" as dict_
-
-  return dict_.serializer((
+  let fields = (
     cap: s.cap,
     dash: s.dash,
     join: s.join,
     miter-limit: s.miter-limit,
     paint: s.paint,
     thickness: s.thickness,
-  ))
+  )
+
+  import "dictionary.typ" as dict_
+  return request(((fields, dict_),), none, ((serialized,), _n) => serialized)
 };
 
 #let deserializer(d, ctx, request) = {

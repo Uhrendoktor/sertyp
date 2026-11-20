@@ -1,16 +1,23 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(c) = {
+#let serializer(c, request) = {
   utils.assert_type(c, color)
 
   import "array.typ" as array_
   import "function.typ" as func_
-  return generic.raw_serializer(dictionary)((
-    components: array_.serializer(c.components()),
-    space: func_.serializer(c.space(), ctx: "color"),
-  ))
-};
+  return request(
+    (
+      (c.components(), array_),
+      (c.space(), func_),
+    ),
+    none,
+    ((components, space), _n) => (
+      components: components,
+      space: space,
+    ),
+  )
+}
 
 #let deserializer(a, ctx, request) = {
   utils.assert_type(a, dictionary)

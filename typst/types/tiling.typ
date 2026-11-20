@@ -1,17 +1,18 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(t) = {
+#let serializer(t, request) = {
   utils.assert_type(t, tiling)
 
   let vars = eval("arguments(" + repr(t).replace("..", "").match(regex("tiling\((.*?)\)$")).captures.at(0) + ")")
-
-  import "dictionary.typ" as dict_
-  return dict_.serializer((
+  let fields = (
     size: vars.pos().at(0),
     ..vars.named(),
-  ))
-};
+  )
+
+  import "dictionary.typ" as dict_
+  return request(((fields, dict_),), none, ((serialized,), _n) => serialized)
+}
 
 #let deserializer(d, ctx, request) = {
   utils.assert_type(d, dictionary)

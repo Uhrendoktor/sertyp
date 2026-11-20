@@ -117,22 +117,38 @@
 
 #let no_value() = {};
 
-/// Serializes any content recursively into the intermediate sertyp representation.
-/// Args:
-/// content (any): The content to serialize.
-///
-/// Returns:
-/// (any): The serialized representation of the content.
-#let serializer(content) = {
+/// Types whose serializers return iterative requests for their children.
+#let SERIALIZERS_WITH_REQUEST = (
+  "array",
+  "dictionary",
+  "arguments",
+  "color",
+  "content",
+  "gradient",
+  "module",
+  "relative",
+  "stroke",
+  "styles",
+  "tiling",
+)
+
+/// Serializes one value, returning a request when it has child values.
+#let serialize_step(content, request) = {
   import "type.typ" as type_
   import "panic.typ" as panic_
 
   let is_panic = panic_.is_panic(content)
-
   let ty = type(content)
-  let value = if is_panic {
-    panic_.serializer(content)
-  } else { type_mod(ty).serializer(content) }
+  let serializer = if is_panic {
+    panic_.serializer
+  } else {
+    type_mod(ty).serializer
+  }
+  let value = if is_panic or utils.type_str(ty) in SERIALIZERS_WITH_REQUEST {
+    serializer(content, request)
+  } else {
+    serializer(content)
+  }
 
   if utils.type_str(ty) in PRIMITIVE {
     return value
@@ -151,6 +167,92 @@
     type: ty,
     value: value,
   )
+}
+
+/// Serializes any content into the intermediate sertyp representation without
+/// recursively traversing nested values.
+#let serializer(content, request: none) = {
+  // A request parameter means this invocation is a single work item in the
+  // iterative traversal, rather than a new traversal.
+  if request != none {
+    return serialize_step(content, request)
+  }
+
+  let request(deps, obj, callback) = {
+    return (
+      __REQUEST__: (
+        deps: deps,
+        obj: obj,
+        callback: callback,
+      ),
+    )
+  }
+  let node(data, parent: none) = {
+    return (
+      data: data,
+      // whether the node has been processed yet
+      processed: false,
+      // amount of solved dependencies
+      solved_deps: array(()),
+      // index of parent in the tree
+      parent: parent,
+    )
+  }
+  let reverse(arr) = {
+    let reversed = array(())
+    let i = arr.len() - 1
+    while i >= 0 {
+      reversed.push(arr.at(i))
+      i -= 1
+    }
+    return reversed
+  }
+  let d(obj, dep, request) = {
+    if type(obj) == module {
+      return if utils.type_str(type(dep)) in SERIALIZERS_WITH_REQUEST {
+        obj.serializer(dep, request)
+      } else {
+        obj.serializer(dep)
+      }
+    }
+    return obj(dep, request)
+  }
+  let tree = (:)
+  let len = 0
+
+  tree.insert(str(0), node(serialize_step(content, request)))
+  len += 1
+
+  while tree.len() > 0 {
+    let (i, n) = tree.pairs().last()
+    // Check if object has dynamic dependency
+    if type(n.at("data")) == dictionary and "__REQUEST__" in n.at("data") {
+      let req = n.at("data").at("__REQUEST__")
+      // Check if node has been processed yet, if not process dependencies
+      if not n.at("processed") {
+        for (dep, ty) in req.at("deps") {
+          tree.insert(str(len), node(d(ty, dep, request), parent: i))
+          len += 1
+        }
+        tree.at(i).at("processed") = true
+      }
+      // Check if all dependencies have been solved
+      let solved_deps = n.at("solved_deps")
+      if solved_deps.len() == req.at("deps").len() {
+        // Replace this node with the callback result.
+        tree.insert(str(len), node(req.at("callback")(reverse(solved_deps), req.at("obj")), parent: n.at("parent")))
+        tree.remove(i)
+        len += 1
+      }
+    } else {
+      if n.at("parent") == none {
+        return n.at("data")
+      }
+      tree.at(str(n.at("parent"))).at("solved_deps").push(n.at("data"))
+      tree.remove(i)
+    }
+  }
+  return tree.at(str(0)).at("data")
 }
 
 /// For more information see `deserializer`

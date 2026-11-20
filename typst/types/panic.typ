@@ -22,7 +22,7 @@
   )
 }
 
-#let serializer(c) = {
+#let serializer(c, request) = {
   utils.assert_type(c, content)
   utils.assert(c.func(), box)
   let body = c.fields().at("body")
@@ -34,10 +34,17 @@
   utils.assert_type(children, array)
   let meta = children.find(el => el.func() == metadata).at("value")
 
-  return generic.raw_serializer(dictionary)((
-    type: generic.serializer(meta.at("type")),
-    msg: generic.serializer(meta.at("msg")),
-  ))
+  return request(
+    (
+      (meta.at("type"), generic.serialize_step),
+      (meta.at("msg"), generic.serialize_step),
+    ),
+    none,
+    ((ty, msg), _n) => (
+      type: ty,
+      msg: msg,
+    ),
+  )
 };
 
 #let error-box(ty, msg, small: false) = {

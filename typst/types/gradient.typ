@@ -31,25 +31,37 @@
   ),
 );
 
-#let serializer(g) = {
+#let serializer(g, request) = {
   utils.assert_type(g, gradient)
 
-  import "function.typ" as func_
   let kind = g.kind()
-  let dict = (
-    kind: func_.serializer(kind),
-  )
-  for (field, ty) in FIELDS.at(repr(kind)).pairs() {
-    dict.insert(
-      field,
-      ty.serializer(eval(
+  let fields = FIELDS.at(repr(kind))
+  import "function.typ" as func_
+  let deps = ((kind, func_),)
+  for (field, ty) in fields.pairs() {
+    let serializer = if ty == generic {
+      generic.serialize_step
+    } else {
+      ty
+    }
+    deps.push((
+      eval(
         "g." + field + "()",
         scope: (g: g),
-      )),
-    )
+      ),
+      serializer,
+    ))
   }
-  return generic.raw_serializer(dictionary)(dict)
-};
+
+  return request(deps, fields.keys(), (values, field_names) => {
+    let dict = utils.str_dict()
+    dict.insert("kind", values.at(0))
+    for (i, field) in field_names.enumerate() {
+      dict.insert(field, values.at(i + 1))
+    }
+    dict
+  })
+}
 
 #let deserializer(d, ctx, request) = {
   utils.assert_type(d, dictionary)

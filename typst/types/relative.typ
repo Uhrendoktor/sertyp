@@ -1,15 +1,15 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(r) = {
+#let serializer(r, request) = {
   utils.assert_type(r, relative)
 
   let relative = repr(r)
   let parts = relative.split(" + ").map(p => eval(p))
 
   import "array.typ" as array_
-  return array_.serializer(parts)
-};
+  return request(((parts, array_),), none, ((serialized,), _n) => serialized)
+}
 
 #let deserializer(r, ctx, request) = {
   utils.assert_type(r, array)

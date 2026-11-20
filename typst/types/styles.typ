@@ -1,10 +1,10 @@
 #import "../utils.typ" as utils;
 #import "generic.typ" as generic;
 
-#let serializer(s) = {
+#let serializer(s, request) = {
   utils.assert(str(type(s)), "styles")
 
-  return generic.serialize(s.child)
+  return request(((s.child, generic.serialize_step),), none, ((child,), _n) => child)
 }
 
 #let deserializer(s, ctx, request) = {
