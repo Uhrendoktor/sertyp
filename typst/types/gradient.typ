@@ -37,11 +37,15 @@
   let kind = g.kind()
   let fields = FIELDS.at(repr(kind))
   import "function.typ" as func_
-  let deps = (kind,)
+  let deps = ((kind, func_),)
   for (field, ty) in fields.pairs() {
-    deps.push(eval(
-      "g." + field + "()",
-      scope: (g: g),
+    let handler = if ty == generic { "generic" } else { ty }
+    deps.push((
+      eval(
+        "g." + field + "()",
+        scope: (g: g),
+      ),
+      handler,
     ))
   }
 

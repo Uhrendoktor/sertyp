@@ -7,7 +7,8 @@
   let relative = repr(r)
   let parts = relative.split(" + ").map(p => eval(p))
 
-  return request((parts,), none, ((serialized,), _n) => serialized)
+  import "array.typ" as array_
+  return request(((parts, array_),), none, ((serialized,), _n) => serialized)
 }
 
 #let deserializer(r, ctx, request) = {

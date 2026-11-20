@@ -4,7 +4,7 @@
 #let serializer(d, request) = {
   utils.assert_type(d, dictionary)
 
-  return request(d.values(), d, (values, d) => {
+  return request(d.values().map(value => (value, "generic")), d, (values, d) => {
     d.keys().enumerate().map(((i, key)) => (key, values.at(i))).to-dict()
   })
 }

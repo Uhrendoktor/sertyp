@@ -3,7 +3,7 @@
 
 #let serializer(a, request) = {
   utils.assert_type(a, array)
-  return request(a, a, (items, _a) => {
+  return request(a.map(item => (item, "generic")), a, (items, _a) => {
     items
   })
 };

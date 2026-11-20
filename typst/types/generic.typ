@@ -177,6 +177,15 @@
     return wrap(serialized)
   }
 
+  // Like the deserializer, each dependency carries the handler that
+  // knows how its value is represented in the parent's serialized form.
+  let serialize_child(value, handler) = {
+    if handler == "generic" {
+      return serialize_value(value)
+    }
+    return handler.serializer(value, request)
+  }
+
   let node(data, parent: none) = (
     data: data,
     processed: false,
@@ -203,8 +212,8 @@
     if type(n.at("data")) == dictionary and "__REQUEST__" in n.at("data") {
       let req = n.at("data").at("__REQUEST__")
       if not n.at("processed") {
-        for dep in req.at("deps") {
-          tree.insert(str(len), node(serialize_value(dep), parent: i))
+        for (dep, handler) in req.at("deps") {
+          tree.insert(str(len), node(serialize_child(dep, handler), parent: i))
           len += 1
         }
         tree.at(i).at("processed") = true

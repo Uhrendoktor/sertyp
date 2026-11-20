@@ -20,16 +20,18 @@
     panic("Context serialization is unsupported")
   }
 
+  import "function.typ" as func_
+  import "dictionary.typ" as dict_
   if fields.len() == 0 {
-    return request((fn,), none, ((func,), _n) => (
+    return request(((fn, func_),), none, ((func,), _n) => (
       func: func,
     ))
   }
 
   return request(
     (
-      fn,
-      fields,
+      (fn, func_),
+      (fields, dict_),
     ),
     none,
     ((func, fields), _n) => (

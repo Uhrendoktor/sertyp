@@ -4,7 +4,7 @@
 #let serializer(s, request) = {
   utils.assert(str(type(s)), "styles")
 
-  return request((s.child,), none, ((child,), _n) => child)
+  return request(((s.child, "generic"),), none, ((child,), _n) => child)
 }
 
 #let deserializer(s, ctx, request) = {

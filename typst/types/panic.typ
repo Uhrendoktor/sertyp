@@ -36,8 +36,8 @@
 
   return request(
     (
-      meta.at("type"),
-      meta.at("msg"),
+      (meta.at("type"), "generic"),
+      (meta.at("msg"), "generic"),
     ),
     none,
     ((ty, msg), _n) => (
