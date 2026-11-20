@@ -17,6 +17,7 @@
         (k, int_.serializer(v, none))
       })
       .to-dict(),
+    none,
   )
 };
 
