@@ -25,6 +25,7 @@
 
 #let test(cycle) = {
   import "module.typ" as mod_
+  import "array.typ" as array_
 
   utils.assert(
     generic.serializer(mod_),
