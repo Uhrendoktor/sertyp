@@ -5,7 +5,7 @@
   utils.assert_type(r, regex)
 
   import "string.typ" as string_
-  return string_.serializer(([#r].fields().at("text")).match(regex("regex\(\"(.*?)\"\)")).captures.at(0), none))
+  return string_.serializer(([#r].fields().at("text")).match(regex("regex\(\"(.*?)\"\)")).captures.at(0), none)
 };
 
 #let deserializer(s, ctx, request) = {
