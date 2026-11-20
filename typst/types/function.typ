@@ -73,7 +73,7 @@
   ),
 )
 
-#let serializer(f, request: none, ctx: none) = {
+#let serializer(f, request, ctx: none) = {
   utils.assert_type(f, function)
 
   for (group, values) in SUPER_TYPES.pairs() {
@@ -87,7 +87,7 @@
   }
 
   import "string.typ" as string_
-  return string_.serializer(if ctx != none { ctx + "." } else { "" } + repr(f))
+  return string_.serializer(if ctx != none { ctx + "." } else { "" } + repr(f), none)
 };
 
 #let deserializer(s, ctx, request) = {
@@ -101,11 +101,11 @@
 
 #let test(cycle) = {
   utils.assert(
-    serializer((x: int) => { return "test" }),
+    serializer((x: int) => { return "test" }, none),
     "(..) => ..",
   )
   utils.assert(
-    serializer(table.cell),
+    serializer(table.cell, none),
     "table.cell",
   )
 

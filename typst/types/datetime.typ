@@ -1,7 +1,7 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(d, request: none) = {
+#let serializer(d, request) = {
   utils.assert_type(d, datetime)
 
   let fields = generic.at_optional(
@@ -14,7 +14,7 @@
     fields
       .pairs()
       .map(((k, v)) => {
-        (k, int_.serializer(v))
+        (k, int_.serializer(v, none))
       })
       .to-dict(),
   )

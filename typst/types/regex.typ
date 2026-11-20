@@ -1,11 +1,11 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(r, request: none) = {
+#let serializer(r, request) = {
   utils.assert_type(r, regex)
 
   import "string.typ" as string_
-  return string_.serializer(([#r].fields().at("text")).match(regex("regex\(\"(.*?)\"\)")).captures.at(0))
+  return string_.serializer(([#r].fields().at("text")).match(regex("regex\(\"(.*?)\"\)")).captures.at(0), none))
 };
 
 #let deserializer(s, ctx, request) = {
@@ -15,7 +15,7 @@
 
 #let test(cycle) = {
   utils.assert(
-    serializer(regex("[a-z]+")),
+    serializer(regex("[a-z]+"), none),
     "[a-z]+",
   )
 

@@ -1,21 +1,21 @@
 #import "../utils.typ" as utils
 
 /// Serializes content into the intermediate sertyp representation.
-#let str_serializer(ty) = (v, request: none) => {
+#let str_serializer(ty) = (v, request) => {
   utils.assert_type(v, ty)
   import "string.typ" as string_
-  return string_.serializer(str(v))
+  return string_.serializer(str(v), none)
 }
 
 /// Serializes content using its repr representation.
-#let repr_serializer(ty) = (v, request: none) => {
+#let repr_serializer(ty) = (v, request) => {
   utils.assert_type(v, ty)
   import "string.typ" as string_
-  return string_.serializer(repr(v))
+  return string_.serializer(repr(v), none)
 }
 
 /// Serializes content raw.
-#let raw_serializer(ty) = (v, request: none) => {
+#let raw_serializer(ty) = (v, request) => {
   utils.assert_type(v, ty)
   return v
 }
@@ -32,9 +32,9 @@
   let value = s.find(regex("[0-9.+-]+"))
   let unit = s.slice(value.len())
   return raw_serializer(dictionary)((
-    value: float_.serializer(float(value)),
-    unit: string_.serializer(unit),
-  ))
+    value: float_.serializer(float(value), none),
+    unit: string_.serializer(unit, none),
+  ), none)
 }
 
 
@@ -154,7 +154,7 @@
       let output_ty = if is_panic {
         "panic"
       } else {
-        type_.serializer(ty)
+        type_.serializer(ty, none)
       }
       if value == no_value {
         return (type: output_ty)
@@ -165,7 +165,7 @@
       )
     }
 
-    let serialized = serializer(value, request: request)
+    let serialized = serializer(value, request)
     if type(serialized) == dictionary and "__REQUEST__" in serialized {
       let req = serialized.at("__REQUEST__")
       return request(

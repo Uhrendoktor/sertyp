@@ -10,7 +10,7 @@
 
 #let test(cycle) = {
   utils.assert(
-    serializer(left),
+    serializer(left, none),
     "left",
   )
 

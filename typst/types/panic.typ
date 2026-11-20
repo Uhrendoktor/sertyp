@@ -29,7 +29,7 @@
   utils.assert_type(body, content)
 
   import "function.typ" as func_
-  utils.assert(func_.serializer(body.func()), "sequence")
+  utils.assert(func_.serializer(body.func(), none), "sequence")
   let children = body.fields().at("children")
   utils.assert_type(children, array)
   let meta = children.find(el => el.func() == metadata).at("value")

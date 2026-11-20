@@ -1,11 +1,11 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(d, request: none) = {
+#let serializer(d, request) = {
   utils.assert_type(d, duration)
 
   import "float.typ" as float_
-  return float_.serializer(float(d.seconds()))
+  return float_.serializer(float(d.seconds()), none)
 };
 
 #let deserializer(f, ctx, request) = {

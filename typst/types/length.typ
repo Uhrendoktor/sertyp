@@ -1,15 +1,15 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(l, request: none) = {
+#let serializer(l, request) = {
   utils.assert_type(l, length)
 
   import "float.typ" as float_
 
   let dict = generic.value_unit_serializer(repr(l.abs))
-  dict.insert("em", float_.serializer(float(l.em)))
+  dict.insert("em", float_.serializer(float(l.em), none))
 
-  return generic.raw_serializer(dictionary)(dict)
+  return generic.raw_serializer(dictionary)(dict, none)
 };
 
 #let deserializer(l, ctx, request) = {
