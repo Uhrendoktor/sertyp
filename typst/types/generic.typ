@@ -165,7 +165,7 @@
       )
     }
 
-    let serialized = serializer(value, request)
+    let serialized = serializer(value, request: request)
     if type(serialized) == dictionary and "__REQUEST__" in serialized {
       let req = serialized.at("__REQUEST__")
       return request(
