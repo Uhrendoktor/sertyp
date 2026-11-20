@@ -150,23 +150,37 @@
     serializer(content)
   }
 
-  if utils.type_str(ty) in PRIMITIVE {
-    return value
-  }
-  let ty = if is_panic {
-    "panic"
-  } else {
-    type_.serializer(type(content))
-  }
-  if value == no_value {
+  let wrap(value) = {
+    if utils.type_str(ty) in PRIMITIVE {
+      return value
+    }
+    let output_ty = if is_panic {
+      "panic"
+    } else {
+      type_.serializer(type(content))
+    }
+    if value == no_value {
+      return (
+        type: output_ty,
+      )
+    }
     return (
-      type: ty,
+      type: output_ty,
+      value: value,
     )
   }
-  return (
-    type: ty,
-    value: value,
-  )
+
+  // Keep the request marker at the top level so the iterative walker can
+  // discover it. Apply the type wrapper only after all dependencies resolve.
+  if type(value) == dictionary and "__REQUEST__" in value {
+    let req = value.at("__REQUEST__")
+    return request(
+      req.at("deps"),
+      req.at("obj"),
+      (deps, obj) => wrap(req.at("callback")(deps, obj)),
+    )
+  }
+  return wrap(value)
 }
 
 /// Serializes any content into the intermediate sertyp representation without
