@@ -1,7 +1,7 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(m) = {
+#let serializer(m, request) = {
   utils.assert_type(m, module)
 
   let fn = ()
@@ -9,11 +9,11 @@
     fn.push(repr(member))
   }
   let name = repr(m).match(regex("\<module (.*?)\>")).captures.at(0)
+
   import "array.typ" as array_
-  import "string.typ" as string_
-  generic.raw_serializer(dictionary)((
-    name: string_.serializer(name),
-    member: array_.serializer(fn),
+  return request(((fn, array_),), name, ((member,), name) => (
+    name: name,
+    member: member,
   ))
 }
 
@@ -26,20 +26,22 @@
 #let test(cycle) = {
   import "module.typ" as mod_
   import "array.typ" as array_
-  import "string.typ" as string_
 
   utils.assert(
-    serializer(mod_),
-    generic.raw_serializer(dictionary)((
-      name: string_.serializer("module"),
-      member: array_.serializer((
-        "<module generic>",
-        "<module utils>",
-        "serializer",
-        "deserializer",
-        "test",
-      )),
-    )),
+    generic.serializer(mod_),
+    (
+      type: "module",
+      value: (
+        name: "module",
+        member: (
+          "<module generic>",
+          "<module utils>",
+          "serializer",
+          "deserializer",
+          "test",
+        ),
+      ),
+    ),
   )
   let null = cycle(mod_)
   let null = cycle(array_)

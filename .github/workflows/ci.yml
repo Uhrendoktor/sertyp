@@ -1,0 +1,26 @@
+name: Rust and Typst tests
+
+on:
+  push:
+    branches: [iterative-serializer]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  roundtrip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: typst-community/setup-typst@v5
+      - name: Build WASM test plugin
+        run: cargo build --release
+        working-directory: test_plugin
+      - name: Run Typst round-trip suite
+        run: typst compile test_plugin/test.typ --root .

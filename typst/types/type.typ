@@ -1,11 +1,11 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(t) = {
+#let serializer(t, request) = {
   utils.assert_type(t, type)
 
   import "string.typ" as string_
-  return string_.serializer(utils.type_str(t))
+  return string_.serializer(utils.type_str(t), none)
 };
 
 #let deserializer(t, ctx, request) = {

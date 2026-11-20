@@ -1,14 +1,12 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(d) = {
+#let serializer(d, request) = {
   utils.assert_type(d, dictionary)
 
-  let dict = utils.str_dict()
-  for (key, value) in d.pairs() {
-    dict.insert(key, generic.serializer(value))
-  }
-  return generic.raw_serializer(dictionary)(dict)
+  return request(d.values().map(value => (value, "generic")), d, (values, d) => {
+    d.keys().enumerate().map(((i, key)) => (key, values.at(i))).to-dict()
+  })
 }
 
 #let deserializer(d, ctx, request) = {

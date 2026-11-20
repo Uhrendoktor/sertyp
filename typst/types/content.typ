@@ -1,14 +1,13 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(c) = {
+#let serializer(c, request) = {
   utils.assert_type(c, content)
 
   /// subtype of content
   let fn = c.func()
 
-  let fields = utils.str_dict()
-  fields = c
+  let fields = c
     .fields()
     .pairs()
     .filter(((k, v)) => {
@@ -23,17 +22,23 @@
 
   import "function.typ" as func_
   import "dictionary.typ" as dict_
-  let dict = (
-    func: func_.serializer(fn),
-  )
-  if fields.len() > 0 {
-    dict = (
-      ..dict,
-      fields: dict_.serializer(fields),
-    )
+  if fields.len() == 0 {
+    return request(((fn, func_),), none, ((func,), _n) => (
+      func: func,
+    ))
   }
 
-  return generic.raw_serializer(dictionary)(dict)
+  return request(
+    (
+      (fn, func_),
+      (fields, dict_),
+    ),
+    none,
+    ((func, fields), _n) => (
+      func: func,
+      fields: fields,
+    ),
+  )
 }
 
 /// Splits positional arguments from named arguments based on a list of positional argument names.

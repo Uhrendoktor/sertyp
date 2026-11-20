@@ -1,11 +1,11 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(a) = {
+#let serializer(a, request) = {
   utils.assert_type(a, array)
-  return generic.raw_serializer(array)(a.map(item => {
-    generic.serializer(item)
-  }))
+  return request(a.map(item => (item, "generic")), a, (items, _a) => {
+    items
+  })
 };
 
 #let deserializer(a, ctx, request) = {
@@ -23,4 +23,20 @@
     arr = arr + (v,)
     cycle(arr)
   }
+
+  // Exercise serialization of deeply nested arrays without using the
+  // roundtrip plugin, so this specifically covers the iterative serializer.
+  let nested = 0
+  for _ in range(1024) {
+    nested = (nested,)
+  }
+  let serialized = generic.serializer(nested)
+  let depth = 0
+  while type(serialized) == array {
+    utils.assert(serialized.len(), 1)
+    serialized = serialized.at(0)
+    depth += 1
+  }
+  utils.assert(depth, 1024)
+  utils.assert(serialized, 0)
 };

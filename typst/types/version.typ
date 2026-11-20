@@ -1,15 +1,15 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(v) = {
+#let serializer(v, request) = {
   utils.assert_type(v, version)
 
   import "integer.typ" as int_
   return generic.raw_serializer(dictionary)((
-    major: int_.serializer(v.major),
-    minor: int_.serializer(v.minor),
-    patch: int_.serializer(v.patch),
-  ))
+    major: int_.serializer(v.major, none),
+    minor: int_.serializer(v.minor, none),
+    patch: int_.serializer(v.patch, none),
+  ), none)
 };
 
 #let deserializer(d, ctx, request) = {

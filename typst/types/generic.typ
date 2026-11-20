@@ -1,21 +1,21 @@
 #import "../utils.typ" as utils
 
 /// Serializes content into the intermediate sertyp representation.
-#let str_serializer(ty) = v => {
+#let str_serializer(ty) = (v, request) => {
   utils.assert_type(v, ty)
   import "string.typ" as string_
-  return string_.serializer(str(v))
+  return string_.serializer(str(v), none)
 }
 
 /// Serializes content using its repr representation.
-#let repr_serializer(ty) = v => {
+#let repr_serializer(ty) = (v, request) => {
   utils.assert_type(v, ty)
   import "string.typ" as string_
-  return string_.serializer(repr(v))
+  return string_.serializer(repr(v), none)
 }
 
 /// Serializes content raw.
-#let raw_serializer(ty) = v => {
+#let raw_serializer(ty) = (v, request) => {
   utils.assert_type(v, ty)
   return v
 }
@@ -32,9 +32,9 @@
   let value = s.find(regex("[0-9.+-]+"))
   let unit = s.slice(value.len())
   return raw_serializer(dictionary)((
-    value: float_.serializer(float(value)),
-    unit: string_.serializer(unit),
-  ))
+    value: float_.serializer(float(value), none),
+    unit: string_.serializer(unit, none),
+  ), none)
 }
 
 
@@ -117,40 +117,130 @@
 
 #let no_value() = {};
 
-/// Serializes any content recursively into the intermediate sertyp representation.
-/// Args:
-/// content (any): The content to serialize.
+/// Serializes a value into the intermediate Sertyp representation.
 ///
-/// Returns:
-/// (any): The serialized representation of the content.
+/// All type serializers receive the same request callback. A serializer that
+/// has children can return a request for those values; serializers without
+/// children simply return their value. The traversal itself is iterative.
 #let serializer(content) = {
   import "type.typ" as type_
   import "panic.typ" as panic_
 
-  let is_panic = panic_.is_panic(content)
-
-  let ty = type(content)
-  let value = if is_panic {
-    panic_.serializer(content)
-  } else { type_mod(ty).serializer(content) }
-
-  if utils.type_str(ty) in PRIMITIVE {
-    return value
-  }
-  let ty = if is_panic {
-    "panic"
-  } else {
-    type_.serializer(type(content))
-  }
-  if value == no_value {
+  let request(deps, obj, callback) = {
     return (
-      type: ty,
+      __REQUEST__: (
+        deps: deps,
+        obj: obj,
+        callback: callback,
+      ),
     )
   }
-  return (
-    type: ty,
-    value: value,
+
+  // Serialize one value. Child values are left as requests for the work loop
+  // below, so this function never descends into the value tree.
+  let serialize_value(value) = {
+    let is_panic = panic_.is_panic(value)
+    let ty = type(value)
+    let serializer = if is_panic {
+      panic_.serializer
+    } else {
+      type_mod(ty).serializer
+    }
+
+    let wrap(value) = {
+      if utils.type_str(ty) in PRIMITIVE {
+        return value
+      }
+      let output_ty = if is_panic {
+        "panic"
+      } else {
+        type_.serializer(ty, none)
+      }
+      if value == no_value {
+        return (type: output_ty)
+      }
+      return (
+        type: output_ty,
+        value: value,
+      )
+    }
+
+    let serialized = serializer(value, request)
+    if type(serialized) == dictionary and "__REQUEST__" in serialized {
+      let req = serialized.at("__REQUEST__")
+      return request(
+        req.at("deps"),
+        req.at("obj"),
+        (deps, obj) => wrap(req.at("callback")(deps, obj)),
+      )
+    }
+    return wrap(serialized)
+  }
+
+  // Like the deserializer, each dependency carries the handler that
+  // knows how its value is represented in the parent's serialized form.
+  let serialize_child(value, handler) = {
+    if handler == "generic" {
+      return serialize_value(value)
+    }
+    return handler.serializer(value, request)
+  }
+
+  let node(data, parent: none) = (
+    data: data,
+    processed: false,
+    solved_deps: array(()),
+    parent: parent,
   )
+  let reverse(values) = {
+    let result = array(())
+    let i = values.len() - 1
+    while i >= 0 {
+      result.push(values.at(i))
+      i -= 1
+    }
+    result
+  }
+
+  let tree = (:)
+  let len = 0
+  tree.insert(str(len), node(serialize_value(content)))
+  len += 1
+
+  while tree.len() > 0 {
+    let (i, n) = tree.pairs().last()
+    if type(n.at("data")) == dictionary and "__REQUEST__" in n.at("data") {
+      let req = n.at("data").at("__REQUEST__")
+      if not n.at("processed") {
+        for (dep, handler) in req.at("deps") {
+          tree.insert(str(len), node(serialize_child(dep, handler), parent: i))
+          len += 1
+        }
+        tree.at(i).at("processed") = true
+      }
+
+      let solved_deps = n.at("solved_deps")
+      if solved_deps.len() == req.at("deps").len() {
+        tree.insert(
+          str(len),
+          node(
+            req.at("callback")(reverse(solved_deps), req.at("obj")),
+            parent: n.at("parent"),
+          ),
+        )
+        tree.remove(i)
+        len += 1
+      }
+    } else {
+      if n.at("parent") == none {
+        return n.at("data")
+      }
+      tree.at(str(n.at("parent"))).at("solved_deps").push(n.at("data"))
+      tree.remove(i)
+    }
+  }
+
+  return tree.at(str(0)).at("data")
 }
 
 /// For more information see `deserializer`

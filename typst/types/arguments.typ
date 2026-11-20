@@ -1,16 +1,23 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(a) = {
+#let serializer(a, request) = {
   utils.assert_type(a, arguments)
 
   import "dictionary.typ" as dict_
   import "array.typ" as array_
-  return generic.raw_serializer(dictionary)((
-    pos: array_.serializer(a.pos()),
-    named: dict_.serializer(a.named()),
-  ))
-};
+  return request(
+    (
+      (a.pos(), array_),
+      (a.named(), dict_),
+    ),
+    none,
+    ((pos, named), _n) => (
+      pos: pos,
+      named: named,
+    ),
+  )
+}
 
 #let deserializer(a, ctx, request) = {
   utils.assert_type(a, dictionary)

@@ -1,104 +1,121 @@
 # Sertyp
 
-Type-preserving serialization for Typst. Serialize Typst values and work with
-them in Rust WASM plugins using typed data structures.
+**Type-preserving serialization between Typst and Rust.**
 
-## What is this?
+Sertyp lets a Typst document pass values to a Rust/WASM plugin and get real
+Typst values back. Colors stay colors, lengths stay lengths, and content stays
+content — rather than being flattened into strings that the Rust side has to
+parse by hand.
 
-Sertyp bridges Typst and Rust for WASM plugin development. Instead of passing
-untyped bytes or parsing strings, you get:
+## How it works
 
-- **Typst package**: Serialize any Typst value (colors, lengths, content, etc.)
-- **Rust library**: Deserialize into typed structs with utility methods
-- **Full roundtrips**: Lossless — serialize and deserialize without degradation
-  and reconstruct displayble values in typst.
+Sertyp has two parts that use the same intermediate format:
 
-Example: Pass `rgb(255, 128, 0)` to a plugin, work with it as
-`Color { space: RGB, components: [255, 128, 0] }` in Rust, and return it back to
-typst. The color can then still be used as a real typst color.
+- **Typst package:** serializes Typst values into a structured representation
+  and, when needed, encodes that representation as CBOR.
+- **Rust crate:** decodes the CBOR into typed Rust values such as `Color`,
+  `Length`, `Content`, or the general `Item` enum. It can encode the result
+  again for Typst to read.
 
-## Example
+The `sertyp.call` helper handles the round trip: encode the arguments, call
+the WASM function, and deserialize its result.
 
-### In Rust (plugin)
+## A small example
+
+A Rust plugin function can use Sertyp's types directly:
 
 ```rust
 use wasm_minimal_protocol::*;
-use sertyp::*;
+use sertyp::{typst_func, Integer, String};
 
 #[cfg(target_arch = "wasm32")]
 initiate_protocol!();
 
 #[typst_func]
-pub fn fibonacci<'a>(
-    n: Integer,
-) -> Result<Integer, String<'a>> {
-    let n: i32 = match n.try_into() {
-        Ok(n) => n,
-        Err(_) => return Err("Invalid integer range".into())
-    };
-    
-    let (mut v0, mut v1) = (0, 1);
+pub fn fibonacci<'a>(n: Integer) -> Result<Integer, String<'a>> {
+    let n: i32 = n.try_into().map_err(|_| "Invalid integer range")?;
+
+    let (mut a, mut b) = (0, 1);
     for _ in 0..n {
-        (v0, v1) = (v1, v0 + v1);
+        (a, b) = (b, a + b);
     }
 
-    Ok(v1.into())
+    Ok(b.into())
 }
 ```
 
-### In Typst
+Call it from Typst with the package:
 
 ```typst
-#import "@preview/sertyp:0.1.5";
-#let fibonacci(n) = {
-    let plugin = plugin("<...>.wasm");
-    sertyp.call(plugin.fibonacci, n);
-}
+#import "@preview/sertyp:0.1.5" as sertyp
 
-#assert(fibonacci(10) == 89)
+#let plugin = plugin("path/to/plugin.wasm")
+#assert(sertyp.call(plugin.fibonacci, 10) == 89)
 ```
 
-## Supported Types
+Add the Rust crate to your plugin's `Cargo.toml`:
 
-- **Primitives**: bool, int, float, decimal, string, bytes, none, auto
-- **Collections**: array, dictionary
-- **Visual**: color (RGB, CMYK, OkLab, HSL, etc.), stroke, gradient, alignment
-- **Numeric**: length, angle, ratio, fraction, duration, relative
-- **Content**: content, label, symbol, regex
-- **Advanced**: function, module, type, arguments, styles, datetime, version
+```toml
+[dependencies]
+sertyp = "0.1.5"
+wasm-minimal-protocol = "0.2"
+```
 
-See [typst/README.md](typst/README.md) for the full list and examples.
+The default Rust features include typed content support. See the
+[Rust README](rust/README.md) for the available types and feature details.
 
-## Why Sertyp?
+## Used in practice
 
-Typst's built-in WASM communication uses untyped bytes. You either:
+[Kalt](https://typst.app/universe/package/kalt) is a good example of what
+Sertyp is for. Kalt evaluates nested Typst equations in Rust — including
+expressions with complex numbers, matrices, and vectors — while keeping the
+input and result in Typst's own value model.
 
-- Parse `repr()` strings (fragile, loses structure)
-- Use `cbor.encode()` directly (loses type information)
-- Manually build serialization for each type
+Its Typst-side `comp` function is essentially a small wrapper around
+`sertyp.call`: it sends the equation to the WASM backend and receives the
+evaluated result as a Typst value. See the
+[Kalt source](https://github.com/Uhrendoktor/kalt).
 
-Sertyp provides:
+## What can it serialize?
 
-- **Type preservation**: Lengths stay lengths, colors stay colors
-- **Structured access**: Extract color components, decompose lengths, parse
-  function names
-- **Zero boilerplate**: Automatic serialization for all supported types
+Sertyp supports most commonly used Typst values, including:
 
-## Documentation and further examples
+- **Basic values:** booleans, integers, floats, decimals, strings, bytes,
+  `none`, and `auto`
+- **Collections:** arrays, dictionaries, and arguments
+- **Numbers and units:** lengths, angles, ratios, fractions, durations, and
+  relative lengths
+- **Content:** text, equations, symbols, labels, and other supported content
+- **Visual values:** colors, strokes, gradients, alignments, directions, and
+  tilings
+- **Other types:** functions, modules, selectors, types, styles, dates, and
+  versions
 
-- **[Typst package](typst/README.md)**: API reference, examples
-- **[Rust library](rust/README.md)**: Data structures, common patterns, plugin
-  development
+The [Typst README](typst/README.md) has examples and the full type list.
 
-## Contributing
+## Why use Sertyp?
 
-Issues and PRs welcome
+Typst's built-in `repr()` is useful for inspection, but it is not a reliable
+data format for moving values between runtimes. Encoding a value as plain CBOR
+also does not, by itself, preserve the meaning of Typst-specific types.
 
-## Limitations
+Sertyp keeps the structure and type information together, so Rust code can work
+with values instead of parsing their textual representation. The
+`call` helper also removes most of the repetitive CBOR and WASM boundary
+handling.
 
-- **Security**: Deserialization uses `eval()` — only deserialize trusted data
-- **Dynamic types**: `context` and runtime-dependent elements cannot be fully
-  serialized
-- **Closures**: Inline functions lose their captured state
+## Documentation
 
-See individual READMEs for details.
+- [Typst package: usage, API, and examples](typst/README.md)
+- [Rust backend: types and plugin development](rust/README.md)
+
+## Limitations and safety
+
+- Deserialization uses Typst's `eval()` for some values. Only deserialize
+  data you trust.
+- Runtime-dependent values such as `context` cannot be fully serialized.
+- Selector support is partial.
+- Inline functions can be serialized, but their captured closure state is not
+  preserved.
+
+Issues and pull requests are welcome. Sertyp is released under the MIT license.

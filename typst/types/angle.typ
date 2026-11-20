@@ -1,7 +1,7 @@
 #import "generic.typ" as generic;
 #import "../utils.typ" as utils;
 
-#let serializer(a) = {
+#let serializer(a, request) = {
   utils.assert_type(a, angle);
   return generic.value_unit_serializer(repr(a));
 };
