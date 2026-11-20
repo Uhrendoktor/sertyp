@@ -9,7 +9,7 @@
     major: int_.serializer(v.major, none),
     minor: int_.serializer(v.minor, none),
     patch: int_.serializer(v.patch, none),
-  ))
+  ), none)
 };
 
 #let deserializer(d, ctx, request) = {
